@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 const HeroSection = () => {
   return (
-    <section className="relative bg-gradient-to-br from-blue-50 via-green-50 to-orange-50 min-h-screen flex items-center">
+    <section className="relative bg-gradient-to-br from-blue-50 via-green-50 to-orange-50  flex items-center">
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-green-600/5" />
 
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">

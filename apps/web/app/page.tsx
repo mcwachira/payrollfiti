@@ -5,6 +5,7 @@ import HeroSection from '@/components/home/HeroSection';
 import WhyPayFlow from '@/components/home/WhyPayFlow';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
 import CTABanner from '@/components/home/CTABanner';
+import Footer from '@/components/home/Footer';
 
 const Home = () => {
   return (
@@ -17,7 +18,7 @@ const Home = () => {
       <ComplianceSection />
       <TestimonialsSection />
       <CTABanner />
-      {/* <Footer /> */}
+      <Footer />
     </div>
   );
 };
