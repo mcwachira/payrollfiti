@@ -1,7 +1,10 @@
+import ComplianceSection from '@/components/home/ComplianceSection';
 import FeaturesOverview from '@/components/home/FeaturesOverview';
-import { Header } from '@/components/home/Header';
+import Header from '@/components/home/Header';
 import HeroSection from '@/components/home/HeroSection';
 import WhyPayFlow from '@/components/home/WhyPayFlow';
+import TestimonialsSection from '@/components/home/TestimonialsSection';
+import CTABanner from '@/components/home/CTABanner';
 
 const Home = () => {
   return (
@@ -11,9 +14,9 @@ const Home = () => {
 
       <FeaturesOverview />
       <WhyPayFlow />
-      {/* <ComplianceSection /> */}
-      {/* <TestimonialsSection /> */}
-      {/* <CTABanner /> */}
+      <ComplianceSection />
+      <TestimonialsSection />
+      <CTABanner />
       {/* <Footer /> */}
     </div>
   );

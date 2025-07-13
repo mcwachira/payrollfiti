@@ -5,9 +5,10 @@ import { useState } from 'react';
 // import { ThemeToggle } from '../theme/ThemeToggle';
 import { FileText, Menu, X } from 'lucide-react';
 import { MobileMenu } from './MobileMenu';
+
 // import Logo from '../Logo';
 
-export function Header() {
+function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -73,3 +74,4 @@ export function Header() {
     </header>
   );
 }
+export default Header;
