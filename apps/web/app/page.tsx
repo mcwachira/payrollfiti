@@ -1,7 +1,9 @@
+import HeroSection from '@/components/home/HeroSection';
+
 const Home = () => {
   return (
-    <div>
-      <h4 className="text-4xl text-yellow-500">this with tailwind works</h4>
+    <div className="min-h-screen bg-background">
+      <HeroSection />
     </div>
   );
 };
