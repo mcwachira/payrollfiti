@@ -11,7 +11,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="border-b border-b-black bg-gradient-to-br from-blue-50 via-green-50 to-orange-50 backdrop-blur-md sticky top-0 z-50">
+    <header className="border-b border-b-primary bg-gradient-to-br from-blue-50 via-green-50 to-orange-50 backdrop-blur-md sticky top-0 z-50">
       <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-green-600/5" />
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">

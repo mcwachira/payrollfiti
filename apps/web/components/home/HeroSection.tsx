@@ -43,7 +43,7 @@ const HeroSection = () => {
               </Button>
             </div>
 
-            <div className="mt-8 flex flex-wrap gap-6 justify-center lg:justify-start text-sm text-muted-foreground">
+            <div className="mt-8 mb-2 flex flex-wrap gap-6 justify-center lg:justify-start text-sm text-muted-foreground">
               <div className="flex items-center">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
                 Free 30-day trial
