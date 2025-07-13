@@ -1,7 +1,7 @@
 const Home = () => {
   return (
     <div>
-      <h4 className="text-4xl">this with tailwind works</h4>
+      <h4 className="text-4xl text-yellow-500">this with tailwind works</h4>
     </div>
   );
 };
