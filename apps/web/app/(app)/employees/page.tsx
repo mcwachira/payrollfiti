@@ -45,6 +45,7 @@ import { toast } from 'sonner';
 import { EmployeeForm } from '@/components/employees/EmployeeForm';
 import { EmployeeDetails } from '@/components/employees/EmployeeDetails';
 import EmployeeDocuments from '@/components/employees/EmployeeDocuments';
+import { EmployeeList } from '@/components/employees/EmployeeList';
 
 const EmployeesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -158,210 +159,214 @@ const EmployeesPage = () => {
   //   );
   // }
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Employee Management</h2>
-          <p className="text-muted-foreground">
-            Manage your organization's employees
-          </p>
-        </div>
-        <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setSelectedEmployee('')}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Employee
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {selectedEmployee ? 'Edit Employee' : 'Add New Employee'}
-              </DialogTitle>
-            </DialogHeader>
-            <EmployeeForm
-              employee={selectedEmployee}
-              onSuccess={handleFormSuccess}
-              onCancel={() => setShowForm(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
+    // <div className="space-y-6">
+    //   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    //     <div>
+    //       <h2 className="text-2xl font-bold">Employee Management</h2>
+    //       <p className="text-muted-foreground">
+    //         Manage your organization's employees
+    //       </p>
+    //     </div>
+    //     <Dialog open={showForm} onOpenChange={setShowForm}>
+    //       <DialogTrigger asChild>
+    //         <Button onClick={() => setSelectedEmployee('')}>
+    //           <Plus className="h-4 w-4 mr-2" />
+    //           Add Employee
+    //         </Button>
+    //       </DialogTrigger>
+    //       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    //         <DialogHeader>
+    //           <DialogTitle>
+    //             {selectedEmployee ? 'Edit Employee' : 'Add New Employee'}
+    //           </DialogTitle>
+    //         </DialogHeader>
+    //         <EmployeeForm
+    //           employee={selectedEmployee}
+    //           onSuccess={handleFormSuccess}
+    //           onCancel={() => setShowForm(false)}
+    //         />
+    //       </DialogContent>
+    //     </Dialog>
+    //   </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <CardTitle>Employees ({filteredEmployees.length})</CardTitle>
-              <CardDescription>
-                Manage employee records and information
-              </CardDescription>
-            </div>
+    //   <Card>
+    //     <CardHeader>
+    //       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    //         <div>
+    //           <CardTitle>Employees ({filteredEmployees.length})</CardTitle>
+    //           <CardDescription>
+    //             Manage employee records and information
+    //           </CardDescription>
+    //         </div>
 
-            <div className="flex gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search employees..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 w-64"
-                />
-              </div>
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Employee #</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Job Title</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Salary</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEmployees.map((employee) => (
-                  <TableRow key={employee.id}>
-                    <TableCell className="font-medium">
-                      {employee.employee_number}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">
-                          {employee.first_name} {employee.last_name}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {employee.email}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{employee.job_title || 'N/A'}</TableCell>
-                    <TableCell>{employee.department || 'N/A'}</TableCell>
-                    <TableCell>
-                      <Badge
-                        className={getStatusColor(
-                          employee.employment_status || 'active',
-                        )}
-                      >
-                        {employee.employment_status || 'active'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      KES {employee.basic_salary?.toLocaleString() || 0}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedEmployee(employee);
-                              setShowDetails(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedEmployee(employee);
-                              setShowForm(true);
-                            }}
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedEmployee(employee);
-                              setShowDocuments(true);
-                            }}
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            Documents
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(employee.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+    //         <div className="flex gap-2">
+    //           <div className="relative">
+    //             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+    //             <Input
+    //               placeholder="Search employees..."
+    //               value={searchTerm}
+    //               onChange={(e) => setSearchTerm(e.target.value)}
+    //               className="pl-10 w-64"
+    //             />
+    //           </div>
+    //           <Button variant="outline" size="icon">
+    //             <Filter className="h-4 w-4" />
+    //           </Button>
+    //         </div>
+    //       </div>
+    //     </CardHeader>
+    //     <CardContent>
+    //       <div className="overflow-x-auto">
+    //         <Table>
+    //           <TableHeader>
+    //             <TableRow>
+    //               <TableHead>Employee #</TableHead>
+    //               <TableHead>Name</TableHead>
+    //               <TableHead>Job Title</TableHead>
+    //               <TableHead>Department</TableHead>
+    //               <TableHead>Status</TableHead>
+    //               <TableHead>Salary</TableHead>
+    //               <TableHead>Actions</TableHead>
+    //             </TableRow>
+    //           </TableHeader>
+    //           <TableBody>
+    //             {filteredEmployees.map((employee) => (
+    //               <TableRow key={employee.id}>
+    //                 <TableCell className="font-medium">
+    //                   {employee.employee_number}
+    //                 </TableCell>
+    //                 <TableCell>
+    //                   <div>
+    //                     <div className="font-medium">
+    //                       {employee.first_name} {employee.last_name}
+    //                     </div>
+    //                     <div className="text-sm text-muted-foreground">
+    //                       {employee.email}
+    //                     </div>
+    //                   </div>
+    //                 </TableCell>
+    //                 <TableCell>{employee.job_title || 'N/A'}</TableCell>
+    //                 <TableCell>{employee.department || 'N/A'}</TableCell>
+    //                 <TableCell>
+    //                   <Badge
+    //                     className={getStatusColor(
+    //                       employee.employment_status || 'active',
+    //                     )}
+    //                   >
+    //                     {employee.employment_status || 'active'}
+    //                   </Badge>
+    //                 </TableCell>
+    //                 <TableCell>
+    //                   KES {employee.basic_salary?.toLocaleString() || 0}
+    //                 </TableCell>
+    //                 <TableCell>
+    //                   <DropdownMenu>
+    //                     <DropdownMenuTrigger asChild>
+    //                       <Button variant="ghost" size="sm">
+    //                         <MoreHorizontal className="h-4 w-4" />
+    //                       </Button>
+    //                     </DropdownMenuTrigger>
+    //                     <DropdownMenuContent align="end">
+    //                       <DropdownMenuItem
+    //                         onClick={() => {
+    //                           setSelectedEmployee(employee);
+    //                           setShowDetails(true);
+    //                         }}
+    //                       >
+    //                         <Eye className="h-4 w-4 mr-2" />
+    //                         View Details
+    //                       </DropdownMenuItem>
+    //                       <DropdownMenuItem
+    //                         onClick={() => {
+    //                           setSelectedEmployee(employee);
+    //                           setShowForm(true);
+    //                         }}
+    //                       >
+    //                         <Edit className="h-4 w-4 mr-2" />
+    //                         Edit
+    //                       </DropdownMenuItem>
+    //                       <DropdownMenuItem
+    //                         onClick={() => {
+    //                           setSelectedEmployee(employee);
+    //                           setShowDocuments(true);
+    //                         }}
+    //                       >
+    //                         <FileText className="h-4 w-4 mr-2" />
+    //                         Documents
+    //                       </DropdownMenuItem>
+    //                       <DropdownMenuItem
+    //                         onClick={() => handleDelete(employee.id)}
+    //                         className="text-red-600"
+    //                       >
+    //                         <Trash2 className="h-4 w-4 mr-2" />
+    //                         Delete
+    //                       </DropdownMenuItem>
+    //                     </DropdownMenuContent>
+    //                   </DropdownMenu>
+    //                 </TableCell>
+    //               </TableRow>
+    //             ))}
+    //           </TableBody>
+    //         </Table>
+    //       </div>
+    //     </CardContent>
+    //   </Card>
 
-      {/* Employee Form Dialog */}
-      <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogTrigger asChild>
-          <Button onClick={() => setSelectedEmployee(null)} className="hidden">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Employee
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedEmployee ? 'Edit Employee' : 'Add New Employee'}
-            </DialogTitle>
-          </DialogHeader>
-          <EmployeeForm
-            employee={selectedEmployee}
-            onSuccess={handleFormSuccess}
-            onCancel={() => setShowForm(false)}
-          />
-        </DialogContent>
-      </Dialog>
+    //   {/* Employee Form Dialog */}
+    //   <Dialog open={showForm} onOpenChange={setShowForm}>
+    //     <DialogTrigger asChild>
+    //       <Button onClick={() => setSelectedEmployee(null)} className="hidden">
+    //         <Plus className="h-4 w-4 mr-2" />
+    //         Add Employee
+    //       </Button>
+    //     </DialogTrigger>
+    //     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    //       <DialogHeader>
+    //         <DialogTitle>
+    //           {selectedEmployee ? 'Edit Employee' : 'Add New Employee'}
+    //         </DialogTitle>
+    //       </DialogHeader>
+    //       <EmployeeForm
+    //         employee={selectedEmployee}
+    //         onSuccess={handleFormSuccess}
+    //         onCancel={() => setShowForm(false)}
+    //       />
+    //     </DialogContent>
+    //   </Dialog>
 
-      {/* Employee Details Dialog */}
-      <Dialog open={showDetails} onOpenChange={setShowDetails}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Employee Details</DialogTitle>
-          </DialogHeader>
-          {selectedEmployee && (
-            <EmployeeDetails
-              employee={selectedEmployee}
-              onClose={() => setShowDetails(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+    //   {/* Employee Details Dialog */}
+    //   <Dialog open={showDetails} onOpenChange={setShowDetails}>
+    //     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    //       <DialogHeader>
+    //         <DialogTitle>Employee Details</DialogTitle>
+    //       </DialogHeader>
+    //       {selectedEmployee && (
+    //         <EmployeeDetails
+    //           employee={selectedEmployee}
+    //           onClose={() => setShowDetails(false)}
+    //         />
+    //       )}
+    //     </DialogContent>
+    //   </Dialog>
 
-      {/* Employee Documents Dialog */}
-      <Dialog open={showDocuments} onOpenChange={setShowDocuments}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              Employee Documents - {selectedEmployee?.first_name}{' '}
-              {selectedEmployee?.last_name}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedEmployee && (
-            <EmployeeDocuments employeeId={selectedEmployee.id} />
-          )}
-        </DialogContent>
-      </Dialog>
+    //   {/* Employee Documents Dialog */}
+    //   <Dialog open={showDocuments} onOpenChange={setShowDocuments}>
+    //     <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+    //       <DialogHeader>
+    //         <DialogTitle>
+    //           Employee Documents - {selectedEmployee?.first_name}{' '}
+    //           {selectedEmployee?.last_name}
+    //         </DialogTitle>
+    //       </DialogHeader>
+    //       {selectedEmployee && (
+    //         <EmployeeDocuments employeeId={selectedEmployee.id} />
+    //       )}
+    //     </DialogContent>
+    //   </Dialog>
+    // </div>
+    //
+    <div className="container mx-auto p-6">
+      <EmployeeList employees={employees} />
     </div>
   );
 };

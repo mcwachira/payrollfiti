@@ -6,10 +6,82 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id          String    @id @default(uuid())
+  name        String
+  countryCode String
+  companies   Company[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Company {
+  id        String     @id @default(uuid())
+  name      String
+  tenantId  String
+  employees Employee[]
+  payrolls  Payroll[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  Tenant    Tenant     @relation(fields: [tenantId], references: [id])
+}
+
+model Employee {
+  id           String         @id @default(uuid())
+  companyId    String
+  firstName    String
+  lastName     String
+  email        String         @unique
+  kraPin       String?
+  nssfNumber   String?
+  nhifNumber   String?
+  jobRole      String?
+  salary       Float
+  status       String
+  documents    Document[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  Company      Company        @relation(fields: [companyId], references: [id])
+  PayrollEntry PayrollEntry[]
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  employeeId String
+  type       String
+  url        String
+  uploadedAt DateTime @default(now())
+  Employee   Employee @relation(fields: [employeeId], references: [id])
+}
+
+model Payroll {
+  id        String         @id @default(uuid())
+  companyId String
+  period    String
+  status    String
+  entries   PayrollEntry[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  Company   Company        @relation(fields: [companyId], references: [id])
+}
+
+model PayrollEntry {
+  id         String   @id @default(uuid())
+  payrollId  String
+  employeeId String
+  grossPay   Float
+  paye       Float
+  nssf       Float
+  nhif       Float
+  deductions Float
+  netPay     Float
+  Payroll    Payroll  @relation(fields: [payrollId], references: [id])
+  Employee   Employee @relation(fields: [employeeId], references: [id])
 }
