@@ -1,3 +1,4 @@
+'use client';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,7 +26,7 @@ interface EmployeeDetailsProps {
   onClose: () => void;
 }
 
-export const EmployeeDetails: React.FC<EmployeeDetailsProps> = ({
+export const EmployeeProfile: React.FC<EmployeeDetailsProps> = ({
   employee,
   onClose,
 }) => {
