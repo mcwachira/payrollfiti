@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -5,7 +6,15 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Users, DollarSign, Calendar, TrendingUp } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Users, DollarSign, Calendar, TrendingUp, Badge } from 'lucide-react';
 
 const stats = [
   {
@@ -37,6 +46,58 @@ const stats = [
     icon: TrendingUp,
   },
 ];
+
+const payrollEntries = [
+  {
+    name: 'John Doe',
+    department: 'Marketing',
+    payDate: 'Dec 31, 2024',
+    status: 'Paid',
+    salary: '$4,200',
+    bonus: '$500',
+    total: '$4,700',
+  },
+  {
+    name: 'Maria Tan',
+    department: 'Finance',
+    payDate: 'Dec 31, 2024',
+    status: 'On Leave',
+    salary: '$5,800',
+    bonus: '$0',
+    total: '$5,800',
+  },
+  {
+    name: 'Charlie Brown',
+    department: 'Design',
+    payDate: 'Dec 31, 2024',
+    status: 'Paid',
+    salary: '$3,200',
+    bonus: '$300',
+    total: '$3,500',
+  },
+  {
+    name: 'Dana White',
+    department: 'HR',
+    payDate: 'Dec 31, 2024',
+    status: 'Paid',
+    salary: '$4,800',
+    bonus: '$200',
+    total: '$5,000',
+  },
+];
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case 'Paid':
+      return 'bg-green-100 text-green-800';
+    case 'On Leave':
+      return 'bg-yellow-100 text-yellow-800';
+    case 'Pending':
+      return 'bg-orange-100 text-orange-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
 
 const Dashboard = () => {
   return (
@@ -159,6 +220,64 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Payroll List */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Payroll List</CardTitle>
+              <CardDescription>Recent payroll entries</CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">
+                Export Payroll
+              </Button>
+              <Button variant="outline" size="sm">
+                Filter
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Pay Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Base Salary</TableHead>
+                <TableHead>Bonus</TableHead>
+                <TableHead>Total Salary</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {payrollEntries.map((entry, index) => (
+                <TableRow key={index}>
+                  <TableCell className="font-medium">{entry.name}</TableCell>
+                  <TableCell>{entry.department}</TableCell>
+                  <TableCell>{entry.payDate}</TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(entry.status)}>
+                      {entry.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{entry.salary}</TableCell>
+                  <TableCell>{entry.bonus}</TableCell>
+                  <TableCell className="font-medium">{entry.total}</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm">
+                      ...
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 };
