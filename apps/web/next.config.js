@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 module.exports = {
-  transpilePackages: ['@repo/ui'],
+  output: 'standalone',
+  transpilePackages: ['@repo/ui', '@repo/api'],
   images: {
     domains: ['images.unsplash.com'],
   },

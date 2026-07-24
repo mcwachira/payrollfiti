@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -15,109 +16,88 @@ import {
   Calendar,
   CreditCard,
   AlertTriangle,
+  Download,
 } from 'lucide-react';
 import { Employee } from '@/types/types';
 import { EmployeeProfile } from '../employees/EmployeeProfile';
 import LeaveBalance from './LeaveBalance';
 import LeaveApplication from './LeaveApplication';
-
-type Payslip = {
-  id: number;
-  employee_id: number;
-  month: string;
-  basic_salary: number;
-  allowances: number;
-  deductions: number;
-  net_pay: number;
-  created_at: string;
-};
-
-// Sample authenticated user (normally from Supabase)
-const mockUser = {
-  email: 'john.doe@example.com',
-};
-
-// Sample employee
-const sampleEmployees: Employee[] = [
-  {
-    id: 1,
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    department: 'Engineering',
-    position: 'Software Engineer',
-  },
-];
-
-// Sample payslips
-const samplePayslips: Payslip[] = [
-  {
-    id: 101,
-    employee_id: 1,
-    month: 'Jul 2025',
-    basic_salary: 120000,
-    allowances: 20000,
-    deductions: 5000,
-    net_pay: 135000,
-    created_at: '2025-07-31T00:00:00Z',
-  },
-  {
-    id: 102,
-    employee_id: 1,
-    month: 'Jun 2025',
-    basic_salary: 120000,
-    allowances: 15000,
-    deductions: 4000,
-    net_pay: 131000,
-    created_at: '2025-06-30T00:00:00Z',
-  },
-];
+import { useAuth } from '@/contexts/AuthContext';
+import { getEmployee, toEmployeeListItem } from '@/lib/employees-api';
+import {
+  getMyPayrollEntries,
+  downloadPayslip,
+  type MyPayrollEntry,
+} from '@/lib/payroll-api';
+import { ApiError } from '@/lib/api-client';
 
 export default function EmployeeSelfService() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [employee, setEmployee] = useState<Employee | null>(null);
-  const [payslips, setPayslips] = useState<Payslip[]>([]);
+  const [payslips, setPayslips] = useState<MyPayrollEntry[]>([]);
+  const [payslipsError, setPayslipsError] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchEmployeeData();
-  }, []);
+    let cancelled = false;
 
-  const fetchEmployeeData = async () => {
-    try {
+    async function load() {
       setLoading(true);
       setError(null);
+      try {
+        if (!user?.employeeId) {
+          throw new Error(
+            'This account is not linked to an employee profile. Please contact HR.',
+          );
+        }
 
-      // Simulate auth user (in real app you'd use Supabase auth)
-      const userEmail = mockUser.email;
-      if (!userEmail) throw new Error('User not authenticated');
+        const employeeData = await getEmployee(user.employeeId);
+        if (cancelled) return;
+        setEmployee(toEmployeeListItem(employeeData) as Employee);
 
-      // Simulate fetching employee data
-      const employeeData = sampleEmployees.find(
-        (emp) => emp.email === userEmail,
-      );
-      if (!employeeData) {
-        throw new Error('Employee profile not found. Please contact HR.');
+        try {
+          const entries = await getMyPayrollEntries();
+          if (!cancelled) setPayslips(entries);
+        } catch (payslipErr) {
+          if (!cancelled) {
+            setPayslipsError(
+              payslipErr instanceof ApiError
+                ? payslipErr.message
+                : 'Failed to load payslips',
+            );
+          }
+        }
+      } catch (err) {
+        if (!cancelled)
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Failed to load employee profile',
+          );
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setEmployee(employeeData);
-
-      // Simulate fetching payslips
-      const payslipData = samplePayslips.filter(
-        (ps) => ps.employee_id === employeeData.id,
-      );
-      setPayslips(payslipData);
-    } catch (error: any) {
-      console.error('Error:', error.message);
-      setError(error.message);
-    } finally {
-      setLoading(false);
     }
-  };
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p className="text-red-600">Error: {error}</p>;
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.employeeId]);
 
-  const handleProfileUpdate = async (data) => {
-    if (!employee) return;
+  const handleDownloadPayslip = async (entryId: string) => {
+    setDownloadingId(entryId);
+    try {
+      await downloadPayslip(entryId);
+    } catch (err) {
+      setPayslipsError(
+        err instanceof ApiError ? err.message : 'Failed to download payslip',
+      );
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   if (loading) {
@@ -184,10 +164,8 @@ export default function EmployeeSelfService() {
             <div className="flex items-center gap-2">
               <CreditCard className="h-4 w-4 text-green-600" />
               <div>
-                <p className="text-sm text-muted-foreground">Basic Salary</p>
-                <p className="font-semibold">
-                  KES {employee.basic_salary?.toLocaleString()}
-                </p>
+                <p className="text-sm text-muted-foreground">Job Title</p>
+                <p className="font-semibold">{employee.job_title ?? '—'}</p>
               </div>
             </div>
           </CardContent>
@@ -231,7 +209,7 @@ export default function EmployeeSelfService() {
         </TabsList>
 
         <TabsContent value="profile" className="space-y-4">
-          <EmployeeProfile employee={employee} onUpdate={handleProfileUpdate} />
+          <EmployeeProfile employee={employee} onClose={() => {}} />
         </TabsContent>
 
         <TabsContent value="leave" className="space-y-4">
@@ -252,7 +230,9 @@ export default function EmployeeSelfService() {
               <CardDescription>View and download your payslips</CardDescription>
             </CardHeader>
             <CardContent>
-              {payslips.length > 0 ? (
+              {payslipsError ? (
+                <p className="text-red-600">{payslipsError}</p>
+              ) : payslips.length > 0 ? (
                 <div className="space-y-2">
                   {payslips.map((payslip) => (
                     <div
@@ -260,26 +240,32 @@ export default function EmployeeSelfService() {
                       className="flex items-center justify-between p-3 border rounded"
                     >
                       <div>
-                        <p className="font-medium">{payslip.period}</p>
+                        <p className="font-medium">
+                          {payslip.payrollRun.period}
+                        </p>
                         <p className="text-sm text-muted-foreground">
-                          Net Pay: KES {payslip.net_pay.toLocaleString()}
+                          Net Pay: {payslip.currency}{' '}
+                          {payslip.netPay.toLocaleString()}
                         </p>
                       </div>
-                      {payslip.payslip_url && (
-                        <a
-                          href={payslip.payslip_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          View Payslip
-                        </a>
-                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={downloadingId === payslip.id}
+                        onClick={() => handleDownloadPayslip(payslip.id)}
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        {downloadingId === payslip.id
+                          ? 'Downloading…'
+                          : 'Download'}
+                      </Button>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground">No payslips available</p>
+                <p className="text-muted-foreground">
+                  No payslips available yet
+                </p>
               )}
             </CardContent>
           </Card>

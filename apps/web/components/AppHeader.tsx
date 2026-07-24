@@ -1,6 +1,8 @@
+'use client';
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
-// import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { LogOut, User } from 'lucide-react';
 import {
   DropdownMenu,
@@ -10,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const AppHeader = () => {
-  //   const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -26,12 +28,11 @@ const AppHeader = () => {
                   className="flex items-center gap-2"
                 >
                   <User className="h-4 w-4" />
-                  {/* {user?.email} */}
-                  demo@gmail.com
+                  {user?.email}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => logout()}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </DropdownMenuItem>

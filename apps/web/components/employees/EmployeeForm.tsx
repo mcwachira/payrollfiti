@@ -27,16 +27,21 @@ import {
   Phone,
   MapPin,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Employee } from '@/types/types';
+import { createEmployee, updateEmployee } from '@/lib/employees-api';
+import { ApiError } from '@/lib/api-client';
 
 interface EmployeeFormProps {
   employee?: any;
+  companyId: string;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
 export const EmployeeForm: React.FC<EmployeeFormProps> = ({
   employee,
+  companyId,
   onSuccess,
   onCancel,
 }) => {
@@ -73,40 +78,37 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
     e.preventDefault();
     setLoading(true);
 
-    // try {
-    //   const employeeData: TablesInsert<'employees'> = {
-    //     ...formData,
-    //     basic_salary: parseFloat(formData.basic_salary) || 0,
-    //     company_id: 'temp-company-id', // This will be replaced with actual company ID from user context
-    //   };
+    // Only the fields the backend Employee model actually persists are sent;
+    // the rest of this form's tabs (DOB, gender, address, ...) aren't part of
+    // that model yet and are kept local until the schema grows to support them.
+    const payload = {
+      employeeNumber: formData.employee_number || undefined,
+      firstName: formData.first_name,
+      lastName: formData.last_name,
+      email: formData.email,
+      kraPin: formData.kra_pin || undefined,
+      nssfNumber: formData.nssf_number || undefined,
+      nhifNumber: formData.nhif_number || undefined,
+      jobRole: formData.job_title || undefined,
+      bankName: formData.bank_name || undefined,
+      bankAccountNumber: formData.bank_account || undefined,
+      bankBranchCode: formData.bank_branch || undefined,
+    };
 
-    //   if (employee?.id) {
-    //     const { error } = await supabase
-    //       .from('employees')
-    //       .update(employeeData)
-    //       .eq('id', employee.id);
-
-    //     if (error) throw error;
-    //     toast({ title: 'Employee updated successfully' });
-    //   } else {
-    //     const { error } = await supabase
-    //       .from('employees')
-    //       .insert([employeeData]);
-
-    //     if (error) throw error;
-    //     toast({ title: 'Employee created successfully' });
-    //   }
-
-    //   onSuccess();
-    // } catch (error: any) {
-    //   toast({
-    //     title: 'Error',
-    //     description: error.message,
-    //     variant: 'destructive',
-    //   });
-    // } finally {
-    //   setLoading(false);
-    // }
+    try {
+      if (employee?.id) {
+        await updateEmployee(employee.id, payload);
+        toast.success('Employee updated successfully');
+      } else {
+        await createEmployee({ ...payload, companyId });
+        toast.success('Employee created successfully');
+      }
+      onSuccess();
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : 'Failed to save employee');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -409,6 +411,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
                 <Input
                   id="email"
                   type="email"
+                  required
                   value={formData.email}
                   onChange={(e) => handleInputChange('email', e.target.value)}
                 />

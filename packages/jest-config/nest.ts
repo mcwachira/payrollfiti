@@ -5,8 +5,9 @@ export const config = {
   ...baseConfig,
   rootDir: 'src',
   testRegex: '.*\\.spec\\.ts$',
+  moduleFileExtensions: [...baseConfig.moduleFileExtensions, 'tsx'],
   transform: {
-    '^.+\\.(t|j)s$': 'ts-jest',
+    '^.+\\.(t|j)sx?$': 'ts-jest',
   },
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: '../coverage',

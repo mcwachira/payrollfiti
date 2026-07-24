@@ -47,8 +47,12 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
+import { toast } from 'sonner';
 import { EmployeeForm } from './EmployeeForm';
 import { EmployeeDetails } from './EmployeeDetails';
+import { removeEmployee } from '@/lib/employees-api';
+import { ApiError } from '@/lib/api-client';
+import type { Employee } from '@/types/types';
 
 // import { EmployeeDocuments } from './EmployeeDocuments';
 
@@ -79,7 +83,13 @@ const employeeStats = [
   },
 ];
 
-export const EmployeeList = ({ employees }: Employee) => {
+interface EmployeeListProps {
+  employees: Employee[];
+  companyId: string;
+  onEmployeeSaved: () => void;
+}
+
+export const EmployeeList = ({ employees, companyId, onEmployeeSaved }: EmployeeListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null,
@@ -90,11 +100,19 @@ export const EmployeeList = ({ employees }: Employee) => {
 
   const handleDelete = async (employeeId: string) => {
     if (!confirm('Are you sure you want to delete this employee?')) return;
+    try {
+      await removeEmployee(employeeId);
+      toast.success('Employee removed');
+      onEmployeeSaved();
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : 'Failed to remove employee');
+    }
   };
 
   const handleFormSuccess = () => {
     setShowForm(false);
     setSelectedEmployee(null);
+    onEmployeeSaved();
   };
 
   const filteredEmployees =
@@ -156,6 +174,7 @@ export const EmployeeList = ({ employees }: Employee) => {
               </DialogHeader>
               <EmployeeForm
                 employee={selectedEmployee}
+                companyId={companyId}
                 onSuccess={handleFormSuccess}
                 onCancel={() => setShowForm(false)}
               />

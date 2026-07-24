@@ -16,23 +16,6 @@
   "publishConfig": {
     "access": "public"
   },
-  "typesVersions": {
-    "*": {
-      "*": [
-        "src/*"
-      ]
-    }
-  },
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
-    },
-    "./*": {
-      "import": "./dist/*.js",
-      "require": "./dist/*.js"
-    }
-  },
   "dependencies": {
     "@nestjs/mapped-types": "*"
   },

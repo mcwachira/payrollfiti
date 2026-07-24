@@ -45,7 +45,7 @@ export const EmployeeProfile: React.FC<EmployeeDetailsProps> = ({
     }
   };
 
-  const formatDate = (dateString: string | null) => {
+  const formatDate = (dateString: string | Date | null | undefined) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString();
   };

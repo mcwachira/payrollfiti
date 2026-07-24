@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useBranding } from '@/contexts/BrandingContext';
 import {
   LayoutDashboard,
   Users,
@@ -12,6 +13,8 @@ import {
   UserCircle,
   FileCheck,
   Building,
+  CreditCard,
+  Settings,
 } from 'lucide-react';
 
 const navigation = [
@@ -22,17 +25,34 @@ const navigation = [
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Employee Portal', href: '/employee-portal', icon: UserCircle },
   { name: 'Compliance', href: '/compliance', icon: FileCheck },
+  { name: 'Billing', href: '/billing', icon: CreditCard },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const branding = useBranding();
 
   return (
     <div className="flex h-full w-64 flex-col fixed inset-y-0 z-50 bg-white border-r border-gray-200">
       <div className="flex items-center h-16 px-6 border-b border-gray-200">
         <div className="flex items-center gap-2">
-          <Building className="h-8 w-8 text-primary" />
-          <span className="text-xl font-bold text-gray-900">PayrollPro</span>
+          {branding.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={branding.logoUrl}
+              alt={branding.appName}
+              className="h-8 w-8 object-contain"
+            />
+          ) : (
+            <Building
+              className="h-8 w-8"
+              style={{ color: branding.primaryColor ?? undefined }}
+            />
+          )}
+          <span className="text-xl font-bold text-gray-900">
+            {branding.appName}
+          </span>
         </div>
       </div>
 

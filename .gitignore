@@ -60,3 +60,6 @@ pnpm-debug.log*
 # Misc
 .DS_Store
 *.pem
+
+# Generated payslip PDFs (runtime output, not source)
+apps/api/storage/

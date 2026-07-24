@@ -1,120 +1,90 @@
-# Turborepo starter
+# PayrollFiti
 
-This is a community-maintained example. If you experience a problem, please submit a pull request with a fix. GitHub Issues will be closed.
+Multi-tenant, multi-country payroll SaaS for Africa — run compliant payroll for
+Kenya, Nigeria, and South Africa (statutory tax/deductions, payslips, bank
+export files, and billing) from one white-labelable platform.
 
-## Using this example
+## Monorepo layout
 
-Run the following command:
+A pnpm + Turborepo monorepo:
 
-```bash
-npx create-turbo@latest -e with-nestjs
+```
+.
+├── apps
+│   ├── api                  # NestJS REST API (auth, tenants, employees, payroll, billing, ...)
+│   └── web                  # Next.js (App Router) frontend
+└── packages
+    ├── api                  # Shared DTOs/enums (e.g. Role) used by both api and web
+    ├── payroll-rules        # Pure, country-pluggable tax/statutory engine (KE/NG/ZA) — no I/O
+    ├── eslint-config         # Shared eslint (+ prettier) config
+    ├── jest-config           # Shared jest config
+    └── typescript-config     # Shared tsconfig.json bases
 ```
 
-## What's inside?
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for architecture notes, environment
+variables, and production deployment guidance.
 
-This Turborepo includes the following packages/apps:
+## Core features
 
-### Apps and Packages
+- **Multi-tenant, multi-country payroll runs** — Kenya, Nigeria, and South Africa
+  statutory tax/deduction rules, computed by the pure `packages/payroll-rules`
+  engine and idempotent per period (re-running the same period is a no-op unless
+  underlying salary data changed).
+- **Employee management** — companies, employees, contracts, and versioned salary
+  structures, all scoped and isolated per tenant.
+- **Payslips** — PDF payslip generation and download per payroll entry.
+- **Bank export** — CSV bank-file generation per payroll run for salary
+  disbursement.
+- **Billing** — subscription plans, invoicing, and payment collection via Stripe
+  or M-Pesa.
+- **White-label branding** — per-tenant app name, logo, and color customization.
+- **Role-based access control** — Admin / HR / Employee roles enforced at the API
+  layer, plus an employee self-service portal (profile, payslip history, leave).
+- **Production hardening** — Helmet security headers, per-IP rate limiting,
+  structured JSON logging (`nestjs-pino`), and a real `/health` check
+  (`@nestjs/terminus`) covering both Postgres and Redis.
 
-    .
-    ├── apps
-    │   ├── api                       # NestJS app (https://nestjs.com).
-    │   └── web                       # Next.js app (https://nextjs.org).
-    └── packages
-        ├── @repo/api                 # Shared `NestJS` resources.
-        ├── @repo/eslint-config       # `eslint` configurations (includes `prettier`)
-        ├── @repo/jest-config         # `jest` configurations
-        ├── @repo/typescript-config   # `tsconfig.json`s used throughout the monorepo
-        └── @repo/ui                  # Shareable stub React component library.
-
-Each package and application are 100% [TypeScript](https://www.typescriptlang.org/) safe.
-
-### Utilities
-
-This `Turborepo` has some additional tools already set for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type-safety
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-- [Jest](https://prettier.io) & [Playwright](https://playwright.dev/) for testing
-
-### Commands
-
-This `Turborepo` already configured useful commands for all your apps and packages.
-
-#### Build
+## Local dev quickstart
 
 ```bash
-# Will build all the app & packages with the supported `build` script.
-pnpm run build
+# 1. Install dependencies
+pnpm install
 
-# ℹ️ If you plan to only build apps individually,
-# Please make sure you've built the packages first.
+# 2. Start Postgres + Redis
+docker compose up -d db redis
+
+# 3. Copy env vars and adjust as needed
+cp .env.example .env
+
+# 4. Apply database migrations
+pnpm --filter api exec prisma migrate deploy
+
+# 5. Seed demo data (dev only — do not run against production)
+pnpm --filter api db:seed
+
+# 6. Run api + web together
+pnpm dev
 ```
 
-#### Develop
+`apps/api` runs on `http://localhost:3000`, `apps/web` on `http://localhost:3001`.
+
+The seed script (`apps/api/prisma/seed.ts`) creates a demo tenant with:
+
+- **Admin login:** `admin@acme.co.ke` / `Password123!`
+- **Employee login:** `jane.wanjiru@acme.co.ke` / `Password123!`
+
+## Testing
 
 ```bash
-# Will run the development server for all the app & packages with the supported `dev` script.
-pnpm run dev
+# Unit tests across every app/package
+pnpm turbo run test
+
+# API end-to-end tests (needs a real Postgres — see docker compose step above)
+pnpm --filter api test:e2e
 ```
 
-#### test
+## Deployment
 
-```bash
-# Will launch a test suites for all the app & packages with the supported `test` script.
-pnpm run test
-
-# You can launch e2e testes with `test:e2e`
-pnpm run test:e2e
-
-# See `@repo/jest-config` to customize the behavior.
-```
-
-#### Lint
-
-```bash
-# Will lint all the app & packages with the supported `lint` script.
-# See `@repo/eslint-config` to customize the behavior.
-pnpm run lint
-```
-
-#### Format
-
-```bash
-# Will format all the supported `.ts,.js,json,.tsx,.jsx` files.
-# See `@repo/eslint-config/prettier-base.js` to customize the behavior.
-pnpm format
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```bash
-npx turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```bash
-npx turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the full guide: required
+environment variables, secrets handling, migrations, health checks, logging,
+scaling notes, and CI/CD.

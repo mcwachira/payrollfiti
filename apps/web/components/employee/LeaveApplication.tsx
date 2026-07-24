@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Calendar, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface LeaveApplicationProps {
   employeeId: string;
@@ -58,7 +59,6 @@ export default function LeaveApplication({
     reason: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchLeaveTypes();
@@ -71,11 +71,7 @@ export default function LeaveApplication({
       setLeaveTypes(mockLeaveTypes);
     } catch (error: any) {
       console.error('Error fetching leave types:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load leave types',
-        variant: 'destructive',
-      });
+      toast.error('Failed to load leave types');
     }
   };
 

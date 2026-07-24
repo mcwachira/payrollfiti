@@ -9,14 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   BarChart,
   Bar,
@@ -36,33 +30,142 @@ import {
   DollarSign,
   Users,
   TrendingUp,
-  Calendar,
   Clock,
   AlertTriangle,
 } from 'lucide-react';
 import payrollData from '@/data/payroll.json';
+import { DepartmentData, LeaveImpact } from '@/types/payroll-data';
 import {
-  CurrentSummary,
-  DepartmentData,
-  LeaveImpact,
-  PayrollAnalytic,
-} from '@/types/payroll-data';
-import { formatCurrency } from '@/utils/payrollCalculations';
+  listCompanies,
+  listEmployees,
+  type Company,
+} from '@/lib/employees-api';
+import { listPayrollRuns } from '@/lib/payroll-api';
+import { ApiError } from '@/lib/api-client';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
+function formatCurrency(amount: number, currency = 'KES') {
+  return new Intl.NumberFormat('en-KE', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+  }).format(amount);
+}
+
+interface PeriodTrendPoint {
+  period: string;
+  grossPay: number;
+  netPay: number;
+  totalDeductions: number;
+  employeeCount: number;
+}
+
+interface CurrentSummary {
+  employeeCount: number;
+  totalGross: number;
+  totalNet: number;
+  totalDeductions: number;
+}
+
 const PayrollAnalytics = () => {
-  const [analytics, setAnalytics] = useState<PayrollAnalytic[]>([]);
-  const [currentSummary, setCurrentSummary] = useState<CurrentSummary[]>();
-  const [departmentData, setDepartmentData] = useState<DepartmentData[]>([]);
-  const [leaveImpact, setLeaveImpact] = useState<LeaveImpact[]>([]);
+  const [company, setCompany] = useState<Company | null>(null);
+  const [trend, setTrend] = useState<PeriodTrendPoint[]>([]);
+  const [currentSummary, setCurrentSummary] = useState<CurrentSummary | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // department_breakdown and leave_impact have no backing Prisma model
+  // (no Employee.department field, no leave backend) — kept as clearly
+  // labeled demo data below.
+  const departmentData: DepartmentData[] = payrollData.department_breakdown;
+  const leaveImpact: LeaveImpact[] = payrollData.leave_impact;
 
   useEffect(() => {
-    setAnalytics(payrollData.payroll_analytics);
-    setCurrentSummary(payrollData.current_summary);
-    setDepartmentData(payrollData.department_breakdown);
-    setLeaveImpact(payrollData.leave_impact);
-  });
+    let cancelled = false;
+
+    async function load() {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const companies = await listCompanies();
+        if (companies.length === 0) {
+          if (!cancelled) setCompany(null);
+          return;
+        }
+        const primaryCompany = companies[0]!;
+        if (cancelled) return;
+        setCompany(primaryCompany);
+
+        const [employees, runs] = await Promise.all([
+          listEmployees(primaryCompany.id),
+          listPayrollRuns(primaryCompany.id),
+        ]);
+        if (cancelled) return;
+
+        const activeEmployeeCount = employees.filter(
+          (e) => e.status === 'ACTIVE',
+        ).length;
+
+        const points: PeriodTrendPoint[] = runs
+          .filter((r) => r.totals)
+          .map((r) => ({
+            period: r.period,
+            grossPay: r.totals!.grossPay,
+            netPay: r.totals!.netPay,
+            totalDeductions: r.totals!.totalDeductions,
+            employeeCount: r.totals!.employeeCount,
+          }))
+          .sort((a, b) => a.period.localeCompare(b.period));
+        setTrend(points);
+
+        const latest = points[points.length - 1];
+        setCurrentSummary({
+          employeeCount: activeEmployeeCount,
+          totalGross: latest?.grossPay ?? 0,
+          totalNet: latest?.netPay ?? 0,
+          totalDeductions: latest?.totalDeductions ?? 0,
+        });
+      } catch (err) {
+        if (!cancelled)
+          setError(
+            err instanceof ApiError
+              ? err.message
+              : 'Failed to load analytics data',
+          );
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-red-600">Error loading analytics: {error}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const currency = company?.currency ?? 'KES';
+
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
@@ -76,7 +179,7 @@ const PayrollAnalytics = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {currentSummary?.employeeCount || 0}
+              {currentSummary?.employeeCount ?? 0}
             </div>
             <p className="text-xs text-muted-foreground">
               Total active workforce
@@ -93,9 +196,11 @@ const PayrollAnalytics = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(currentSummary?.totalGross || 0)}
+              {formatCurrency(currentSummary?.totalGross ?? 0, currency)}
             </div>
-            <p className="text-xs text-muted-foreground">Current month total</p>
+            <p className="text-xs text-muted-foreground">
+              Latest completed run
+            </p>
           </CardContent>
         </Card>
 
@@ -108,7 +213,7 @@ const PayrollAnalytics = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(currentSummary?.totalDeductions || 0)}
+              {formatCurrency(currentSummary?.totalDeductions ?? 0, currency)}
             </div>
             <p className="text-xs text-muted-foreground">
               Statutory + Voluntary
@@ -123,7 +228,7 @@ const PayrollAnalytics = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(currentSummary?.totalNet || 0)}
+              {formatCurrency(currentSummary?.totalNet ?? 0, currency)}
             </div>
             <p className="text-xs text-muted-foreground">
               After all deductions
@@ -147,54 +252,55 @@ const PayrollAnalytics = () => {
               <CardHeader>
                 <CardTitle>Payroll Trends</CardTitle>
                 <CardDescription>
-                  Monthly payroll costs over time
+                  Gross, net, and deductions across completed payroll runs
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={analytics}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="period_start"
-                      tickFormatter={(value) =>
-                        new Date(value).toLocaleDateString('default', {
-                          month: 'short',
-                        })
-                      }
-                    />
-                    <YAxis
-                      tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
-                    />
-                    <Tooltip
-                      formatter={(value: number) => [formatCurrency(value), '']}
-                      labelFormatter={(value) =>
-                        new Date(value).toLocaleDateString()
-                      }
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="total_gross_pay"
-                      stroke="#8884d8"
-                      name="Gross Pay"
-                      strokeWidth={2}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="total_net_pay"
-                      stroke="#82ca9d"
-                      name="Net Pay"
-                      strokeWidth={2}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="total_deductions"
-                      stroke="#ffc658"
-                      name="Deductions"
-                      strokeWidth={2}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                {trend.length === 0 ? (
+                  <p className="text-muted-foreground py-12 text-center">
+                    No completed payroll runs yet.
+                  </p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={trend}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="period" />
+                      <YAxis
+                        tickFormatter={(value) =>
+                          `${(value / 1000).toFixed(0)}K`
+                        }
+                      />
+                      <Tooltip
+                        formatter={(value: number) => [
+                          formatCurrency(value, currency),
+                          '',
+                        ]}
+                      />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="grossPay"
+                        stroke="#8884d8"
+                        name="Gross Pay"
+                        strokeWidth={2}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="netPay"
+                        stroke="#82ca9d"
+                        name="Net Pay"
+                        strokeWidth={2}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="totalDeductions"
+                        stroke="#ffc658"
+                        name="Deductions"
+                        strokeWidth={2}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -205,7 +311,14 @@ const PayrollAnalytics = () => {
             {/* Department Distribution */}
             <Card>
               <CardHeader>
-                <CardTitle>Employee Distribution by Department</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Employee Distribution by Department</CardTitle>
+                  <Badge variant="outline">Demo data</Badge>
+                </div>
+                <CardDescription>
+                  No department field exists on employees yet — illustrative
+                  only.
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -235,7 +348,10 @@ const PayrollAnalytics = () => {
             {/* Department Salary Costs */}
             <Card>
               <CardHeader>
-                <CardTitle>Salary Costs by Department</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle>Salary Costs by Department</CardTitle>
+                  <Badge variant="outline">Demo data</Badge>
+                </div>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
@@ -262,60 +378,34 @@ const PayrollAnalytics = () => {
         <TabsContent value="trends" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Employee Count Trends</CardTitle>
+              <CardTitle>Employees Paid per Run</CardTitle>
               <CardDescription>
-                Track workforce changes over time
+                Employee count processed in each completed payroll run
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={analytics}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="period_start"
-                    tickFormatter={(value) =>
-                      new Date(value).toLocaleDateString('default', {
-                        month: 'short',
-                      })
-                    }
-                  />
-                  <YAxis />
-                  <Tooltip
-                    labelFormatter={(value) =>
-                      new Date(value).toLocaleDateString()
-                    }
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="total_employees"
-                    stroke="#8884d8"
-                    name="Total Employees"
-                    strokeWidth={2}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="active_employees"
-                    stroke="#82ca9d"
-                    name="Active Employees"
-                    strokeWidth={2}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="new_hires"
-                    stroke="#ffc658"
-                    name="New Hires"
-                    strokeWidth={2}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="terminations"
-                    stroke="#ff7c7c"
-                    name="Terminations"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {trend.length === 0 ? (
+                <p className="text-muted-foreground py-12 text-center">
+                  No completed payroll runs yet.
+                </p>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={trend}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="employeeCount"
+                      stroke="#8884d8"
+                      name="Employees Paid"
+                      strokeWidth={2}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -323,12 +413,15 @@ const PayrollAnalytics = () => {
         <TabsContent value="leave-impact" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Leave Impact on Payroll
-              </CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Leave Impact on Payroll
+                </CardTitle>
+                <Badge variant="outline">Demo data</Badge>
+              </div>
               <CardDescription>
-                Track how leave affects payroll costs
+                No leave backend exists yet — illustrative only.
               </CardDescription>
             </CardHeader>
             <CardContent>

@@ -1,0 +1,2071 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Root page should match the snapshot 1`] = `
+<div>
+  <div
+    class="min-h-screen bg-background"
+  >
+    <header
+      class="border-b border-b-primary bg-gradient-to-br from-blue-50 via-green-50 to-orange-50 backdrop-blur-md sticky top-0 z-50"
+    >
+      <div
+        class="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-green-600/5"
+      />
+      <div
+        class="container mx-auto px-4 py-4"
+      >
+        <div
+          class="flex items-center justify-between"
+        >
+          <a
+            class="flex items-center gap-2"
+            href="/"
+          >
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-file-text h-7 w-7"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"
+              />
+              <path
+                d="M14 2v4a2 2 0 0 0 2 2h4"
+              />
+              <path
+                d="M10 9H8"
+              />
+              <path
+                d="M16 13H8"
+              />
+              <path
+                d="M16 17H8"
+              />
+            </svg>
+            <span
+              class="text-xl font-bold"
+            >
+              PayrollFiti
+            </span>
+          </a>
+          <nav
+            class="hidden lg:flex items-center space-x-10"
+          >
+            <a
+              class="text-muted-foreground hover:text-foreground transition-colors"
+              href="#features"
+            >
+              Features
+            </a>
+            <a
+              class="text-muted-foreground hover:text-foreground transition-colors"
+              href="#pricing"
+            >
+              Pricing
+            </a>
+            <a
+              class="text-muted-foreground hover:text-foreground transition-colors"
+              href="#testimonials"
+            >
+              Reviews
+            </a>
+            <a
+              class="text-muted-foreground hover:text-foreground transition-colors"
+              href="#contact"
+            >
+              Contact
+            </a>
+          </nav>
+          <div
+            class="flex items-center space-x-4"
+          >
+            <button
+              class="md:hidden p-2 rounded-md hover:bg-accent transition-colors"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-menu h-5 w-5"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M4 12h16"
+                />
+                <path
+                  d="M4 18h16"
+                />
+                <path
+                  d="M4 6h16"
+                />
+              </svg>
+            </button>
+            <button
+              class="hidden md:block bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
+            >
+              Try It Free
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+    <section
+      class="relative bg-gradient-to-br from-blue-50 via-green-50 to-orange-50  flex items-center"
+    >
+      <div
+        class="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-green-600/5"
+      />
+      <div
+        class="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10"
+      >
+        <div
+          class="grid lg:grid-cols-2 gap-12 items-center"
+        >
+          <div
+            class="text-center lg:text-left"
+          >
+            <h1
+              class="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight"
+            >
+              Effortless Payroll and
+              <span
+                class="text-primary"
+              >
+                 HR Compliance
+              </span>
+              <br />
+              Across Africa
+            </h1>
+            <p
+              class="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl"
+            >
+              Manage payroll, statutory deductions, and HR tasks in one powerful, cloud-based platform — fully compliant with Kenya's PAYE, NSSF, and NHIF requirements.
+            </p>
+            <div
+              class="flex flex-col sm:flxe-row gap-4 justify-center lg:justify-start"
+            >
+              <button
+                class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive shadow-xs h-10 rounded-md has-[>svg]:px-4 bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4"
+                data-slot="button"
+              >
+                Get Started Free
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-arrow-right ml-2 h-5 w-5"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M5 12h14"
+                  />
+                  <path
+                    d="m12 5 7 7-7 7"
+                  />
+                </svg>
+              </button>
+              <button
+                class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-10 rounded-md has-[>svg]:px-4 border-primary text-primary hover:bg-primary/10 px-8 py-4"
+                data-slot="button"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-play mr-2 h-5 w-5"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <polygon
+                    points="6 3 20 12 6 21 6 3"
+                  />
+                </svg>
+                Request a Demo
+              </button>
+            </div>
+            <div
+              class="mt-8 mb-2 flex flex-wrap gap-6 justify-center lg:justify-start text-sm text-muted-foreground"
+            >
+              <div
+                class="flex items-center"
+              >
+                <div
+                  class="w-2 h-2 bg-green-500 rounded-full mr-2"
+                />
+                Free 30-day trial
+              </div>
+              <div
+                class="flex items-center"
+              >
+                <div
+                  class="w-2 h-2 bg-green-500 rounded-full mr-2"
+                />
+                No setup fees
+              </div>
+              <div
+                class="flex items-center"
+              >
+                <div
+                  class="w-2 h-2 bg-green-500 rounded-full mr-2"
+                />
+                Cancel anytime
+              </div>
+            </div>
+          </div>
+          <div
+            class="relative"
+          >
+            <div
+              class="bg-white rounded-2xl shadow-2xl p-8 border"
+            >
+              <div
+                class="relative w-full h-80 md:h-96 lg:h-[400px] rounded-lg overflow-hidden"
+              >
+                <img
+                  alt="Professional using PayFlow Africa platform"
+                  class="object-cover"
+                  data-nimg="fill"
+                  decoding="async"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 600px"
+                  src="/_next/image?url=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1581091226825-a6a2a5aee158%3Fw%3D600%26h%3D400%26fit%3Dcrop&w=3840&q=75"
+                  srcset="/_next/image?url=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1581091226825-a6a2a5aee158%3Fw%3D600%26h%3D400%26fit%3Dcrop&w=640&q=75 640w, /_next/image?url=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1581091226825-a6a2a5aee158%3Fw%3D600%26h%3D400%26fit%3Dcrop&w=750&q=75 750w, /_next/image?url=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1581091226825-a6a2a5aee158%3Fw%3D600%26h%3D400%26fit%3Dcrop&w=828&q=75 828w, /_next/image?url=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1581091226825-a6a2a5aee158%3Fw%3D600%26h%3D400%26fit%3Dcrop&w=1080&q=75 1080w, /_next/image?url=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1581091226825-a6a2a5aee158%3Fw%3D600%26h%3D400%26fit%3Dcrop&w=1200&q=75 1200w, /_next/image?url=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1581091226825-a6a2a5aee158%3Fw%3D600%26h%3D400%26fit%3Dcrop&w=1920&q=75 1920w, /_next/image?url=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1581091226825-a6a2a5aee158%3Fw%3D600%26h%3D400%26fit%3Dcrop&w=2048&q=75 2048w, /_next/image?url=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1581091226825-a6a2a5aee158%3Fw%3D600%26h%3D400%26fit%3Dcrop&w=3840&q=75 3840w"
+                  style="position: absolute; height: 100%; width: 100%; left: 0px; top: 0px; right: 0px; bottom: 0px; color: transparent;"
+                />
+              </div>
+              <div
+                class="absolute -top-4 -left-4 bg-primary text-primary-foreground p-4 rounded-lg shadow-lg"
+              >
+                <div
+                  class="text-2xl font-bold"
+                >
+                  1,000+
+                </div>
+                <div
+                  class="text-sm opacity-90"
+                >
+                  Businesses Trust Us
+                </div>
+              </div>
+              <div
+                class="absolute -bottom-4 -right-4 bg-green-600 text-white p-4 rounded-lg shadow-lg"
+              >
+                <div
+                  class="text-2xl font-bold"
+                >
+                  99.9%
+                </div>
+                <div
+                  class="text-sm opacity-90"
+                >
+                  Compliance Rate
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section
+      class="py-20 bg-background"
+    >
+      <div
+        class="container mx-auto px-4 sm:px-6 lg:px-8"
+      >
+        <div
+          class="text-center mb-16"
+        >
+          <h2
+            class="text-3xl md:text-4xl font-bold text-foreground mb-4"
+          >
+            Everything You Need for Modern HR & Payroll
+          </h2>
+          <p
+            class="text-lg text-muted-foreground max-w-2xl mx-auto"
+          >
+            Streamline your entire HR and payroll process with our comprehensive suite of tools
+          </p>
+        </div>
+        <div
+          class="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+        >
+          <div
+            class="text-card-foreground flex flex-col gap-6 rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow border-0 bg-card"
+            data-slot="card"
+          >
+            <div
+              class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mb-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-calculator h-6 w-6 text-white"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  height="20"
+                  rx="2"
+                  width="16"
+                  x="4"
+                  y="2"
+                />
+                <line
+                  x1="8"
+                  x2="16"
+                  y1="6"
+                  y2="6"
+                />
+                <line
+                  x1="16"
+                  x2="16"
+                  y1="14"
+                  y2="18"
+                />
+                <path
+                  d="M16 10h.01"
+                />
+                <path
+                  d="M12 10h.01"
+                />
+                <path
+                  d="M8 10h.01"
+                />
+                <path
+                  d="M12 14h.01"
+                />
+                <path
+                  d="M8 14h.01"
+                />
+                <path
+                  d="M12 18h.01"
+                />
+                <path
+                  d="M8 18h.01"
+                />
+              </svg>
+            </div>
+            <h3
+              class="text-xl font-semibold text-card-foreground mb-3"
+            >
+              Payroll Automation
+            </h3>
+            <p
+              class="text-muted-foreground"
+            >
+              Automate complex payroll calculations with built-in tax brackets and statutory deductions.
+            </p>
+          </div>
+          <div
+            class="text-card-foreground flex flex-col gap-6 rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow border-0 bg-card"
+            data-slot="card"
+          >
+            <div
+              class="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center mb-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-shield h-6 w-6 text-white"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+                />
+              </svg>
+            </div>
+            <h3
+              class="text-xl font-semibold text-card-foreground mb-3"
+            >
+              Statutory Compliance
+            </h3>
+            <p
+              class="text-muted-foreground"
+            >
+              Stay compliant with PAYE, NSSF, NHIF, and other African regulatory requirements.
+            </p>
+          </div>
+          <div
+            class="text-card-foreground flex flex-col gap-6 rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow border-0 bg-card"
+            data-slot="card"
+          >
+            <div
+              class="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center mb-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-users h-6 w-6 text-white"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                />
+                <path
+                  d="M16 3.128a4 4 0 0 1 0 7.744"
+                />
+                <path
+                  d="M22 21v-2a4 4 0 0 0-3-3.87"
+                />
+                <circle
+                  cx="9"
+                  cy="7"
+                  r="4"
+                />
+              </svg>
+            </div>
+            <h3
+              class="text-xl font-semibold text-card-foreground mb-3"
+            >
+              Employee Self-Service
+            </h3>
+            <p
+              class="text-muted-foreground"
+            >
+              Empower employees with self-service portals for payslips, leave requests, and profile updates.
+            </p>
+          </div>
+          <div
+            class="text-card-foreground flex flex-col gap-6 rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow border-0 bg-card"
+            data-slot="card"
+          >
+            <div
+              class="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center mb-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-file-text h-6 w-6 text-white"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"
+                />
+                <path
+                  d="M14 2v4a2 2 0 0 0 2 2h4"
+                />
+                <path
+                  d="M10 9H8"
+                />
+                <path
+                  d="M16 13H8"
+                />
+                <path
+                  d="M16 17H8"
+                />
+              </svg>
+            </div>
+            <h3
+              class="text-xl font-semibold text-card-foreground mb-3"
+            >
+              Payslip Generation
+            </h3>
+            <p
+              class="text-muted-foreground"
+            >
+              Generate professional payslips with detailed breakdowns and statutory information.
+            </p>
+          </div>
+          <div
+            class="text-card-foreground flex flex-col gap-6 rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow border-0 bg-card"
+            data-slot="card"
+          >
+            <div
+              class="w-12 h-12 bg-teal-500 rounded-lg flex items-center justify-center mb-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-globe h-6 w-6 text-white"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                />
+                <path
+                  d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"
+                />
+                <path
+                  d="M2 12h20"
+                />
+              </svg>
+            </div>
+            <h3
+              class="text-xl font-semibold text-card-foreground mb-3"
+            >
+              Multi-country Support
+            </h3>
+            <p
+              class="text-muted-foreground"
+            >
+              Expand across Africa with localized compliance for Kenya, Uganda, Nigeria, and more.
+            </p>
+          </div>
+          <div
+            class="text-card-foreground flex flex-col gap-6 rounded-xl shadow-sm p-6 hover:shadow-lg transition-shadow border-0 bg-card"
+            data-slot="card"
+          >
+            <div
+              class="w-12 h-12 bg-rose-500 rounded-lg flex items-center justify-center mb-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-chart-column h-6 w-6 text-white"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M3 3v16a2 2 0 0 0 2 2h16"
+                />
+                <path
+                  d="M18 17V9"
+                />
+                <path
+                  d="M13 17V5"
+                />
+                <path
+                  d="M8 17v-3"
+                />
+              </svg>
+            </div>
+            <h3
+              class="text-xl font-semibold text-card-foreground mb-3"
+            >
+              Reports & Remittances
+            </h3>
+            <p
+              class="text-muted-foreground"
+            >
+              Generate comprehensive reports and automate statutory remittances to authorities.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section
+      class="py-20 bg-muted/30"
+    >
+      <div
+        class="container mx-auto px-4 sm:px-6 lg:px-8"
+      >
+        <div
+          class="grid lg:grid-cols-2 gap-12 items-center"
+        >
+          <div>
+            <h2
+              class="text-3xl md:text-4xl font-bold text-foreground mb-6"
+            >
+              Why Choose PayFlow Africa?
+            </h2>
+            <p
+              class="text-lg text-muted-foreground mb-8"
+            >
+              We understand the unique challenges of managing payroll across Africa. Our platform is built by Africans, for Africans.
+            </p>
+            <div
+              class="space-y-6"
+            >
+              <div
+                class="flex items-start space-x-4"
+              >
+                <div
+                  class="bg-primary/10 p-2 rounded-lg flex-shrink-0"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="lucide lucide-map-pin h-6 w-6 text-primary"
+                    fill="none"
+                    height="24"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
+                    />
+                    <circle
+                      cx="12"
+                      cy="10"
+                      r="3"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3
+                    class="font-semibold text-foreground mb-2"
+                  >
+                    Localized for African Regulations
+                  </h3>
+                  <p
+                    class="text-muted-foreground"
+                  >
+                    Built specifically for African tax laws, labor regulations, and compliance requirements.
+                  </p>
+                </div>
+              </div>
+              <div
+                class="flex items-start space-x-4"
+              >
+                <div
+                  class="bg-primary/10 p-2 rounded-lg flex-shrink-0"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="lucide lucide-zap h-6 w-6 text-primary"
+                    fill="none"
+                    height="24"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3
+                    class="font-semibold text-foreground mb-2"
+                  >
+                    API Integration Ready
+                  </h3>
+                  <p
+                    class="text-muted-foreground"
+                  >
+                    Seamlessly integrate with banks, government portals, and third-party systems.
+                  </p>
+                </div>
+              </div>
+              <div
+                class="flex items-start space-x-4"
+              >
+                <div
+                  class="bg-primary/10 p-2 rounded-lg flex-shrink-0"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="lucide lucide-shield h-6 w-6 text-primary"
+                    fill="none"
+                    height="24"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3
+                    class="font-semibold text-foreground mb-2"
+                  >
+                    Cloud-based & Secure
+                  </h3>
+                  <p
+                    class="text-muted-foreground"
+                  >
+                    Enterprise-grade security with 99.9% uptime and automated backups.
+                  </p>
+                </div>
+              </div>
+              <div
+                class="flex items-start space-x-4"
+              >
+                <div
+                  class="bg-primary/10 p-2 rounded-lg flex-shrink-0"
+                >
+                  <svg
+                    aria-hidden="true"
+                    class="lucide lucide-clock h-6 w-6 text-primary"
+                    fill="none"
+                    height="24"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    viewBox="0 0 24 24"
+                    width="24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M12 6v6l4 2"
+                    />
+                    <circle
+                      cx="12"
+                      cy="12"
+                      r="10"
+                    />
+                  </svg>
+                </div>
+                <div>
+                  <h3
+                    class="font-semibold text-foreground mb-2"
+                  >
+                    Save Time & Reduce Errors
+                  </h3>
+                  <p
+                    class="text-muted-foreground"
+                  >
+                    Eliminate manual calculations and reduce payroll processing time by 80%.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="grid grid-cols-2 gap-6"
+          >
+            <div
+              class="flex flex-col gap-6 rounded-xl border shadow-sm p-6 text-center bg-primary text-primary-foreground"
+              data-slot="card"
+            >
+              <div
+                class="text-3xl font-bold mb-2"
+              >
+                1,000+
+              </div>
+              <div
+                class="text-sm opacity-90"
+              >
+                Businesses Served
+              </div>
+            </div>
+            <div
+              class="flex flex-col gap-6 rounded-xl border shadow-sm p-6 text-center bg-green-600 text-white"
+              data-slot="card"
+            >
+              <div
+                class="text-3xl font-bold mb-2"
+              >
+                50,000+
+              </div>
+              <div
+                class="text-sm opacity-90"
+              >
+                Employees Managed
+              </div>
+            </div>
+            <div
+              class="flex flex-col gap-6 rounded-xl border shadow-sm p-6 text-center bg-orange-500 text-white"
+              data-slot="card"
+            >
+              <div
+                class="text-3xl font-bold mb-2"
+              >
+                99.9%
+              </div>
+              <div
+                class="text-sm opacity-90"
+              >
+                Uptime Guarantee
+              </div>
+            </div>
+            <div
+              class="flex flex-col gap-6 rounded-xl border shadow-sm p-6 text-center bg-purple-600 text-white"
+              data-slot="card"
+            >
+              <div
+                class="text-3xl font-bold mb-2"
+              >
+                5
+              </div>
+              <div
+                class="text-sm opacity-90"
+              >
+                Countries Supported
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section
+      class="py-20 bg-background"
+    >
+      <div
+        class="container mx-auto px-4 sm:px-6 lg:px-8"
+      >
+        <div
+          class="text-center mb-16"
+        >
+          <h2
+            class="text-3xl md:text-4xl font-bold text-foreground mb-4"
+          >
+            Kenya Statutory Compliance Made Simple
+          </h2>
+          <p
+            class="text-lg text-muted-foreground max-w-2xl mx-auto"
+          >
+            Stay compliant with all Kenyan tax and statutory requirements automatically
+          </p>
+        </div>
+        <div
+          class="grid lg:grid-cols-3 gap-8 mb-12"
+        >
+          <div
+            class="text-card-foreground flex flex-col gap-6 rounded-xl border shadow-sm p-6 bg-blue-50 border-blue-200"
+            data-slot="card"
+          >
+            <div
+              class="bg-blue-500 w-12 h-12 rounded-lg flex items-center justify-center mb-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-dollar-sign h-6 w-6 text-white"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <line
+                  x1="12"
+                  x2="12"
+                  y1="2"
+                  y2="22"
+                />
+                <path
+                  d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"
+                />
+              </svg>
+            </div>
+            <h3
+              class="text-xl font-semibold text-foreground mb-3"
+            >
+              PAYE Tax
+            </h3>
+            <p
+              class="text-muted-foreground mb-4"
+            >
+              Automatic calculation of Pay As You Earn tax with current KRA brackets
+            </p>
+            <div
+              class="space-y-2"
+            >
+              <span
+                class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
+                data-slot="badge"
+              >
+                0-24,000: 10%
+              </span>
+              <span
+                class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
+                data-slot="badge"
+              >
+                24,001-32,333: 25%
+              </span>
+              <span
+                class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
+                data-slot="badge"
+              >
+                32,334+: 30%
+              </span>
+            </div>
+          </div>
+          <div
+            class="text-card-foreground flex flex-col gap-6 rounded-xl border shadow-sm p-6 bg-green-50 border-green-200"
+            data-slot="card"
+          >
+            <div
+              class="bg-green-500 w-12 h-12 rounded-lg flex items-center justify-center mb-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-file-check h-6 w-6 text-white"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"
+                />
+                <path
+                  d="M14 2v4a2 2 0 0 0 2 2h4"
+                />
+                <path
+                  d="m9 15 2 2 4-4"
+                />
+              </svg>
+            </div>
+            <h3
+              class="text-xl font-semibold text-foreground mb-3"
+            >
+              NSSF
+            </h3>
+            <p
+              class="text-muted-foreground mb-4"
+            >
+              Tier I & II contributions calculated automatically
+            </p>
+            <div
+              class="space-y-2"
+            >
+              <span
+                class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
+                data-slot="badge"
+              >
+                Tier I: KES 360
+              </span>
+              <span
+                class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
+                data-slot="badge"
+              >
+                Tier II: 12% of pensionable pay
+              </span>
+            </div>
+          </div>
+          <div
+            class="text-card-foreground flex flex-col gap-6 rounded-xl border shadow-sm p-6 bg-orange-50 border-orange-200"
+            data-slot="card"
+          >
+            <div
+              class="bg-orange-500 w-12 h-12 rounded-lg flex items-center justify-center mb-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-calculator h-6 w-6 text-white"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  height="20"
+                  rx="2"
+                  width="16"
+                  x="4"
+                  y="2"
+                />
+                <line
+                  x1="8"
+                  x2="16"
+                  y1="6"
+                  y2="6"
+                />
+                <line
+                  x1="16"
+                  x2="16"
+                  y1="14"
+                  y2="18"
+                />
+                <path
+                  d="M16 10h.01"
+                />
+                <path
+                  d="M12 10h.01"
+                />
+                <path
+                  d="M8 10h.01"
+                />
+                <path
+                  d="M12 14h.01"
+                />
+                <path
+                  d="M8 14h.01"
+                />
+                <path
+                  d="M12 18h.01"
+                />
+                <path
+                  d="M8 18h.01"
+                />
+              </svg>
+            </div>
+            <h3
+              class="text-xl font-semibold text-foreground mb-3"
+            >
+              NHIF
+            </h3>
+            <p
+              class="text-muted-foreground mb-4"
+            >
+              Health insurance contributions based on salary bands
+            </p>
+            <div
+              class="space-y-2"
+            >
+              <span
+                class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
+                data-slot="badge"
+              >
+                Salary-based rates
+              </span>
+              <span
+                class="inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90"
+                data-slot="badge"
+              >
+                Auto-updated annually
+              </span>
+            </div>
+          </div>
+        </div>
+        <div
+          class="text-center"
+        >
+          <button
+            class="inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive text-primary-foreground shadow-xs h-10 rounded-md px-6 has-[>svg]:px-4 bg-primary hover:bg-primary/90"
+            data-slot="button"
+          >
+            Try Our Compliance Calculator
+          </button>
+        </div>
+      </div>
+    </section>
+    <section
+      class="py-20 bg-muted/30"
+    >
+      <div
+        class="container mx-auto px-4 sm:px-6 lg:px-8"
+      >
+        <div
+          class="text-center mb-16"
+        >
+          <h2
+            class="text-3xl md:text-4xl font-bold text-foreground mb-4"
+          >
+            Trusted by Growing Businesses Across Africa
+          </h2>
+          <p
+            class="text-lg text-muted-foreground max-w-2xl mx-auto"
+          >
+            See how PayFlow Africa is helping businesses streamline their HR and payroll operations
+          </p>
+        </div>
+        <div
+          class="grid md:grid-cols-3 gap-8"
+        >
+          <div
+            class="text-card-foreground flex flex-col gap-6 rounded-xl p-6 bg-card border-0 shadow-lg"
+            data-slot="card"
+          >
+            <div
+              class="flex mb-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+            </div>
+            <p
+              class="text-muted-foreground mb-6 italic"
+            >
+              "
+              PayFlow Africa transformed our payroll process. What used to take us 3 days now takes 30 minutes. The compliance features give us peace of mind.
+              "
+            </p>
+            <div
+              class="flex items-center"
+            >
+              <span
+                class="relative flex size-8 shrink-0 overflow-hidden rounded-full h-12 w-12 mr-4"
+                data-slot="avatar"
+              >
+                <span
+                  class="bg-muted flex size-full items-center justify-center rounded-full"
+                  data-slot="avatar-fallback"
+                >
+                  SM
+                </span>
+              </span>
+              <div>
+                <div
+                  class="font-semibold text-card-foreground"
+                >
+                  Sarah Mwangi
+                </div>
+                <div
+                  class="text-sm text-muted-foreground"
+                >
+                  HR Director
+                  , 
+                  TechStart Kenya
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="text-card-foreground flex flex-col gap-6 rounded-xl p-6 bg-card border-0 shadow-lg"
+            data-slot="card"
+          >
+            <div
+              class="flex mb-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+            </div>
+            <p
+              class="text-muted-foreground mb-6 italic"
+            >
+              "
+              The statutory compliance features are incredible. We never worry about PAYE, NSSF, or NHIF calculations anymore. Everything is automated and accurate.
+              "
+            </p>
+            <div
+              class="flex items-center"
+            >
+              <span
+                class="relative flex size-8 shrink-0 overflow-hidden rounded-full h-12 w-12 mr-4"
+                data-slot="avatar"
+              >
+                <span
+                  class="bg-muted flex size-full items-center justify-center rounded-full"
+                  data-slot="avatar-fallback"
+                >
+                  JO
+                </span>
+              </span>
+              <div>
+                <div
+                  class="font-semibold text-card-foreground"
+                >
+                  James Ochieng
+                </div>
+                <div
+                  class="text-sm text-muted-foreground"
+                >
+                  Finance Manager
+                  , 
+                  Green Energy Solutions
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="text-card-foreground flex flex-col gap-6 rounded-xl p-6 bg-card border-0 shadow-lg"
+            data-slot="card"
+          >
+            <div
+              class="flex mb-4"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-star h-5 w-5 fill-yellow-400 text-yellow-400"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z"
+                />
+              </svg>
+            </div>
+            <p
+              class="text-muted-foreground mb-6 italic"
+            >
+              "
+              As a growing business, PayFlow Africa scales with us. The employee self-service portal reduced HR queries by 70%. Highly recommended!
+              "
+            </p>
+            <div
+              class="flex items-center"
+            >
+              <span
+                class="relative flex size-8 shrink-0 overflow-hidden rounded-full h-12 w-12 mr-4"
+                data-slot="avatar"
+              >
+                <span
+                  class="bg-muted flex size-full items-center justify-center rounded-full"
+                  data-slot="avatar-fallback"
+                >
+                  GN
+                </span>
+              </span>
+              <div>
+                <div
+                  class="font-semibold text-card-foreground"
+                >
+                  Grace Nduku
+                </div>
+                <div
+                  class="text-sm text-muted-foreground"
+                >
+                  CEO
+                  , 
+                  Mama Foods Ltd
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section
+      class="py-20 bg-gradient-to-r from-primary to-primary/80"
+    >
+      <div
+        class="container mx-auto px-4 sm:px-6 lg:px-8 text-center"
+      >
+        <div
+          class="max-w-4xl mx-auto"
+        >
+          <div
+            class="flex justify-center mb-6"
+          >
+            <div
+              class="bg-white/20 p-4 rounded-full"
+            >
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-users h-12 w-12 text-white"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"
+                />
+                <path
+                  d="M16 3.128a4 4 0 0 1 0 7.744"
+                />
+                <path
+                  d="M22 21v-2a4 4 0 0 0-3-3.87"
+                />
+                <circle
+                  cx="9"
+                  cy="7"
+                  r="4"
+                />
+              </svg>
+            </div>
+          </div>
+          <h2
+            class="text-3xl md:text-4xl font-bold text-white mb-4"
+          >
+            Join 1,000+ Businesses Transforming Payroll Across Africa
+          </h2>
+          <p
+            class="text-xl text-white/90 mb-8 max-w-2xl mx-auto"
+          >
+            Start your journey to effortless payroll management and statutory compliance today. No setup fees, no long-term contracts.
+          </p>
+          <div
+            class="flex flex-col sm:flex-row gap-4 justify-center"
+          >
+            <button
+              class="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive shadow-xs h-10 rounded-md has-[>svg]:px-4 bg-white text-primary hover:bg-white/90 px-8 py-4 text-lg font-semibold"
+              data-slot="button"
+            >
+              Start Your Free Trial
+              <svg
+                aria-hidden="true"
+                class="lucide lucide-arrow-right ml-2 h-5 w-5"
+                fill="none"
+                height="24"
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5 12h14"
+                />
+                <path
+                  d="m12 5 7 7-7 7"
+                />
+              </svg>
+            </button>
+            <button
+              class="inline-flex items-center justify-center gap-2 whitespace-nowrap transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-10 rounded-md has-[>svg]:px-4 border-white text-black hover:bg-white/10 px-8 py-4 text-lg font-semibold"
+              data-slot="button"
+            >
+              See a Demo
+            </button>
+          </div>
+        </div>
+        <div
+          class="mt-8 flex flex-wrap gap-6 justify-center text-white/80"
+        >
+          <div>
+            ✓ 30-day free trial
+          </div>
+          <div>
+            ✓ No credit card required
+          </div>
+          <div>
+            ✓ Cancel anytime
+          </div>
+          <div>
+            ✓ Full customer support
+          </div>
+        </div>
+      </div>
+    </section>
+    <footer
+      class="bg-muted/50 border-t"
+    >
+      <div
+        class="container mx-auto px-4 sm:px-6 lg:px-8 py-16"
+      >
+        <div
+          class="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
+        >
+          <div>
+            <h3
+              class="text-xl font-bold text-foreground mb-4"
+            >
+              PayFlow Africa
+            </h3>
+            <p
+              class="text-muted-foreground mb-4"
+            >
+              Empowering African businesses with modern payroll and HR solutions.
+            </p>
+            <div
+              class="space-y-2 text-sm text-muted-foreground"
+            >
+              <div
+                class="flex items-center"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-map-pin h-4 w-4 mr-2"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"
+                  />
+                  <circle
+                    cx="12"
+                    cy="10"
+                    r="3"
+                  />
+                </svg>
+                Nairobi, Kenya
+              </div>
+              <div
+                class="flex items-center"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-phone h-4 w-4 mr-2"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384"
+                  />
+                </svg>
+                +254 700 123 456
+              </div>
+              <div
+                class="flex items-center"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-mail h-4 w-4 mr-2"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"
+                  />
+                  <rect
+                    height="16"
+                    rx="2"
+                    width="20"
+                    x="2"
+                    y="4"
+                  />
+                </svg>
+                hello@payflow-africa.com
+              </div>
+            </div>
+          </div>
+          <div>
+            <h4
+              class="font-semibold text-foreground mb-4"
+            >
+              Product
+            </h4>
+            <ul
+              class="space-y-2 text-muted-foreground"
+            >
+              <li>
+                <a
+                  class="hover:text-primary transition-colors"
+                  href="#"
+                >
+                  Features
+                </a>
+              </li>
+              <li>
+                <a
+                  class="hover:text-primary transition-colors"
+                  href="#"
+                >
+                  Pricing
+                </a>
+              </li>
+              <li>
+                <a
+                  class="hover:text-primary transition-colors"
+                  href="#"
+                >
+                  Integrations
+                </a>
+              </li>
+              <li>
+                <a
+                  class="hover:text-primary transition-colors"
+                  href="#"
+                >
+                  API
+                </a>
+              </li>
+              <li>
+                <a
+                  class="hover:text-primary transition-colors"
+                  href="#"
+                >
+                  Security
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4
+              class="font-semibold text-foreground mb-4"
+            >
+              Support
+            </h4>
+            <ul
+              class="space-y-2 text-muted-foreground"
+            >
+              <li>
+                <a
+                  class="hover:text-primary transition-colors"
+                  href="#"
+                >
+                  Help Center
+                </a>
+              </li>
+              <li>
+                <a
+                  class="hover:text-primary transition-colors"
+                  href="#"
+                >
+                  Contact Us
+                </a>
+              </li>
+              <li>
+                <a
+                  class="hover:text-primary transition-colors"
+                  href="#"
+                >
+                  Blog
+                </a>
+              </li>
+              <li>
+                <a
+                  class="hover:text-primary transition-colors"
+                  href="#"
+                >
+                  Community
+                </a>
+              </li>
+              <li>
+                <a
+                  class="hover:text-primary transition-colors"
+                  href="#"
+                >
+                  Status
+                </a>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h4
+              class="font-semibold text-foreground mb-4"
+            >
+              Stay Updated
+            </h4>
+            <p
+              class="text-muted-foreground mb-4 text-sm"
+            >
+              Get the latest news and updates from PayFlow Africa.
+            </p>
+            <div
+              class="flex gap-2 mb-4"
+            >
+              <input
+                class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive flex-1"
+                data-slot="input"
+                placeholder="Enter your email"
+              />
+              <button
+                class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5"
+                data-slot="button"
+              >
+                Subscribe
+              </button>
+            </div>
+            <div
+              class="flex gap-2 mb-4"
+            >
+              <button
+                class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 flex-1"
+                data-slot="button"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-globe h-4 w-4 mr-2"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="10"
+                  />
+                  <path
+                    d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"
+                  />
+                  <path
+                    d="M2 12h20"
+                  />
+                </svg>
+                English
+              </button>
+              <button
+                class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5 flex-1"
+                data-slot="button"
+              >
+                Kenya
+              </button>
+            </div>
+          </div>
+        </div>
+        <div
+          class="bg-border shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px my-8"
+          data-orientation="horizontal"
+          data-slot="separator"
+          role="none"
+        />
+        <div
+          class="flex flex-col md:flex-row justify-between items-center"
+        >
+          <div
+            class="text-sm text-muted-foreground mb-4 md:mb-0"
+          >
+            © 2024 PayFlow Africa. All rights reserved.
+          </div>
+          <div
+            class="flex items-center space-x-6"
+          >
+            <div
+              class="flex space-x-4 text-sm text-muted-foreground"
+            >
+              <a
+                class="hover:text-primary transition-colors"
+                href="#"
+              >
+                Privacy Policy
+              </a>
+              <a
+                class="hover:text-primary transition-colors"
+                href="#"
+              >
+                Terms of Service
+              </a>
+              <a
+                class="hover:text-primary transition-colors"
+                href="#"
+              >
+                Cookie Policy
+              </a>
+            </div>
+            <div
+              class="flex space-x-3"
+            >
+              <button
+                class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 rounded-md gap-1.5 has-[>svg]:px-2.5 h-8 w-8 p-0"
+                data-slot="button"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-facebook h-4 w-4"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"
+                  />
+                </svg>
+              </button>
+              <button
+                class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 rounded-md gap-1.5 has-[>svg]:px-2.5 h-8 w-8 p-0"
+                data-slot="button"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-twitter h-4 w-4"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"
+                  />
+                </svg>
+              </button>
+              <button
+                class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 rounded-md gap-1.5 has-[>svg]:px-2.5 h-8 w-8 p-0"
+                data-slot="button"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-linkedin h-4 w-4"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"
+                  />
+                  <rect
+                    height="12"
+                    width="4"
+                    x="2"
+                    y="9"
+                  />
+                  <circle
+                    cx="4"
+                    cy="4"
+                    r="2"
+                  />
+                </svg>
+              </button>
+              <button
+                class="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 rounded-md gap-1.5 has-[>svg]:px-2.5 h-8 w-8 p-0"
+                data-slot="button"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="lucide lucide-instagram h-4 w-4"
+                  fill="none"
+                  height="24"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  viewBox="0 0 24 24"
+                  width="24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <rect
+                    height="20"
+                    rx="5"
+                    ry="5"
+                    width="20"
+                    x="2"
+                    y="2"
+                  />
+                  <path
+                    d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"
+                  />
+                  <line
+                    x1="17.5"
+                    x2="17.51"
+                    y1="6.5"
+                    y2="6.5"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+</div>
+`;

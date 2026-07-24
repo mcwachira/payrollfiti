@@ -1,6 +1,30 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "globalDependencies": ["**/.env.*local"],
+  "globalEnv": [
+    "APP_NAME",
+    "NODE_ENV",
+    "PORT",
+    "COUNTRY_DEFAULT",
+    "CORS_ORIGIN",
+    "THROTTLE_TTL",
+    "THROTTLE_LIMIT",
+    "JWT_ACCESS_SECRET",
+    "JWT_ACCESS_EXPIRES_IN",
+    "JWT_REFRESH_SECRET",
+    "JWT_REFRESH_EXPIRES_IN",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+    "MPESA_CONSUMER_KEY",
+    "MPESA_CONSUMER_SECRET",
+    "MPESA_SHORTCODE",
+    "MPESA_PASSKEY",
+    "MPESA_ENV",
+    "MPESA_CALLBACK_URL",
+    "REDIS_URL",
+    "PAYSLIP_STORAGE_DIR",
+    "DATABASE_URL"
+  ],
   "ui": "tui",
   "tasks": {
     "dev": {
@@ -9,7 +33,8 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [".next/**", "!.next/cache/**"],
+      "env": ["NEXT_PUBLIC_API_URL", "NEXT_PUBLIC_APP_NAME"]
     },
     "lint": {},
     "test": {},
@@ -18,6 +43,9 @@
       "cache": false
     },
     "db:push": {
+      "cache": false
+    },
+    "db:seed": {
       "cache": false
     }
   }

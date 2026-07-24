@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,75 +10,337 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  ADMIN
+  HR
+  EMPLOYEE
+}
+
+enum EmploymentType {
+  PERMANENT
+  CONTRACT
+  CASUAL
+  INTERN
+}
+
+enum PayrollRunStatus {
+  DRAFT
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  VOID
+  UNCOLLECTIBLE
+}
+
+enum PaymentProviderType {
+  STRIPE
+  MPESA
+}
+
+// Tenants are the top-level SaaS customer boundary; every row that matters
+// for isolation carries a tenantId so a Prisma middleware can scope queries.
 model Tenant {
-  id          String    @id @default(uuid())
-  name        String
-  countryCode String
-  companies   Company[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id              String         @id @default(uuid())
+  name            String
+  countryCode     String
+  defaultCurrency String         @default("KES")
+  settings        Json?
+  branding        BrandingConfig?
+  companies       Company[]
+  users           User[]
+  subscription    Subscription?
+  invoices        Invoice[]
+  usageRecords    UsageRecord[]
+  auditLogs       AuditLog[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+// Per-tenant white-label override; falls back to the APP_NAME env var when absent.
+model BrandingConfig {
+  id             String   @id @default(uuid())
+  tenantId       String   @unique
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  appName        String?
+  logoUrl        String?
+  primaryColor   String?
+  secondaryColor String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model Company {
-  id        String     @id @default(uuid())
-  name      String
+  id        String        @id @default(uuid())
   tenantId  String
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  currency  String        @default("KES")
   employees Employee[]
-  payrolls  Payroll[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  Tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  payrollRuns PayrollRun[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([tenantId])
+}
+
+// Login identity + RBAC role. Optionally linked 1:1 to an Employee when the
+// role is EMPLOYEE, so self-service endpoints can resolve "my" records.
+model User {
+  id               String    @id @default(uuid())
+  tenantId         String
+  tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email            String    @unique
+  passwordHash     String
+  role             Role      @default(EMPLOYEE)
+  isActive         Boolean   @default(true)
+  refreshTokenHash String?
+  employeeId       String?   @unique
+  employee         Employee? @relation(fields: [employeeId], references: [id])
+  auditLogs        AuditLog[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([tenantId])
 }
 
 model Employee {
-  id           String         @id @default(uuid())
-  companyId    String
-  firstName    String
-  lastName     String
-  email        String         @unique
-  kraPin       String?
-  nssfNumber   String?
-  nhifNumber   String?
-  jobRole      String?
-  salary       Float
-  status       String
-  documents    Document[]
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  Company      Company        @relation(fields: [companyId], references: [id])
-  PayrollEntry PayrollEntry[]
+  id             String           @id @default(uuid())
+  companyId      String
+  company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeNumber String?
+  firstName      String
+  lastName       String
+  email          String           @unique
+  kraPin         String?
+  nssfNumber     String?
+  nhifNumber     String?
+  jobRole        String?
+  employmentType EmploymentType   @default(PERMANENT)
+  currency       String           @default("KES")
+  status         String           @default("ACTIVE")
+  bankName          String?
+  bankAccountNumber String?
+  bankCode          String?
+  bankBranchCode    String?
+  user           User?
+  contracts      Contract[]
+  salaryStructures SalaryStructure[]
+  documents      Document[]
+  payrollEntries PayrollEntry[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([companyId])
+}
+
+model Contract {
+  id         String         @id @default(uuid())
+  employeeId String
+  employee   Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type       EmploymentType
+  startDate  DateTime
+  endDate    DateTime?
+  terms      Json?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([employeeId])
+}
+
+// Versioned so a payslip generated last month still reflects the salary
+// structure that was effective then, even after a raise.
+model SalaryStructure {
+  id            String    @id @default(uuid())
+  employeeId    String
+  employee      Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  basicSalary   Float
+  allowances    Json?
+  currency      String
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([employeeId, effectiveFrom])
 }
 
 model Document {
   id         String   @id @default(uuid())
   employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   type       String
   url        String
   uploadedAt DateTime @default(now())
-  Employee   Employee @relation(fields: [employeeId], references: [id])
+
+  @@index([employeeId])
 }
 
-model Payroll {
-  id        String         @id @default(uuid())
-  companyId String
-  period    String
-  status    String
-  entries   PayrollEntry[]
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  Company   Company        @relation(fields: [companyId], references: [id])
+// One run per company per period. idempotencyKey lets re-submitting the
+// same run request return the existing run instead of double-processing.
+model PayrollRun {
+  id              String           @id @default(uuid())
+  companyId       String
+  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  period          String
+  periodStart     DateTime
+  periodEnd       DateTime
+  countryCode     String
+  currency        String
+  ruleVersion     String
+  status          PayrollRunStatus @default(DRAFT)
+  idempotencyKey  String           @unique
+  totals          Json?
+  initiatedById   String?
+  entries         PayrollEntry[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([companyId, period])
 }
 
+// Country-agnostic result of one employee's line in a run. Line-item detail
+// (which statutory deductions applied, tax breakdown, etc.) lives in the
+// JSON columns so no country's rule names leak into the schema itself.
 model PayrollEntry {
+  id                   String     @id @default(uuid())
+  payrollRunId         String
+  payrollRun           PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employeeId           String
+  employee             Employee   @relation(fields: [employeeId], references: [id])
+  currency             String
+  prorationFactor      Float      @default(1)
+  grossPay             Float
+  totalTax             Float
+  totalStatutoryDeductions Float
+  totalVoluntaryDeductions Float
+  totalDeductions      Float
+  netPay               Float
+  earningsBreakdown    Json
+  statutoryDeductions  Json
+  taxBreakdown         Json
+  inputHash            String
+  payslip              Payslip?
+  createdAt            DateTime   @default(now())
+
+  @@index([payrollRunId])
+  @@index([employeeId])
+}
+
+model Payslip {
+  id             String       @id @default(uuid())
+  payrollEntryId String       @unique
+  payrollEntry   PayrollEntry @relation(fields: [payrollEntryId], references: [id], onDelete: Cascade)
+  pdfPath        String?
+  generatedAt    DateTime     @default(now())
+}
+
+// Append-only trail of who changed what. Interceptor-populated, never
+// updated or deleted by application code.
+model AuditLog {
   id         String   @id @default(uuid())
-  payrollId  String
-  employeeId String
-  grossPay   Float
-  paye       Float
-  nssf       Float
-  nhif       Float
-  deductions Float
-  netPay     Float
-  Payroll    Payroll  @relation(fields: [payrollId], references: [id])
-  Employee   Employee @relation(fields: [employeeId], references: [id])
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  actorId    String?
+  actor      User?    @relation(fields: [actorId], references: [id])
+  action     String
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, entityType, entityId])
+  @@index([tenantId, createdAt])
+}
+
+model Plan {
+  id              String         @id @default(uuid())
+  code            String         @unique
+  name            String
+  pricePerEmployee Float
+  currency        String         @default("USD")
+  tier            String?
+  isActive        Boolean        @default(true)
+  subscriptions   Subscription[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model Subscription {
+  id                     String              @id @default(uuid())
+  tenantId               String              @unique
+  tenant                 Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  planId                 String
+  plan                   Plan                @relation(fields: [planId], references: [id])
+  status                 SubscriptionStatus  @default(TRIALING)
+  provider               PaymentProviderType @default(STRIPE)
+  providerCustomerId     String?
+  providerSubscriptionId String?
+  currentPeriodStart     DateTime
+  currentPeriodEnd       DateTime
+  invoices               Invoice[]
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+}
+
+model Invoice {
+  id               String        @id @default(uuid())
+  tenantId         String
+  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscriptionId   String
+  subscription     Subscription  @relation(fields: [subscriptionId], references: [id])
+  amount           Float
+  currency         String
+  status           InvoiceStatus @default(DRAFT)
+  dueDate          DateTime
+  paidAt           DateTime?
+  provider         PaymentProviderType @default(STRIPE)
+  providerInvoiceId String?
+  transactions     PaymentTransaction[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([tenantId, status])
+}
+
+model UsageRecord {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  period        String
+  employeeCount Int
+  computedAt    DateTime @default(now())
+
+  @@unique([tenantId, period])
+}
+
+// Raw log of provider-side attempts (Stripe charge, M-Pesa STK push, ...)
+// against an invoice, kept for reconciliation independent of invoice.status.
+model PaymentTransaction {
+  id          String              @id @default(uuid())
+  invoiceId   String
+  invoice     Invoice             @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  provider    PaymentProviderType
+  reference   String
+  amount      Float
+  currency    String
+  status      String
+  rawResponse Json?
+  createdAt   DateTime            @default(now())
+
+  @@index([invoiceId])
 }

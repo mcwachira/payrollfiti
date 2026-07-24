@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  # Only used to satisfy `prisma generate` during install/build — no real DB is touched.
+  DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder
+
+jobs:
+  lint-build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter api exec prisma generate
+
+      - name: Lint
+        run: pnpm turbo run lint
+
+      - name: Build
+        run: pnpm turbo run build
+
+      - name: Test
+        run: pnpm turbo run test
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: lint-build-test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: payrollfiti
+          POSTGRES_PASSWORD: payrollfiti
+          POSTGRES_DB: payrollfiti
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U payrollfiti"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://payrollfiti:payrollfiti@localhost:5432/payrollfiti
+      JWT_ACCESS_SECRET: ci-access-secret
+      JWT_REFRESH_SECRET: ci-refresh-secret
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8.15.5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run migrations
+        run: pnpm --filter api exec prisma migrate deploy
+
+      - name: Run API e2e tests
+        run: pnpm --filter api test:e2e
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: lint-build-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build api image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: false
+
+      - name: Build web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: false

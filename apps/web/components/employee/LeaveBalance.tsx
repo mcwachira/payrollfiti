@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface LeaveBalanceProps {
   employeeId: string;
@@ -66,7 +67,6 @@ const mockLeaveBalances: LeaveBalance[] = [
 export default function LeaveBalance({ employeeId }: LeaveBalanceProps) {
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchLeaveBalances();
@@ -85,11 +85,7 @@ export default function LeaveBalance({ employeeId }: LeaveBalanceProps) {
       setBalances(filtered);
     } catch (error: any) {
       console.error('Error fetching leave balances:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load leave balances',
-        variant: 'destructive',
-      });
+      toast.error('Failed to load leave balances');
     } finally {
       setIsLoading(false);
     }

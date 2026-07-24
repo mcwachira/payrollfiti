@@ -190,15 +190,12 @@ function StatutoryRemittance() {
       // Mock file generation
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      toast({
-        title: 'File Generated',
+      toast('File Generated', {
         description: `${type} remittance file has been generated successfully.`,
       });
     } catch (error) {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to generate remittance file',
-        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -225,15 +222,12 @@ function StatutoryRemittance() {
         ),
       );
 
-      toast({
-        title: 'Return Submitted',
+      toast('Return Submitted', {
         description: `${type} return has been submitted successfully.`,
       });
     } catch (error) {
-      toast({
-        title: 'Error',
+      toast.error('Error', {
         description: 'Failed to submit return',
-        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
@@ -266,6 +260,15 @@ function StatutoryRemittance() {
 
   return (
     <div className="space-y-6">
+      <div className="flex items-start gap-3 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-yellow-900">
+        <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+        <p className="text-sm">
+          <span className="font-semibold">Demo data</span> — statutory e-filing
+          integration (KRA, NSSF, NHIF) is not yet implemented. Everything below
+          is illustrative sample data, not connected to a live filing system.
+        </p>
+      </div>
+
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold">

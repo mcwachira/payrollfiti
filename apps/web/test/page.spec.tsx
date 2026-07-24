@@ -8,12 +8,10 @@ window.fetch = jest.fn().mockImplementation(() =>
     ok: true,
     json: () => [],
   })
-);
+) as unknown as typeof fetch;
 
 describe('Root page', () => {
-  const { container, unmount } = render(
-    <RootPage params={{ forTest: true }} />
-  );
+  const { container, unmount } = render(<RootPage />);
 
   it('should match the snapshot', () => {
     expect(container).toMatchSnapshot();
