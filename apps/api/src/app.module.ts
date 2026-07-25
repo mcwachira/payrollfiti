@@ -21,6 +21,7 @@ import { BankExportModule } from './bank-export/bank-export.module';
 import { BrandingModule } from './branding/branding.module';
 import { HealthModule } from './health/health.module';
 import { CryptoModule } from './common/crypto/crypto.module';
+import { ComplianceReportsModule } from './compliance-reports/compliance-reports.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
@@ -80,6 +81,7 @@ import { AppController } from './app.controller';
     BrandingModule,
     HealthModule,
     CryptoModule,
+    ComplianceReportsModule,
   ],
   controllers: [AppController],
   providers: [
