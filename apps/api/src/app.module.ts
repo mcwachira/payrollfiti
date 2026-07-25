@@ -28,6 +28,9 @@ import { PublicApiModule } from './public-api/public-api.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { AccountingModule } from './accounting/accounting.module';
 import { SalaryComponentsModule } from './salary-components/salary-components.module';
+import { DocumentsModule } from './documents/documents.module';
+import { LeaveModule } from './leave/leave.module';
+import { AttendanceModule } from './attendance/attendance.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
@@ -94,6 +97,9 @@ import { AppController } from './app.controller';
     WebhooksModule,
     AccountingModule,
     SalaryComponentsModule,
+    DocumentsModule,
+    LeaveModule,
+    AttendanceModule,
   ],
   controllers: [AppController],
   providers: [

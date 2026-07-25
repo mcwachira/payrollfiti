@@ -60,6 +60,18 @@ enum SalaryComponentCalcType {
   PERCENTAGE_OF_BASIC
 }
 
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LEAVE
+}
+
 // Tenants are the top-level SaaS customer boundary; every row that matters
 // for isolation carries a tenantId so a Prisma middleware can scope queries.
 model Tenant {
@@ -79,6 +91,7 @@ model Tenant {
   apiKeys         ApiKey[]
   webhookEndpoints WebhookEndpoint[]
   salaryComponents SalaryComponent[]
+  leaveTypes      LeaveType[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 }
@@ -126,6 +139,9 @@ model User {
   auditLogs        AuditLog[]
   notifications    Notification[]
   apiKeysCreated   ApiKey[]
+  approvedLeaveRequests     LeaveRequest[]
+  recordedAttendanceRecords AttendanceRecord[]
+  uploadedDocuments         Document[]
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -156,6 +172,9 @@ model Employee {
   salaryStructures SalaryStructure[]
   documents      Document[]
   payrollEntries PayrollEntry[]
+  leaveBalances     LeaveBalance[]
+  leaveRequests     LeaveRequest[]
+  attendanceRecords AttendanceRecord[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -229,13 +248,89 @@ model SalaryStructureComponent {
 }
 
 model Document {
-  id         String   @id @default(uuid())
-  employeeId String
-  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  type       String
-  url        String
-  uploadedAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  employeeId   String
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type         String
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+  url          String   // relative path under DOCUMENT_STORAGE_DIR, e.g. "<employeeId>/<uuid>-<fileName>"
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
+  uploadedAt   DateTime @default(now())
 
+  @@index([employeeId])
+  @@index([employeeId, type])
+}
+
+model LeaveType {
+  id          String         @id @default(uuid())
+  tenantId    String
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  daysPerYear Float
+  isPaid      Boolean        @default(true)
+  isActive    Boolean        @default(true)
+  balances    LeaveBalance[]
+  requests    LeaveRequest[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model LeaveBalance {
+  id            String    @id @default(uuid())
+  employeeId    String
+  employee      Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId   String
+  leaveType     LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  year          Int
+  accruedDays   Float     @default(0)
+  usedDays      Float     @default(0)
+  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime  @default(now())
+
+  @@unique([employeeId, leaveTypeId, year])
+  @@index([employeeId])
+}
+
+model LeaveRequest {
+  id            String              @id @default(uuid())
+  employeeId    String
+  employee      Employee            @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId   String
+  leaveType     LeaveType           @relation(fields: [leaveTypeId], references: [id])
+  startDate     DateTime
+  endDate       DateTime
+  daysRequested Float
+  reason        String?
+  status        LeaveRequestStatus  @default(PENDING)
+  approverId    String?
+  approver      User?               @relation(fields: [approverId], references: [id])
+  decidedAt     DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([employeeId])
+  @@index([employeeId, status])
+}
+
+model AttendanceRecord {
+  id           String            @id @default(uuid())
+  employeeId   String
+  employee     Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date         DateTime
+  status       AttendanceStatus
+  notes        String?
+  recordedById String?
+  recordedBy   User?             @relation(fields: [recordedById], references: [id])
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@unique([employeeId, date])
   @@index([employeeId])
 }
 
