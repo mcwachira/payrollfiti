@@ -66,6 +66,8 @@ model Tenant {
   usageRecords    UsageRecord[]
   auditLogs       AuditLog[]
   notifications   Notification[]
+  apiKeys         ApiKey[]
+  webhookEndpoints WebhookEndpoint[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 }
@@ -112,6 +114,7 @@ model User {
   employee         Employee? @relation(fields: [employeeId], references: [id])
   auditLogs        AuditLog[]
   notifications    Notification[]
+  apiKeysCreated   ApiKey[]
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -361,4 +364,58 @@ model Notification {
 
   @@index([userId, read])
   @@index([tenantId])
+}
+
+// Machine credential for the read-only public-api. hashedKey is a one-way
+// SHA-256 digest of a server-generated high-entropy token — never store the
+// raw key (see ApiKeysService for the hashing rationale).
+model ApiKey {
+  id          String    @id @default(uuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  hashedKey   String    @unique
+  keyPrefix   String
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  createdById String?
+  createdBy   User?     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@index([tenantId])
+}
+
+// Tenant-configured outbound webhook subscription. `secret` is stored in
+// retrievable plaintext (unlike ApiKey.hashedKey) because it's used by the
+// server to SIGN outgoing deliveries, not presented back to the server for
+// verification — see WebhooksService for the full rationale.
+model WebhookEndpoint {
+  id          String              @id @default(uuid())
+  tenantId    String
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  url         String
+  secret      String
+  events      String[]
+  isActive    Boolean             @default(true)
+  deliveries  WebhookDeliveryLog[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([tenantId])
+}
+
+// One row per delivery attempt (single-shot, no retries in this pass — see
+// WebhooksService.dispatch).
+model WebhookDeliveryLog {
+  id                String          @id @default(uuid())
+  webhookEndpointId String
+  webhookEndpoint   WebhookEndpoint @relation(fields: [webhookEndpointId], references: [id], onDelete: Cascade)
+  event             String
+  payload           Json
+  statusCode        Int?
+  success           Boolean
+  error             String?
+  createdAt         DateTime        @default(now())
+
+  @@index([webhookEndpointId, createdAt])
 }

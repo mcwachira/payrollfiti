@@ -4,9 +4,12 @@ import { Reflector } from '@nestjs/core';
 import { Role } from '@prisma/client';
 import { RolesGuard } from './roles.guard';
 
-function makeContext(user: { role: Role } | undefined): ExecutionContext {
+function makeContext(
+  user: { role: Role } | undefined,
+  extra: Record<string, unknown> = {},
+): ExecutionContext {
   return {
-    switchToHttp: () => ({ getRequest: () => ({ user }) }),
+    switchToHttp: () => ({ getRequest: () => ({ user, ...extra }) }),
     getHandler: () => ({}),
     getClass: () => ({}),
   } as unknown as ExecutionContext;
@@ -47,5 +50,17 @@ describe('RolesGuard', () => {
     expect(() => guard.canActivate(makeContext(undefined))).toThrow(
       ForbiddenException,
     );
+  });
+
+  it('fails closed for an API-key-authenticated request on a role-restricted route, even though the placeholder role would otherwise satisfy it', () => {
+    const reflector = {
+      getAllAndOverride: () => [Role.ADMIN],
+    } as unknown as Reflector;
+    const guard = new RolesGuard(reflector);
+    expect(() =>
+      guard.canActivate(
+        makeContext({ role: Role.ADMIN }, { isApiKeyAuth: true }),
+      ),
+    ).toThrow(ForbiddenException);
   });
 });

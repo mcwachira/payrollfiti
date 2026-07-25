@@ -23,6 +23,10 @@ import { HealthModule } from './health/health.module';
 import { CryptoModule } from './common/crypto/crypto.module';
 import { ComplianceReportsModule } from './compliance-reports/compliance-reports.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { ApiKeysModule } from './api-keys/api-keys.module';
+import { PublicApiModule } from './public-api/public-api.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
+import { AccountingModule } from './accounting/accounting.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
@@ -84,6 +88,10 @@ import { AppController } from './app.controller';
     CryptoModule,
     ComplianceReportsModule,
     NotificationsModule,
+    ApiKeysModule,
+    PublicApiModule,
+    WebhooksModule,
+    AccountingModule,
   ],
   controllers: [AppController],
   providers: [

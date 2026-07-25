@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import {
   InvoiceStatus,
   PaymentProviderType,
@@ -12,6 +12,11 @@ import { MpesaProvider } from './providers/mpesa.provider';
 import { PaymentProvider } from './providers/payment-provider.interface';
 import { SubscribeDto } from './dto/subscribe.dto';
 import { PayInvoiceDto } from './dto/pay-invoice.dto';
+import { WebhooksService } from '../webhooks/webhooks.service';
+import {
+  ACCOUNTING_PROVIDER,
+  AccountingProvider,
+} from '../accounting/accounting-provider.interface';
 
 const INVOICE_DUE_DAYS = 14;
 
@@ -21,6 +26,9 @@ export class BillingService {
     private readonly prisma: PrismaService,
     private readonly stripeProvider: StripeProvider,
     private readonly mpesaProvider: MpesaProvider,
+    private readonly webhooksService: WebhooksService,
+    @Inject(ACCOUNTING_PROVIDER)
+    private readonly accountingProvider: AccountingProvider,
   ) {}
 
   private getProvider(type: PaymentProviderType): PaymentProvider {
@@ -175,6 +183,26 @@ export class BillingService {
           providerInvoiceId: result.providerReference,
         },
       });
+
+      // Best-effort side effects of a paid invoice — neither may fail the
+      // already-committed payment response.
+      void this.webhooksService
+        .dispatch(tenantId, 'invoice.paid', {
+          invoiceId: invoice.id,
+          amount: invoice.amount,
+          currency: invoice.currency,
+        })
+        .catch(() => {});
+
+      await this.accountingProvider
+        .syncInvoice({
+          id: invoice.id,
+          tenantId,
+          amount: invoice.amount,
+          currency: invoice.currency,
+          status: InvoiceStatus.PAID,
+        })
+        .catch(() => {});
     }
 
     return result;

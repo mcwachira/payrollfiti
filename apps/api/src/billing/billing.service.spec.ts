@@ -6,6 +6,8 @@ import { BillingService } from './billing.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { StripeProvider } from './providers/stripe.provider';
 import { MpesaProvider } from './providers/mpesa.provider';
+import { WebhooksService } from '../webhooks/webhooks.service';
+import { ACCOUNTING_PROVIDER } from '../accounting/accounting-provider.interface';
 
 // jest.fn() with no type args resolves to Mock<UnknownFunction>, whose return
 // type is `unknown` rather than `Promise<unknown>` — that makes the conditional
@@ -19,6 +21,8 @@ describe('BillingService', () => {
   let prisma: any;
   let stripeProvider: any;
   let mpesaProvider: any;
+  let webhooksService: any;
+  let accountingProvider: any;
 
   const plan = {
     id: 'plan-1',
@@ -92,12 +96,21 @@ describe('BillingService', () => {
       }),
     };
 
+    webhooksService = { dispatch: asyncMock(undefined) };
+    accountingProvider = {
+      name: 'noop',
+      syncInvoice: asyncMock({ success: true }),
+      syncPayrollExpense: asyncMock({ success: true }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BillingService,
         { provide: PrismaService, useValue: prisma },
         { provide: StripeProvider, useValue: stripeProvider },
         { provide: MpesaProvider, useValue: mpesaProvider },
+        { provide: WebhooksService, useValue: webhooksService },
+        { provide: ACCOUNTING_PROVIDER, useValue: accountingProvider },
       ],
     }).compile();
 
@@ -201,6 +214,40 @@ describe('BillingService', () => {
         }),
       );
       expect(result).toEqual(expect.objectContaining({ status: 'succeeded' }));
+    });
+
+    it('dispatches an invoice.paid webhook and syncs to the accounting provider on a successful charge', async () => {
+      prisma.invoice.findUnique.mockResolvedValueOnce(invoice);
+
+      await service.payInvoice('tenant-1', 'invoice-1', {});
+
+      expect(webhooksService.dispatch).toHaveBeenCalledWith(
+        'tenant-1',
+        'invoice.paid',
+        expect.objectContaining({ invoiceId: 'invoice-1', amount: 2000 }),
+      );
+      expect(accountingProvider.syncInvoice).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'invoice-1',
+          tenantId: 'tenant-1',
+          amount: 2000,
+          status: InvoiceStatus.PAID,
+        }),
+      );
+    });
+
+    it('does not dispatch a webhook or accounting sync when the charge is not successful', async () => {
+      prisma.invoice.findUnique.mockResolvedValueOnce(invoice);
+      stripeProvider.charge.mockResolvedValueOnce({
+        providerReference: 'ch_pending',
+        status: 'pending',
+        raw: {},
+      });
+
+      await service.payInvoice('tenant-1', 'invoice-1', {});
+
+      expect(webhooksService.dispatch).not.toHaveBeenCalled();
+      expect(accountingProvider.syncInvoice).not.toHaveBeenCalled();
     });
 
     it('throws NotFoundException for a cross-tenant invoice even though the row exists', async () => {
