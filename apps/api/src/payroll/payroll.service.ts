@@ -1,9 +1,19 @@
-import { createHash } from 'crypto';
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Employee, PayrollRunStatus, Prisma } from '@prisma/client';
+import { createHash, randomUUID } from 'crypto';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  Employee,
+  PayrollCorrection,
+  PayrollRunStatus,
+  Prisma,
+} from '@prisma/client';
 import {
   PayrollCalculationInput,
   PayrollCalculationResult,
+  getRuleSetByVersion,
   runPayrollCalculation,
   stableStringify,
   sum,
@@ -12,12 +22,30 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { EmployeesService } from '../employees/employees.service';
 import { AuditService } from '../audit/audit.service';
+import { SalaryComponentsService } from '../salary-components/salary-components.service';
+import { PayslipEmailService } from '../notifications/payslip-email.service';
+import { WebhooksService } from '../webhooks/webhooks.service';
 import { RulesCacheService } from './rules-cache.service';
 import { RunPayrollDto } from './dto/run-payroll.dto';
+import { RunOffCyclePayrollDto } from './dto/run-off-cycle-payroll.dto';
+import { CreateCorrectionDto } from './dto/create-correction.dto';
 
 interface Computation {
   employee: Employee;
   result: PayrollCalculationResult;
+}
+
+interface ExecuteRunParams {
+  tenantId: string;
+  actorId: string;
+  companyId: string;
+  period: string;
+  periodStart: string;
+  periodEnd: string;
+  employeeIds?: string[];
+  isOffCycle: boolean;
+  reason?: string;
+  force?: boolean;
 }
 
 @Injectable()
@@ -28,26 +56,83 @@ export class PayrollService {
     private readonly employeesService: EmployeesService,
     private readonly rulesCache: RulesCacheService,
     private readonly auditService: AuditService,
+    private readonly salaryComponentsService: SalaryComponentsService,
+    private readonly payslipEmailService: PayslipEmailService,
+    private readonly webhooksService: WebhooksService,
   ) {}
 
   async runPayroll(tenantId: string, actorId: string, dto: RunPayrollDto) {
+    return this.executeRun({
+      tenantId,
+      actorId,
+      companyId: dto.companyId,
+      period: dto.period,
+      periodStart: dto.periodStart,
+      periodEnd: dto.periodEnd,
+      isOffCycle: false,
+      force: dto.force,
+    });
+  }
+
+  async runOffCyclePayroll(
+    tenantId: string,
+    actorId: string,
+    dto: RunOffCyclePayrollDto,
+  ) {
+    return this.executeRun({
+      tenantId,
+      actorId,
+      companyId: dto.companyId,
+      period: dto.period,
+      periodStart: dto.periodStart,
+      periodEnd: dto.periodEnd,
+      employeeIds: dto.employeeIds,
+      isOffCycle: true,
+      reason: dto.reason,
+    });
+  }
+
+  /**
+   * Shared body for both the ordinary monthly run and off-cycle runs. Only
+   * the parameters differ — company/tenant/ruleSet resolution, per-employee
+   * computation, idempotency, persistence and auditing are identical either
+   * way.
+   */
+  private async executeRun(params: ExecuteRunParams) {
+    const {
+      tenantId,
+      actorId,
+      companyId,
+      period,
+      periodStart: periodStartInput,
+      periodEnd: periodEndInput,
+      employeeIds,
+      isOffCycle,
+      reason,
+      force,
+    } = params;
+
     const company = await this.tenantsService.assertCompanyBelongsToTenant(
-      dto.companyId,
+      companyId,
       tenantId,
     );
     const tenant = await this.prisma.tenant.findUniqueOrThrow({
       where: { id: tenantId },
     });
 
-    const periodStart = new Date(dto.periodStart);
-    const periodEnd = new Date(dto.periodEnd);
+    const periodStart = new Date(periodStartInput);
+    const periodEnd = new Date(periodEndInput);
     const ruleSet = await this.rulesCache.resolve(
       tenant.countryCode,
       periodStart,
     );
 
     const employees = await this.prisma.employee.findMany({
-      where: { companyId: company.id, status: 'ACTIVE' },
+      where: {
+        companyId: company.id,
+        status: 'ACTIVE',
+        ...(employeeIds ? { id: { in: employeeIds } } : {}),
+      },
     });
 
     const computations: Computation[] = [];
@@ -59,16 +144,31 @@ export class PayrollService {
         );
       if (!salaryStructure) continue;
 
+      const { allowances, voluntaryDeductions } =
+        await this.salaryComponentsService.resolveStructureEarnings(
+          salaryStructure.id,
+          salaryStructure.basicSalary,
+          salaryStructure.allowances as Record<string, number> | null,
+        );
+
+      // Only set `deductions` when there's something in it — omitting the
+      // key entirely (rather than setting it to `{ voluntary: {} }`) keeps
+      // the stableStringify shape of the input, and therefore its
+      // inputHash/idempotencyKey, byte-identical to before this field
+      // existed for every structure with no voluntary deduction lines,
+      // which today is all of them.
       const input: PayrollCalculationInput = {
         employeeId: employee.id,
         countryCode: ruleSet.countryCode,
         currency: salaryStructure.currency,
         earnings: {
           basicSalary: salaryStructure.basicSalary,
-          allowances:
-            (salaryStructure.allowances as Record<string, number>) ?? {},
+          allowances,
         },
-        period: { periodStart: dto.periodStart, periodEnd: dto.periodEnd },
+        ...(Object.keys(voluntaryDeductions).length > 0
+          ? { deductions: { voluntary: voluntaryDeductions } }
+          : {}),
+        period: { periodStart: periodStartInput, periodEnd: periodEndInput },
       };
 
       computations.push({
@@ -79,16 +179,18 @@ export class PayrollService {
 
     const idempotencyKey = this.computeRunIdempotencyKey(
       company.id,
-      dto.period,
+      period,
       ruleSet.version,
       computations,
+      isOffCycle,
+      reason,
     );
 
     const existingRun = await this.prisma.payrollRun.findUnique({
       where: { idempotencyKey },
       include: { entries: true },
     });
-    if (existingRun && !dto.force) {
+    if (existingRun && !force) {
       return existingRun;
     }
 
@@ -98,7 +200,7 @@ export class PayrollService {
       const payrollRun = await tx.payrollRun.create({
         data: {
           companyId: company.id,
-          period: dto.period,
+          period,
           periodStart,
           periodEnd,
           countryCode: ruleSet.countryCode,
@@ -108,6 +210,8 @@ export class PayrollService {
           idempotencyKey,
           totals: totals as unknown as Prisma.InputJsonValue,
           initiatedById: actorId,
+          isOffCycle,
+          reason,
         },
       });
 
@@ -146,11 +250,27 @@ export class PayrollService {
     await this.auditService.record({
       tenantId,
       actorId,
-      action: 'payroll.run',
+      action: isOffCycle ? 'payroll.run.off-cycle' : 'payroll.run',
       entityType: 'PayrollRun',
       entityId: run.id,
       after: totals as unknown as Prisma.InputJsonValue,
     });
+
+    // PayslipEmailService is internally safe (never throws) — a failure to
+    // email payslips must never fail the HTTP response for a run that has
+    // already been committed.
+    await this.payslipEmailService.sendPayslipEmailsForRun(tenantId, run.id);
+
+    // Best-effort webhook dispatch for a run that has already been
+    // committed — a delivery failure must never fail the HTTP response.
+    void this.webhooksService
+      .dispatch(tenantId, 'payroll.run.completed', {
+        runId: run.id,
+        companyId: run.companyId,
+        period: run.period,
+        totals: run.totals,
+      })
+      .catch(() => {});
 
     return run;
   }
@@ -187,18 +307,182 @@ export class PayrollService {
     });
   }
 
+  /**
+   * Recomputes a single already-completed payroll entry against the exact
+   * ruleset that produced it, and records the corrected figures as a new
+   * off-cycle entry linked back to the original via PayrollCorrection. The
+   * original entry is never mutated — this keeps a full audit trail of what
+   * was actually paid and why it changed.
+   */
+  async createCorrection(
+    tenantId: string,
+    actorId: string,
+    originalEntryId: string,
+    dto: CreateCorrectionDto,
+  ) {
+    const originalEntry = await this.prisma.payrollEntry.findUnique({
+      where: { id: originalEntryId },
+      include: {
+        employee: { include: { company: true } },
+        payrollRun: true,
+      },
+    });
+    if (
+      !originalEntry ||
+      originalEntry.employee.company.tenantId !== tenantId
+    ) {
+      throw new NotFoundException('Payroll entry not found');
+    }
+    if (originalEntry.payrollRun.status !== PayrollRunStatus.COMPLETED) {
+      throw new BadRequestException('Only completed runs can be corrected');
+    }
+
+    // Resolve the exact original ruleset (not the rules cache) to guarantee
+    // bit-identical rules to the original run.
+    const originalRuleSet = getRuleSetByVersion(
+      originalEntry.payrollRun.countryCode,
+      originalEntry.payrollRun.ruleVersion,
+    );
+
+    const input: PayrollCalculationInput = {
+      employeeId: originalEntry.employeeId,
+      countryCode: originalEntry.payrollRun.countryCode,
+      currency: originalEntry.payrollRun.currency,
+      earnings: {
+        basicSalary: dto.basicSalary,
+        allowances: dto.allowances ?? {},
+        overtimeAmount: dto.overtimeAmount,
+        commissionAmount: dto.commissionAmount,
+        bonusAmount: dto.bonusAmount,
+      },
+      period: {
+        periodStart: originalEntry.payrollRun.periodStart.toISOString(),
+        periodEnd: originalEntry.payrollRun.periodEnd.toISOString(),
+      },
+    };
+    const result = runPayrollCalculation(input, originalRuleSet);
+
+    const correction = await this.prisma.$transaction(async (tx) => {
+      const correctionRun = await tx.payrollRun.create({
+        data: {
+          companyId: originalEntry.payrollRun.companyId,
+          period: originalEntry.payrollRun.period,
+          periodStart: originalEntry.payrollRun.periodStart,
+          periodEnd: originalEntry.payrollRun.periodEnd,
+          countryCode: originalEntry.payrollRun.countryCode,
+          currency: originalEntry.payrollRun.currency,
+          ruleVersion: originalEntry.payrollRun.ruleVersion,
+          status: PayrollRunStatus.COMPLETED,
+          idempotencyKey: randomUUID(),
+          initiatedById: actorId,
+          isOffCycle: true,
+          reason: dto.reason,
+        },
+      });
+
+      const totalStatutoryDeductions = sum(
+        result.statutoryDeductions.map((d) => d.employeeAmount),
+      );
+      const correctedEntry = await tx.payrollEntry.create({
+        data: {
+          payrollRunId: correctionRun.id,
+          employeeId: originalEntry.employeeId,
+          currency: result.currency,
+          prorationFactor: result.prorationFactor,
+          grossPay: result.grossPay,
+          totalTax: result.tax.netTax,
+          totalStatutoryDeductions,
+          totalVoluntaryDeductions: result.totalVoluntaryDeductions,
+          totalDeductions: result.totalDeductions,
+          netPay: result.netPay,
+          earningsBreakdown:
+            result.earnings as unknown as Prisma.InputJsonValue,
+          statutoryDeductions:
+            result.statutoryDeductions as unknown as Prisma.InputJsonValue,
+          taxBreakdown: result.tax as unknown as Prisma.InputJsonValue,
+          inputHash: result.inputHash,
+        },
+      });
+
+      const payrollCorrection = await tx.payrollCorrection.create({
+        data: {
+          originalEntryId: originalEntry.id,
+          correctedEntryId: correctedEntry.id,
+          reason: dto.reason,
+          createdById: actorId,
+        },
+      });
+
+      return { ...payrollCorrection, correctedEntry };
+    });
+
+    await this.auditService.record({
+      tenantId,
+      actorId,
+      action: 'payroll.correction',
+      entityType: 'PayrollEntry',
+      entityId: originalEntryId,
+      after: {
+        correctionId: correction.id,
+        correctedEntryId: correction.correctedEntryId,
+        netPay: result.netPay,
+        reason: dto.reason,
+      } as unknown as Prisma.InputJsonValue,
+    });
+
+    return correction;
+  }
+
+  async listCorrections(
+    tenantId: string,
+    originalEntryId: string,
+  ): Promise<PayrollCorrection[]> {
+    const originalEntry = await this.prisma.payrollEntry.findUnique({
+      where: { id: originalEntryId },
+      include: { employee: { include: { company: true } } },
+    });
+    if (
+      !originalEntry ||
+      originalEntry.employee.company.tenantId !== tenantId
+    ) {
+      throw new NotFoundException('Payroll entry not found');
+    }
+
+    return this.prisma.payrollCorrection.findMany({
+      where: { originalEntryId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * CRITICAL: hashes the same payload shape as before this method existed
+   * for ordinary (non-off-cycle) runs — isOffCycle/reason are only mixed
+   * into the payload when isOffCycle is true. Changing this for ordinary
+   * runs would silently break idempotency for every already-COMPLETED
+   * period in any real deployment.
+   */
   private computeRunIdempotencyKey(
     companyId: string,
     period: string,
     ruleVersion: string,
     computations: Computation[],
+    isOffCycle: boolean,
+    reason?: string,
   ): string {
     const entryHashes = computations
       .map((c) => `${c.employee.id}:${c.result.inputHash}`)
       .sort();
-    return createHash('sha256')
-      .update(stableStringify({ companyId, period, ruleVersion, entryHashes }))
-      .digest('hex');
+    const payload: Record<string, unknown> = {
+      companyId,
+      period,
+      ruleVersion,
+      entryHashes,
+    };
+    if (isOffCycle) {
+      payload.isOffCycle = true;
+      payload.reason = reason;
+    }
+    return createHash('sha256').update(stableStringify(payload)).digest('hex');
   }
 
   private aggregateTotals(computations: Computation[]) {

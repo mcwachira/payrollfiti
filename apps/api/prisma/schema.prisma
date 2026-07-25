@@ -50,6 +50,16 @@ enum PaymentProviderType {
   MPESA
 }
 
+enum SalaryComponentType {
+  EARNING
+  DEDUCTION
+}
+
+enum SalaryComponentCalcType {
+  FIXED
+  PERCENTAGE_OF_BASIC
+}
+
 // Tenants are the top-level SaaS customer boundary; every row that matters
 // for isolation carries a tenantId so a Prisma middleware can scope queries.
 model Tenant {
@@ -68,6 +78,7 @@ model Tenant {
   notifications   Notification[]
   apiKeys         ApiKey[]
   webhookEndpoints WebhookEndpoint[]
+  salaryComponents SalaryComponent[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 }
@@ -172,14 +183,49 @@ model SalaryStructure {
   employeeId    String
   employee      Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   basicSalary   Float
-  allowances    Json?
+  allowances    Json?                       // LEGACY — kept for backward compat, see SalaryComponentsService fallback rule
   currency      String
   effectiveFrom DateTime
   effectiveTo   DateTime?
+  components    SalaryStructureComponent[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   @@index([employeeId, effectiveFrom])
+}
+
+model SalaryComponent {
+  id             String                     @id @default(uuid())
+  tenantId       String
+  tenant         Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name           String
+  code           String                     // stable key used in earnings/deductions maps, e.g. "TRANSPORT"
+  type           SalaryComponentType
+  calcType       SalaryComponentCalcType    @default(FIXED)
+  isTaxable      Boolean                    @default(true)
+  isActive       Boolean                    @default(true)
+  defaultAmount  Float?                     // used when calcType = FIXED and no per-structure override
+  defaultRate    Float?                     // percentage points, used when calcType = PERCENTAGE_OF_BASIC
+  structureLines SalaryStructureComponent[]
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+model SalaryStructureComponent {
+  id                String          @id @default(uuid())
+  salaryStructureId String
+  salaryStructure   SalaryStructure @relation(fields: [salaryStructureId], references: [id], onDelete: Cascade)
+  salaryComponentId String
+  salaryComponent   SalaryComponent @relation(fields: [salaryComponentId], references: [id])
+  amount            Float?          // overrides SalaryComponent.defaultAmount when calcType = FIXED
+  rate              Float?          // overrides SalaryComponent.defaultRate when calcType = PERCENTAGE_OF_BASIC
+  createdAt         DateTime        @default(now())
+
+  @@unique([salaryStructureId, salaryComponentId])
+  @@index([salaryStructureId])
 }
 
 model Document {
@@ -209,6 +255,8 @@ model PayrollRun {
   idempotencyKey  String           @unique
   totals          Json?
   initiatedById   String?
+  isOffCycle      Boolean          @default(false)
+  reason          String?
   entries         PayrollEntry[]
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
@@ -238,10 +286,28 @@ model PayrollEntry {
   taxBreakdown         Json
   inputHash            String
   payslip              Payslip?
+  correctionsAsOriginal PayrollCorrection[] @relation("OriginalEntry")
+  correctionAsCorrected PayrollCorrection?  @relation("CorrectedEntry")
   createdAt            DateTime   @default(now())
 
   @@index([payrollRunId])
   @@index([employeeId])
+}
+
+// Links a completed PayrollEntry to the off-cycle PayrollEntry that recomputes
+// it after a mistake is found — the original row is never mutated in place,
+// preserving an immutable audit trail of what was actually paid and why.
+model PayrollCorrection {
+  id               String       @id @default(uuid())
+  originalEntryId  String
+  originalEntry    PayrollEntry @relation("OriginalEntry", fields: [originalEntryId], references: [id], onDelete: Cascade)
+  correctedEntryId String       @unique
+  correctedEntry   PayrollEntry @relation("CorrectedEntry", fields: [correctedEntryId], references: [id], onDelete: Cascade)
+  reason           String
+  createdById      String?
+  createdAt        DateTime     @default(now())
+
+  @@index([originalEntryId])
 }
 
 model Payslip {
