@@ -22,6 +22,7 @@ import { BrandingModule } from './branding/branding.module';
 import { HealthModule } from './health/health.module';
 import { CryptoModule } from './common/crypto/crypto.module';
 import { ComplianceReportsModule } from './compliance-reports/compliance-reports.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
@@ -82,6 +83,7 @@ import { AppController } from './app.controller';
     HealthModule,
     CryptoModule,
     ComplianceReportsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

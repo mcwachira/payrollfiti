@@ -28,6 +28,13 @@ export interface AppConfig {
   };
   redisUrl?: string;
   encryptionKey?: string;
+  smtp: {
+    host?: string;
+    port: number;
+    user?: string;
+    pass?: string;
+    from: string;
+  };
 }
 
 export default (): AppConfig => ({
@@ -62,4 +69,11 @@ export default (): AppConfig => ({
   },
   redisUrl: process.env.REDIS_URL,
   encryptionKey: process.env.ENCRYPTION_KEY,
+  smtp: {
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT ?? '587', 10),
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+    from: process.env.SMTP_FROM ?? 'PayrollFiti <noreply@payrollfiti.com>',
+  },
 });
