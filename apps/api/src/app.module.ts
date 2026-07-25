@@ -20,6 +20,7 @@ import { BillingModule } from './billing/billing.module';
 import { BankExportModule } from './bank-export/bank-export.module';
 import { BrandingModule } from './branding/branding.module';
 import { HealthModule } from './health/health.module';
+import { CryptoModule } from './common/crypto/crypto.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AppController } from './app.controller';
@@ -77,6 +78,7 @@ import { AppController } from './app.controller';
     BankExportModule,
     BrandingModule,
     HealthModule,
+    CryptoModule,
   ],
   controllers: [AppController],
   providers: [

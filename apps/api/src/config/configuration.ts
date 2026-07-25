@@ -27,6 +27,7 @@ export interface AppConfig {
     callbackUrl?: string;
   };
   redisUrl?: string;
+  encryptionKey?: string;
 }
 
 export default (): AppConfig => ({
@@ -60,4 +61,5 @@ export default (): AppConfig => ({
     callbackUrl: process.env.MPESA_CALLBACK_URL,
   },
   redisUrl: process.env.REDIS_URL,
+  encryptionKey: process.env.ENCRYPTION_KEY,
 });

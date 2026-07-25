@@ -4,6 +4,7 @@ import { NotFoundException } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantsService } from '../tenants/tenants.service';
+import { EncryptionService } from '../common/crypto/encryption.service';
 
 // jest.fn() with no type args resolves to Mock<UnknownFunction>, whose return
 // type is `unknown` rather than `Promise<unknown>` — that makes the conditional
@@ -16,6 +17,7 @@ describe('EmployeesService', () => {
   let service: EmployeesService;
   let prisma: any;
   let tenantsService: any;
+  let encryptionService: any;
 
   const company = { id: 'company-1', tenantId: 'tenant-1', name: 'Acme' };
   const employee = {
@@ -24,6 +26,10 @@ describe('EmployeesService', () => {
     firstName: 'Jane',
     lastName: 'Doe',
     status: 'ACTIVE',
+    kraPin: 'enc:A123456789Z',
+    nssfNumber: 'enc:NSSF-1',
+    nhifNumber: 'enc:NHIF-1',
+    bankAccountNumber: 'enc:1234567890',
     company,
   };
 
@@ -38,12 +44,25 @@ describe('EmployeesService', () => {
       salaryStructure: { findFirst: asyncMock(null) },
     };
     tenantsService = { assertCompanyBelongsToTenant: asyncMock(company) };
+    // Identity-ish mocks: prefix on encrypt, strip prefix on decrypt — lets
+    // tests assert the encrypt/decrypt calls actually happened without
+    // duplicating round-trip correctness, which encryption.service.spec.ts
+    // already covers.
+    encryptionService = {
+      encrypt: jest.fn((v: string | null | undefined) =>
+        v ? `enc:${v}` : null,
+      ),
+      decrypt: jest.fn((v: string | null | undefined) =>
+        v ? String(v).replace(/^enc:/, '') : null,
+      ),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EmployeesService,
         { provide: PrismaService, useValue: prisma },
         { provide: TenantsService, useValue: tenantsService },
+        { provide: EncryptionService, useValue: encryptionService },
       ],
     }).compile();
 
@@ -59,7 +78,11 @@ describe('EmployeesService', () => {
     };
 
     it('validates the company belongs to the tenant before creating the employee', async () => {
-      const result = await service.create('tenant-1', dto);
+      const result = await service.create('tenant-1', {
+        ...dto,
+        kraPin: 'A123456789Z',
+        bankAccountNumber: '1234567890',
+      });
 
       expect(tenantsService.assertCompanyBelongsToTenant).toHaveBeenCalledWith(
         'company-1',
@@ -73,7 +96,41 @@ describe('EmployeesService', () => {
           }),
         }),
       );
-      expect(result).toBe(employee);
+      // The mocked prisma.employee.create resolves the fixed `employee`
+      // fixture regardless of input — this asserts the service decrypts
+      // whatever prisma returns, not that it echoes the dto back verbatim.
+      expect(result).toEqual({
+        ...employee,
+        kraPin: 'A123456789Z',
+        nssfNumber: 'NSSF-1',
+        nhifNumber: 'NHIF-1',
+        bankAccountNumber: '1234567890',
+      });
+    });
+
+    it('encrypts kraPin, nssfNumber, nhifNumber and bankAccountNumber before writing to the database', async () => {
+      await service.create('tenant-1', {
+        ...dto,
+        kraPin: 'A123456789Z',
+        nssfNumber: 'NSSF-1',
+        nhifNumber: 'NHIF-1',
+        bankAccountNumber: '1234567890',
+      });
+
+      expect(encryptionService.encrypt).toHaveBeenCalledWith('A123456789Z');
+      expect(encryptionService.encrypt).toHaveBeenCalledWith('NSSF-1');
+      expect(encryptionService.encrypt).toHaveBeenCalledWith('NHIF-1');
+      expect(encryptionService.encrypt).toHaveBeenCalledWith('1234567890');
+      expect(prisma.employee.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            kraPin: 'enc:A123456789Z',
+            nssfNumber: 'enc:NSSF-1',
+            nhifNumber: 'enc:NHIF-1',
+            bankAccountNumber: 'enc:1234567890',
+          }),
+        }),
+      );
     });
 
     it('propagates NotFoundException when the company does not belong to the tenant', async () => {
@@ -89,10 +146,25 @@ describe('EmployeesService', () => {
   });
 
   describe('findOne', () => {
-    it('returns the employee when it belongs to the tenant', async () => {
+    it('returns the employee when it belongs to the tenant, with PII decrypted', async () => {
       const result = await service.findOne('tenant-1', 'emp-1');
 
-      expect(result).toBe(employee);
+      expect(result).toEqual({
+        ...employee,
+        kraPin: 'A123456789Z',
+        nssfNumber: 'NSSF-1',
+        nhifNumber: 'NHIF-1',
+        bankAccountNumber: '1234567890',
+      });
+    });
+
+    it('decrypts kraPin, nssfNumber, nhifNumber and bankAccountNumber before returning', async () => {
+      await service.findOne('tenant-1', 'emp-1');
+
+      expect(encryptionService.decrypt).toHaveBeenCalledWith('enc:A123456789Z');
+      expect(encryptionService.decrypt).toHaveBeenCalledWith('enc:NSSF-1');
+      expect(encryptionService.decrypt).toHaveBeenCalledWith('enc:NHIF-1');
+      expect(encryptionService.decrypt).toHaveBeenCalledWith('enc:1234567890');
     });
 
     it('throws NotFoundException when the employee does not exist', async () => {

@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Employee, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantsService } from '../tenants/tenants.service';
+import { EncryptionService } from '../common/crypto/encryption.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
@@ -12,40 +13,58 @@ export class EmployeesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenantsService: TenantsService,
+    private readonly encryptionService: EncryptionService,
   ) {}
+
+  /** Decrypts the PII fields on a fetched Employee row before returning it to a caller. */
+  private decryptEmployee<T extends Employee>(employee: T): T {
+    return {
+      ...employee,
+      kraPin: this.encryptionService.decrypt(employee.kraPin),
+      nssfNumber: this.encryptionService.decrypt(employee.nssfNumber),
+      nhifNumber: this.encryptionService.decrypt(employee.nhifNumber),
+      bankAccountNumber: this.encryptionService.decrypt(
+        employee.bankAccountNumber,
+      ),
+    };
+  }
 
   async create(tenantId: string, dto: CreateEmployeeDto) {
     await this.tenantsService.assertCompanyBelongsToTenant(
       dto.companyId,
       tenantId,
     );
-    return this.prisma.employee.create({
+    const created = await this.prisma.employee.create({
       data: {
         companyId: dto.companyId,
         employeeNumber: dto.employeeNumber,
         firstName: dto.firstName,
         lastName: dto.lastName,
         email: dto.email,
-        kraPin: dto.kraPin,
-        nssfNumber: dto.nssfNumber,
-        nhifNumber: dto.nhifNumber,
+        kraPin: this.encryptionService.encrypt(dto.kraPin),
+        nssfNumber: this.encryptionService.encrypt(dto.nssfNumber),
+        nhifNumber: this.encryptionService.encrypt(dto.nhifNumber),
         jobRole: dto.jobRole,
         employmentType: dto.employmentType,
         currency: dto.currency ?? 'KES',
         bankName: dto.bankName,
-        bankAccountNumber: dto.bankAccountNumber,
+        bankAccountNumber: this.encryptionService.encrypt(
+          dto.bankAccountNumber,
+        ),
         bankCode: dto.bankCode,
         bankBranchCode: dto.bankBranchCode,
       },
     });
+    return this.decryptEmployee(created);
   }
 
   async findAll(tenantId: string, companyId: string) {
     await this.tenantsService.assertCompanyBelongsToTenant(companyId, tenantId);
-    return this.prisma.employee.findMany({
+    const employees = await this.prisma.employee.findMany({
       where: { companyId },
       include: { contracts: true, salaryStructures: true },
     });
+    return employees.map((employee) => this.decryptEmployee(employee));
   }
 
   async findOne(tenantId: string, employeeId: string) {
@@ -56,23 +75,40 @@ export class EmployeesService {
     if (!employee || employee.company.tenantId !== tenantId) {
       throw new NotFoundException('Employee not found');
     }
-    return employee;
+    return this.decryptEmployee(employee);
   }
 
   async update(tenantId: string, employeeId: string, dto: UpdateEmployeeDto) {
     await this.findOne(tenantId, employeeId);
-    return this.prisma.employee.update({
+    const data: Prisma.EmployeeUpdateInput = { ...dto };
+    if (dto.kraPin !== undefined) {
+      data.kraPin = this.encryptionService.encrypt(dto.kraPin);
+    }
+    if (dto.nssfNumber !== undefined) {
+      data.nssfNumber = this.encryptionService.encrypt(dto.nssfNumber);
+    }
+    if (dto.nhifNumber !== undefined) {
+      data.nhifNumber = this.encryptionService.encrypt(dto.nhifNumber);
+    }
+    if (dto.bankAccountNumber !== undefined) {
+      data.bankAccountNumber = this.encryptionService.encrypt(
+        dto.bankAccountNumber,
+      );
+    }
+    const updated = await this.prisma.employee.update({
       where: { id: employeeId },
-      data: dto,
+      data,
     });
+    return this.decryptEmployee(updated);
   }
 
   async remove(tenantId: string, employeeId: string) {
     await this.findOne(tenantId, employeeId);
-    return this.prisma.employee.update({
+    const updated = await this.prisma.employee.update({
       where: { id: employeeId },
       data: { status: 'INACTIVE' },
     });
+    return this.decryptEmployee(updated);
   }
 
   async addContract(

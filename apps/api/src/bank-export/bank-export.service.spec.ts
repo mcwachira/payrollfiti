@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { BankExportService } from './bank-export.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { EncryptionService } from '../common/crypto/encryption.service';
 
 // jest.fn() with no type args resolves to Mock<UnknownFunction>, whose return
 // type is `unknown` rather than `Promise<unknown>` — that makes the conditional
@@ -14,14 +15,23 @@ const asyncMock = (value?: unknown) =>
 describe('BankExportService', () => {
   let service: BankExportService;
   let prisma: any;
+  let encryptionService: any;
 
   beforeEach(async () => {
     prisma = { payrollRun: { findUnique: asyncMock(null) } };
+    // Identity passthrough — round-trip correctness is covered by
+    // encryption.service.spec.ts; here we just need decrypt to be a no-op
+    // so existing fixtures (plaintext values) still assert correctly, plus
+    // one test that the call actually happens.
+    encryptionService = {
+      decrypt: jest.fn((v: string | null) => v),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BankExportService,
         { provide: PrismaService, useValue: prisma },
+        { provide: EncryptionService, useValue: encryptionService },
       ],
     }).compile();
 
@@ -108,6 +118,14 @@ describe('BankExportService', () => {
     await expect(service.generateCsv('tenant-1', 'run-1')).rejects.toThrow(
       NotFoundException,
     );
+  });
+
+  it('decrypts the bank account number before writing it to the CSV', async () => {
+    prisma.payrollRun.findUnique.mockResolvedValueOnce(baseRun);
+
+    await service.generateCsv('tenant-1', 'run-1');
+
+    expect(encryptionService.decrypt).toHaveBeenCalledWith('1234567890');
   });
 
   it('CSV-escapes a value containing a comma', async () => {

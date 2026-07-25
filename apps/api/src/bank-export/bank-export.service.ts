@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EncryptionService } from '../common/crypto/encryption.service';
 
 const CSV_HEADERS = [
   'employee_number',
@@ -20,7 +21,10 @@ function csvEscape(value: string | number): string {
 
 @Injectable()
 export class BankExportService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly encryptionService: EncryptionService,
+  ) {}
 
   async generateCsv(tenantId: string, payrollRunId: string): Promise<string> {
     const run = await this.prisma.payrollRun.findUnique({
@@ -33,13 +37,14 @@ export class BankExportService {
 
     const rows = run.entries.map((entry) => {
       const employee = entry.employee;
-      const hasBankDetails = Boolean(
-        employee.bankAccountNumber && employee.bankName,
+      const bankAccountNumber = this.encryptionService.decrypt(
+        employee.bankAccountNumber,
       );
+      const hasBankDetails = Boolean(bankAccountNumber && employee.bankName);
       return [
         employee.employeeNumber ?? employee.id,
         `${employee.firstName} ${employee.lastName}`,
-        hasBankDetails ? employee.bankAccountNumber! : 'MISSING',
+        hasBankDetails ? bankAccountNumber! : 'MISSING',
         hasBankDetails ? employee.bankName! : 'MISSING',
         employee.bankCode ?? '',
         employee.bankBranchCode ?? '',
