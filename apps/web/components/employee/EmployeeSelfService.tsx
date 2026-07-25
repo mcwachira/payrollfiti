@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Card,
   CardContent,
@@ -30,6 +30,9 @@ import {
   type MyPayrollEntry,
 } from '@/lib/payroll-api';
 import { ApiError } from '@/lib/api-client';
+import { fetchWithOfflineCache } from '@/lib/offline/offline-cache';
+import { useResyncOnReconnect } from '@/lib/offline/use-resync-on-reconnect';
+import { OfflineDataBanner } from '@/components/offline/OfflineDataBanner';
 
 export default function EmployeeSelfService() {
   const { user } = useAuth();
@@ -39,53 +42,80 @@ export default function EmployeeSelfService() {
   const [payslips, setPayslips] = useState<MyPayrollEntry[]>([]);
   const [payslipsError, setPayslipsError] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [offlineCachedAt, setOfflineCachedAt] = useState<number | null>(null);
 
+  // Guards every setState below against firing after unmount — load() also
+  // runs from useResyncOnReconnect, outside the mount effect below, so a
+  // plain effect-cleanup `cancelled` flag scoped to one call wouldn't cover it.
+  const isMountedRef = useRef(true);
   useEffect(() => {
-    let cancelled = false;
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
-    async function load() {
-      setLoading(true);
-      setError(null);
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    setOfflineCachedAt(null);
+    try {
+      if (!user?.employeeId) {
+        throw new Error(
+          'This account is not linked to an employee profile. Please contact HR.',
+        );
+      }
+      const employeeId = user.employeeId;
+
+      const profileResult = await fetchWithOfflineCache(
+        `profile:${employeeId}`,
+        () => getEmployee(employeeId),
+      );
+      if (!isMountedRef.current) return;
+      setEmployee(toEmployeeListItem(profileResult.data) as Employee);
+      if (profileResult.fromCache) setOfflineCachedAt(profileResult.cachedAt ?? Date.now());
+
       try {
-        if (!user?.employeeId) {
-          throw new Error(
-            'This account is not linked to an employee profile. Please contact HR.',
-          );
-        }
-
-        const employeeData = await getEmployee(user.employeeId);
-        if (cancelled) return;
-        setEmployee(toEmployeeListItem(employeeData) as Employee);
-
-        try {
-          const entries = await getMyPayrollEntries();
-          if (!cancelled) setPayslips(entries);
-        } catch (payslipErr) {
-          if (!cancelled) {
-            setPayslipsError(
-              payslipErr instanceof ApiError
-                ? payslipErr.message
-                : 'Failed to load payslips',
-            );
+        const payslipsResult = await fetchWithOfflineCache(
+          `payslips:${employeeId}`,
+          () => getMyPayrollEntries(),
+        );
+        if (isMountedRef.current) {
+          setPayslips(payslipsResult.data);
+          setPayslipsError(null);
+          if (payslipsResult.fromCache) {
+            setOfflineCachedAt((prev) => prev ?? payslipsResult.cachedAt ?? Date.now());
           }
         }
-      } catch (err) {
-        if (!cancelled)
-          setError(
-            err instanceof Error
-              ? err.message
-              : 'Failed to load employee profile',
+      } catch (payslipErr) {
+        if (isMountedRef.current) {
+          setPayslipsError(
+            payslipErr instanceof ApiError
+              ? payslipErr.message
+              : 'Failed to load payslips',
           );
-      } finally {
-        if (!cancelled) setLoading(false);
+        }
       }
+    } catch (err) {
+      if (isMountedRef.current)
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to load employee profile',
+        );
+    } finally {
+      if (isMountedRef.current) setLoading(false);
     }
-
-    void load();
-    return () => {
-      cancelled = true;
-    };
   }, [user?.employeeId]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // "Sync when online": silently refetches and re-caches the moment
+  // connectivity returns, so cached data shown while offline doesn't go
+  // stale any longer than necessary.
+  useResyncOnReconnect(load);
 
   const handleDownloadPayslip = async (entryId: string) => {
     setDownloadingId(entryId);
@@ -133,6 +163,10 @@ export default function EmployeeSelfService() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {offlineCachedAt !== null && (
+        <OfflineDataBanner cachedAt={offlineCachedAt} />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
