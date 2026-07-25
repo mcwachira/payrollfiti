@@ -4,8 +4,10 @@ import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { TerminusModule } from '@nestjs/terminus';
+import { BullModule } from '@nestjs/bullmq';
 import { LoggerModule } from 'nestjs-pino';
 import { redisStore } from 'cache-manager-redis-yet';
+import Redis from 'ioredis';
 
 import configuration, { AppConfig } from './config/configuration';
 import { PrismaModule } from './prisma/prisma.module';
@@ -76,6 +78,16 @@ import { AppController } from './app.controller';
         }
         return { store: await redisStore({ url: redisUrl }) };
       },
+      inject: [ConfigService],
+    }),
+    BullModule.forRootAsync({
+      useFactory: (configService: ConfigService<AppConfig, true>) => ({
+        connection: new Redis(
+          configService.get('redisUrl', { infer: true }) ??
+            'redis://localhost:6379',
+          { maxRetriesPerRequest: null },
+        ),
+      }),
       inject: [ConfigService],
     }),
     TerminusModule,

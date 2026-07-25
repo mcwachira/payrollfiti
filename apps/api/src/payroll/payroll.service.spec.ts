@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { PayrollRunStatus } from '@prisma/client';
+import { PayrollRunStatus, Role } from '@prisma/client';
 import { kenyaV1 } from '@repo/payroll-rules';
 import { PayrollService } from './payroll.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,6 +11,7 @@ import { RulesCacheService } from './rules-cache.service';
 import { AuditService } from '../audit/audit.service';
 import { SalaryComponentsService } from '../salary-components/salary-components.service';
 import { PayslipEmailService } from '../notifications/payslip-email.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 
 // jest.fn() with no type args resolves to Mock<UnknownFunction>, whose return
@@ -56,6 +57,7 @@ describe('PayrollService', () => {
   let auditService: any;
   let salaryComponentsService: any;
   let payslipEmailService: any;
+  let notificationsService: any;
   let webhooksService: any;
 
   beforeEach(async () => {
@@ -74,6 +76,9 @@ describe('PayrollService', () => {
     };
     payslipEmailService = {
       sendPayslipEmailsForRun: asyncMock(undefined),
+    };
+    notificationsService = {
+      dispatchForRoles: asyncMock(undefined),
     };
     webhooksService = {
       dispatch: asyncMock(undefined),
@@ -101,6 +106,7 @@ describe('PayrollService', () => {
           useValue: salaryComponentsService,
         },
         { provide: PayslipEmailService, useValue: payslipEmailService },
+        { provide: NotificationsService, useValue: notificationsService },
         { provide: WebhooksService, useValue: webhooksService },
       ],
     }).compile();
@@ -149,6 +155,15 @@ describe('PayrollService', () => {
     expect(payslipEmailService.sendPayslipEmailsForRun).toHaveBeenCalledWith(
       'tenant-1',
       'run-1',
+    );
+    expect(notificationsService.dispatchForRoles).toHaveBeenCalledWith(
+      'tenant-1',
+      [Role.ADMIN, Role.HR],
+      'PAYROLL_RUN_COMPLETED',
+      expect.any(String),
+      expect.objectContaining({
+        metadata: expect.objectContaining({ runId: 'run-1' }),
+      }),
     );
   });
 
@@ -213,6 +228,7 @@ describe('PayrollService', () => {
           useValue: salaryComponentsService,
         },
         { provide: PayslipEmailService, useValue: payslipEmailService },
+        { provide: NotificationsService, useValue: notificationsService },
         { provide: WebhooksService, useValue: webhooksService },
       ],
     }).compile();

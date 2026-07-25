@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
+import { getQueueToken } from '@nestjs/bullmq';
 import { Role } from '@prisma/client';
 import { NotificationsService } from './notifications.service';
+import { NotificationChannel } from './notification-channel.enum';
+import { NOTIFICATIONS_QUEUE, NOTIFICATION_DELIVER_JOB } from './notifications.queue';
 import { PrismaService } from '../prisma/prisma.service';
 
 const asyncMock = (value?: unknown) =>
@@ -11,6 +14,7 @@ const asyncMock = (value?: unknown) =>
 describe('NotificationsService', () => {
   let service: NotificationsService;
   let prisma: any;
+  let queue: any;
 
   const notification = {
     id: 'notif-1',
@@ -32,11 +36,13 @@ describe('NotificationsService', () => {
       },
       user: { findMany: asyncMock([{ id: 'user-1' }, { id: 'user-2' }]) },
     };
+    queue = { add: asyncMock(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotificationsService,
         { provide: PrismaService, useValue: prisma },
+        { provide: getQueueToken(NOTIFICATIONS_QUEUE), useValue: queue },
       ],
     }).compile();
 
@@ -124,6 +130,64 @@ describe('NotificationsService', () => {
         where: { tenantId: 'tenant-1', userId: 'user-1', read: false },
         data: { read: true },
       });
+    });
+  });
+
+  describe('dispatch', () => {
+    it('writes the in-app row and enqueues an EMAIL delivery job by default', async () => {
+      await service.dispatch(
+        'tenant-1',
+        'user-1',
+        'PAYROLL_RUN_COMPLETED',
+        'msg',
+      );
+
+      expect(prisma.notification.create).toHaveBeenCalledTimes(1);
+      expect(queue.add).toHaveBeenCalledWith(NOTIFICATION_DELIVER_JOB, {
+        tenantId: 'tenant-1',
+        userId: 'user-1',
+        type: 'PAYROLL_RUN_COMPLETED',
+        message: 'msg',
+        metadata: undefined,
+        channels: [NotificationChannel.EMAIL],
+      });
+    });
+
+    it('never throws even when enqueueing fails', async () => {
+      queue.add.mockRejectedValueOnce(new Error('redis down'));
+
+      await expect(
+        service.dispatch('tenant-1', 'user-1', 'PAYROLL_RUN_COMPLETED', 'msg'),
+      ).resolves.toBeUndefined();
+    });
+
+    it('honors explicit channels and metadata', async () => {
+      await service.dispatch('tenant-1', 'user-1', 'PAYROLL_RUN_COMPLETED', 'msg', {
+        metadata: { runId: 'run-1' },
+        channels: [NotificationChannel.SMS, NotificationChannel.PUSH],
+      });
+
+      expect(queue.add).toHaveBeenCalledWith(
+        NOTIFICATION_DELIVER_JOB,
+        expect.objectContaining({
+          metadata: { runId: 'run-1' },
+          channels: [NotificationChannel.SMS, NotificationChannel.PUSH],
+        }),
+      );
+    });
+  });
+
+  describe('dispatchForRoles', () => {
+    it('creates in-app rows and enqueues delivery for every active user matching the given roles', async () => {
+      await service.dispatchForRoles(
+        'tenant-1',
+        [Role.ADMIN, Role.HR],
+        'PAYROLL_RUN_COMPLETED',
+        'msg',
+      );
+
+      expect(prisma.notification.create).toHaveBeenCalledTimes(2);
+      expect(queue.add).toHaveBeenCalledTimes(2);
     });
   });
 });

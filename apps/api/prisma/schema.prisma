@@ -134,6 +134,7 @@ model User {
   role             Role      @default(EMPLOYEE)
   isActive         Boolean   @default(true)
   refreshTokenHash String?
+  phone            String?   // E.164 format; used only as an SMS delivery target (see SmsProvider)
   employeeId       String?   @unique
   employee         Employee? @relation(fields: [employeeId], references: [id])
   auditLogs        AuditLog[]

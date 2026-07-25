@@ -9,6 +9,7 @@ import {
   PayrollCorrection,
   PayrollRunStatus,
   Prisma,
+  Role,
 } from '@prisma/client';
 import {
   PayrollCalculationInput,
@@ -24,6 +25,7 @@ import { EmployeesService } from '../employees/employees.service';
 import { AuditService } from '../audit/audit.service';
 import { SalaryComponentsService } from '../salary-components/salary-components.service';
 import { PayslipEmailService } from '../notifications/payslip-email.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { RulesCacheService } from './rules-cache.service';
 import { RunPayrollDto } from './dto/run-payroll.dto';
@@ -58,6 +60,7 @@ export class PayrollService {
     private readonly auditService: AuditService,
     private readonly salaryComponentsService: SalaryComponentsService,
     private readonly payslipEmailService: PayslipEmailService,
+    private readonly notificationsService: NotificationsService,
     private readonly webhooksService: WebhooksService,
   ) {}
 
@@ -260,6 +263,16 @@ export class PayrollService {
     // email payslips must never fail the HTTP response for a run that has
     // already been committed.
     await this.payslipEmailService.sendPayslipEmailsForRun(tenantId, run.id);
+
+    // Best-effort notification for a run that has already been committed —
+    // dispatchForRoles never throws (see NotificationsService).
+    await this.notificationsService.dispatchForRoles(
+      tenantId,
+      [Role.ADMIN, Role.HR],
+      'PAYROLL_RUN_COMPLETED',
+      `Payroll run for ${run.period} has completed. Net pay total: ${totals.netPay} ${run.currency}.`,
+      { metadata: { runId: run.id, companyId: run.companyId, period: run.period } },
+    );
 
     // Best-effort webhook dispatch for a run that has already been
     // committed — a delivery failure must never fail the HTTP response.
