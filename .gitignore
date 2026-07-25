@@ -63,3 +63,9 @@ pnpm-debug.log*
 
 # Generated payslip PDFs (runtime output, not source)
 apps/api/storage/
+
+# Serwist-generated service worker build output (see apps/web/next.config.js)
+apps/web/public/sw.js
+apps/web/public/sw.js.map
+apps/web/public/swe-worker-*.js
+apps/web/public/swe-worker-*.js.map
