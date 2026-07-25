@@ -7,6 +7,7 @@ import { EmployeesModule } from '../employees/employees.module';
 import { SalaryComponentsModule } from '../salary-components/salary-components.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
+import { LoansModule } from '../loans/loans.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { WebhooksModule } from '../webhooks/webhooks.module';
     SalaryComponentsModule,
     NotificationsModule,
     WebhooksModule,
+    LoansModule,
   ],
   controllers: [PayrollController],
   providers: [PayrollService, RulesCacheService],

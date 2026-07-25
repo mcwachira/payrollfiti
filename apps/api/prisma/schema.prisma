@@ -72,6 +72,19 @@ enum AttendanceStatus {
   LEAVE
 }
 
+enum LoanStatus {
+  PENDING
+  REJECTED
+  ACTIVE
+  PAID_OFF
+}
+
+enum LoanRepaymentStatus {
+  PENDING
+  PAID
+  SKIPPED
+}
+
 // Tenants are the top-level SaaS customer boundary; every row that matters
 // for isolation carries a tenantId so a Prisma middleware can scope queries.
 model Tenant {
@@ -92,6 +105,7 @@ model Tenant {
   webhookEndpoints WebhookEndpoint[]
   salaryComponents SalaryComponent[]
   leaveTypes      LeaveType[]
+  loans           Loan[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 }
@@ -143,6 +157,8 @@ model User {
   approvedLeaveRequests     LeaveRequest[]
   recordedAttendanceRecords AttendanceRecord[]
   uploadedDocuments         Document[]
+  loansRequested            Loan[]             @relation("LoanRequestedBy")
+  loansApproved             Loan[]             @relation("LoanApprovedBy")
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -176,6 +192,7 @@ model Employee {
   leaveBalances     LeaveBalance[]
   leaveRequests     LeaveRequest[]
   attendanceRecords AttendanceRecord[]
+  loans             Loan[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -384,6 +401,7 @@ model PayrollEntry {
   payslip              Payslip?
   correctionsAsOriginal PayrollCorrection[] @relation("OriginalEntry")
   correctionAsCorrected PayrollCorrection?  @relation("CorrectedEntry")
+  loanRepayments        LoanRepayment[]
   createdAt            DateTime   @default(now())
 
   @@index([payrollRunId])
@@ -580,4 +598,60 @@ model WebhookDeliveryLog {
   createdAt         DateTime        @default(now())
 
   @@index([webhookEndpointId, createdAt])
+}
+
+// An employee loan/salary advance. `installmentAmount` and the
+// LoanRepayment schedule are only generated once the loan is APPROVED
+// (see LoansService.decide) — a REJECTED loan never ties up future
+// payroll periods.
+model Loan {
+  id                String          @id @default(uuid())
+  tenantId          String
+  tenant            Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  employeeId        String
+  employee          Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  principal         Float
+  currency          String
+  installments      Int
+  installmentAmount Float?
+  startPeriod       String          // "YYYY-MM" — first payroll period the deduction applies from, once approved
+  reason            String?
+  status            LoanStatus      @default(PENDING)
+  requestedById     String?
+  requestedBy       User?           @relation("LoanRequestedBy", fields: [requestedById], references: [id])
+  approvedById      String?
+  approvedBy        User?           @relation("LoanApprovedBy", fields: [approvedById], references: [id])
+  decidedAt         DateTime?
+  closedAt          DateTime?
+  repayments        LoanRepayment[]
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([tenantId])
+  @@index([employeeId])
+  @@index([employeeId, status])
+}
+
+// One row per scheduled installment. `payrollEntryId` is set only once the
+// installment is actually deducted through a payroll run (see
+// PayrollService.executeRun / LoansService.resolvePayrollDeductions) — an
+// early payoff instead marks remaining rows SKIPPED without ever setting it.
+model LoanRepayment {
+  id             String              @id @default(uuid())
+  loanId         String
+  loan           Loan                @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  installmentNo  Int
+  period         String
+  amountDue      Float
+  amountPaid     Float               @default(0)
+  status         LoanRepaymentStatus @default(PENDING)
+  payrollEntryId String?
+  payrollEntry   PayrollEntry?       @relation(fields: [payrollEntryId], references: [id])
+  paidAt         DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@unique([loanId, installmentNo])
+  @@index([loanId])
+  @@index([period, status])
 }

@@ -34,6 +34,7 @@ import { DocumentsModule } from './documents/documents.module';
 import { LeaveModule } from './leave/leave.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { LoansModule } from './loans/loans.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
@@ -114,6 +115,7 @@ import { AppController } from './app.controller';
     LeaveModule,
     AttendanceModule,
     AnalyticsModule,
+    LoansModule,
   ],
   controllers: [AppController],
   providers: [

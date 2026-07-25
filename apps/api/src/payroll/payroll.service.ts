@@ -27,6 +27,7 @@ import { SalaryComponentsService } from '../salary-components/salary-components.
 import { PayslipEmailService } from '../notifications/payslip-email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
+import { LoansService, DueLoanRepayment } from '../loans/loans.service';
 import { RulesCacheService } from './rules-cache.service';
 import { RunPayrollDto } from './dto/run-payroll.dto';
 import { RunOffCyclePayrollDto } from './dto/run-off-cycle-payroll.dto';
@@ -35,6 +36,7 @@ import { CreateCorrectionDto } from './dto/create-correction.dto';
 interface Computation {
   employee: Employee;
   result: PayrollCalculationResult;
+  loanRepayments: DueLoanRepayment[];
 }
 
 interface ExecuteRunParams {
@@ -62,6 +64,7 @@ export class PayrollService {
     private readonly payslipEmailService: PayslipEmailService,
     private readonly notificationsService: NotificationsService,
     private readonly webhooksService: WebhooksService,
+    private readonly loansService: LoansService,
   ) {}
 
   async runPayroll(tenantId: string, actorId: string, dto: RunPayrollDto) {
@@ -147,12 +150,19 @@ export class PayrollService {
         );
       if (!salaryStructure) continue;
 
-      const { allowances, voluntaryDeductions } =
+      const { allowances, voluntaryDeductions: componentDeductions } =
         await this.salaryComponentsService.resolveStructureEarnings(
           salaryStructure.id,
           salaryStructure.basicSalary,
           salaryStructure.allowances as Record<string, number> | null,
         );
+      const { voluntaryDeductions: loanDeductions, repayments: loanRepayments } =
+        await this.loansService.resolvePayrollDeductions(
+          tenantId,
+          employee.id,
+          period,
+        );
+      const voluntaryDeductions = { ...componentDeductions, ...loanDeductions };
 
       // Only set `deductions` when there's something in it — omitting the
       // key entirely (rather than setting it to `{ voluntary: {} }`) keeps
@@ -177,6 +187,7 @@ export class PayrollService {
       computations.push({
         employee,
         result: runPayrollCalculation(input, ruleSet),
+        loanRepayments,
       });
     }
 
@@ -263,6 +274,22 @@ export class PayrollService {
     // email payslips must never fail the HTTP response for a run that has
     // already been committed.
     await this.payslipEmailService.sendPayslipEmailsForRun(tenantId, run.id);
+
+    // Marks the loan installments folded into this run's voluntaryDeductions
+    // (see resolvePayrollDeductions above) as paid — never throws (see
+    // LoansService.markRepaymentsPaid), for the same reason as the payslip
+    // email above.
+    for (const entry of run.entries) {
+      const computation = computations.find(
+        (c) => c.employee.id === entry.employeeId,
+      );
+      if (computation && computation.loanRepayments.length > 0) {
+        await this.loansService.markRepaymentsPaid(
+          computation.loanRepayments,
+          entry.id,
+        );
+      }
+    }
 
     // Best-effort notification for a run that has already been committed —
     // dispatchForRoles never throws (see NotificationsService).

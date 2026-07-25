@@ -13,6 +13,7 @@ import { SalaryComponentsService } from '../salary-components/salary-components.
 import { PayslipEmailService } from '../notifications/payslip-email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
+import { LoansService } from '../loans/loans.service';
 
 // jest.fn() with no type args resolves to Mock<UnknownFunction>, whose return
 // type is `unknown` rather than `Promise<unknown>` — that makes the conditional
@@ -59,6 +60,7 @@ describe('PayrollService', () => {
   let payslipEmailService: any;
   let notificationsService: any;
   let webhooksService: any;
+  let loansService: any;
 
   beforeEach(async () => {
     prisma = {
@@ -82,6 +84,13 @@ describe('PayrollService', () => {
     };
     webhooksService = {
       dispatch: asyncMock(undefined),
+    };
+    loansService = {
+      resolvePayrollDeductions: asyncMock({
+        voluntaryDeductions: {},
+        repayments: [],
+      }),
+      markRepaymentsPaid: asyncMock(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -108,6 +117,7 @@ describe('PayrollService', () => {
         { provide: PayslipEmailService, useValue: payslipEmailService },
         { provide: NotificationsService, useValue: notificationsService },
         { provide: WebhooksService, useValue: webhooksService },
+        { provide: LoansService, useValue: loansService },
       ],
     }).compile();
 
@@ -164,6 +174,40 @@ describe('PayrollService', () => {
       expect.objectContaining({
         metadata: expect.objectContaining({ runId: 'run-1' }),
       }),
+    );
+  });
+
+  it('folds due loan installments into voluntary deductions and marks them paid against the created entry', async () => {
+    loansService.resolvePayrollDeductions.mockResolvedValueOnce({
+      voluntaryDeductions: { LOAN_REPAYMENT_loan1: 10_000 },
+      repayments: [{ id: 'rep-1', loanId: 'loan-1', amountDue: 10_000 }],
+    });
+    const createdRun = {
+      id: 'run-1',
+      status: PayrollRunStatus.COMPLETED,
+      entries: [{ id: 'entry-1', employeeId: 'emp-1' }],
+    };
+    const txPrisma = {
+      payrollRun: {
+        create: asyncMock({ id: 'run-1' }),
+        findUniqueOrThrow: asyncMock(createdRun),
+      },
+      payrollEntry: { create: asyncMock({}) },
+    };
+    prisma.$transaction.mockImplementation((cb: any) => cb(txPrisma));
+
+    await service.runPayroll('tenant-1', 'user-1', dto);
+
+    expect(loansService.resolvePayrollDeductions).toHaveBeenCalledWith(
+      'tenant-1',
+      'emp-1',
+      '2026-07',
+    );
+    const entryArgs = txPrisma.payrollEntry.create.mock.calls[0][0].data;
+    expect(entryArgs.totalVoluntaryDeductions).toBeGreaterThan(0);
+    expect(loansService.markRepaymentsPaid).toHaveBeenCalledWith(
+      [{ id: 'rep-1', loanId: 'loan-1', amountDue: 10_000 }],
+      'entry-1',
     );
   });
 
@@ -230,6 +274,7 @@ describe('PayrollService', () => {
         { provide: PayslipEmailService, useValue: payslipEmailService },
         { provide: NotificationsService, useValue: notificationsService },
         { provide: WebhooksService, useValue: webhooksService },
+        { provide: LoansService, useValue: loansService },
       ],
     }).compile();
     const serviceWithoutSalary = module.get(PayrollService);
