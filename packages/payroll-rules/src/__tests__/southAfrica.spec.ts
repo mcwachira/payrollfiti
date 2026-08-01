@@ -32,8 +32,10 @@ describe('South Africa payroll rules (basic support)', () => {
         employerAmount: 300,
       }),
     ]);
-    expect(result.tax.netTax).toBeCloseTo(4_737.03, 1);
-    expect(result.netPay).toBeCloseTo(25_085.85, 1);
+    // PAYE is computed on gross pay, not gross-minus-UIF: UIF contributions
+    // are not tax-deductible under SARS rules (unlike retirement funds).
+    expect(result.tax.netTax).toBeCloseTo(4_783.08, 1);
+    expect(result.netPay).toBeCloseTo(25_039.8, 1);
   });
 
   it('caps UIF contribution at the monthly remuneration ceiling for high earners', () => {

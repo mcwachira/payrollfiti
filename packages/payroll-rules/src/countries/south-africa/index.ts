@@ -66,10 +66,10 @@ export const southAfricaV1: CountryRuleSet = {
   calculateStatutoryDeductions({ grossPay }) {
     return [calculateUif(grossPay), calculateSdl(grossPay)];
   },
-  calculateTax({ grossPay, statutoryDeductions }) {
-    const uif =
-      statutoryDeductions.find((d) => d.code === 'UIF')?.employeeAmount ?? 0;
-    return calculatePaye(grossPay - uif);
+  calculateTax({ grossPay }) {
+    // UIF is not a tax-deductible contribution under SARS rules (unlike
+    // retirement fund contributions), so PAYE is computed on gross pay.
+    return calculatePaye(grossPay);
   },
   validate,
 };
