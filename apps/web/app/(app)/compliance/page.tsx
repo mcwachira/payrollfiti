@@ -271,7 +271,7 @@ function StatutoryRemittance() {
 
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-2xl font-extrabold">
             Statutory Remittance & Compliance
           </h1>
           <p className="text-muted-foreground">
@@ -279,11 +279,26 @@ function StatutoryRemittance() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            onClick={() =>
+              toast('Data import', {
+                description:
+                  'Bulk data import is not available in this demo environment yet.',
+              })
+            }
+          >
             <Upload className="mr-2 h-4 w-4" />
             Import Data
           </Button>
-          <Button>
+          <Button
+            disabled={isLoading}
+            onClick={() => {
+              void handleGenerateFile('1', 'PAYE');
+              void handleGenerateFile('2', 'NSSF');
+              void handleGenerateFile('3', 'NHIF');
+            }}
+          >
             <FileText className="mr-2 h-4 w-4" />
             Generate All Files
           </Button>
@@ -308,7 +323,7 @@ function StatutoryRemittance() {
               .map((alert) => (
                 <div
                   key={alert.id}
-                  className={`flex items-center justify-between p-3 border-l-4 bg-white rounded ${getPriorityColor(alert.priority)}`}
+                  className={`flex items-center justify-between p-3 border-l-4 bg-card rounded ${getPriorityColor(alert.priority)}`}
                 >
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4 text-yellow-600" />
@@ -342,7 +357,9 @@ function StatutoryRemittance() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingReturns.length}</div>
+            <div className="text-2xl font-extrabold">
+              {pendingReturns.length}
+            </div>
             <p className="text-xs text-muted-foreground">Require submission</p>
           </CardContent>
         </Card>
@@ -353,7 +370,7 @@ function StatutoryRemittance() {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{upcomingDue.length}</div>
+            <div className="text-2xl font-extrabold">{upcomingDue.length}</div>
             <p className="text-xs text-muted-foreground">Upcoming deadlines</p>
           </CardContent>
         </Card>
@@ -366,7 +383,7 @@ function StatutoryRemittance() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-extrabold">
               {formatCurrency(
                 pendingReturns.reduce((sum, ret) => sum + ret.total_amount, 0),
               )}
@@ -383,7 +400,7 @@ function StatutoryRemittance() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">95%</div>
+            <div className="text-2xl font-extrabold text-green-600">95%</div>
             <p className="text-xs text-muted-foreground">On-time submissions</p>
           </CardContent>
         </Card>
@@ -441,6 +458,7 @@ function StatutoryRemittance() {
                               handleGenerateFile(returnItem.id, returnItem.type)
                             }
                             disabled={isLoading}
+                            aria-label={`Download ${returnItem.type} return for ${returnItem.period}`}
                           >
                             <Download className="h-4 w-4" />
                           </Button>
@@ -517,11 +535,19 @@ function StatutoryRemittance() {
                   <FileText className="mr-2 h-4 w-4" />
                   Generate P9A Form
                 </Button>
-                <Button variant="outline">
+                <Button
+                  variant="outline"
+                  disabled={isLoading}
+                  onClick={() => handleGenerateFile('1', 'PAYE Excel Template')}
+                >
                   <Download className="mr-2 h-4 w-4" />
                   Download Excel Template
                 </Button>
-                <Button variant="outline">
+                <Button
+                  variant="outline"
+                  disabled={isLoading}
+                  onClick={() => handleSubmitReturn('1', 'PAYE')}
+                >
                   <Send className="mr-2 h-4 w-4" />
                   Submit to iTax
                 </Button>
@@ -558,11 +584,20 @@ function StatutoryRemittance() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm">
+                  <Button
+                    size="sm"
+                    disabled={isLoading}
+                    onClick={() => handleGenerateFile('2', 'NSSF')}
+                  >
                     <FileText className="mr-2 h-4 w-4" />
                     Generate File
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isLoading}
+                    onClick={() => handleGenerateFile('2', 'NSSF')}
+                  >
                     <Download className="mr-2 h-4 w-4" />
                     Download
                   </Button>
@@ -598,11 +633,25 @@ function StatutoryRemittance() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      toast('NHIF Receipt', {
+                        description:
+                          'Reference NHIF-2024-12-001 — submitted 28 Dec 2024.',
+                      })
+                    }
+                  >
                     <FileText className="mr-2 h-4 w-4" />
                     View Receipt
                   </Button>
-                  <Button size="sm" variant="outline">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={isLoading}
+                    onClick={() => handleGenerateFile('3', 'NHIF')}
+                  >
                     <Download className="mr-2 h-4 w-4" />
                     Download
                   </Button>
@@ -651,7 +700,9 @@ function StatutoryRemittance() {
                       <CheckCircle className="h-4 w-4 text-green-600" />
                       <span className="font-medium">Compliance Rate</span>
                     </div>
-                    <div className="text-2xl font-bold text-green-600">95%</div>
+                    <div className="text-2xl font-extrabold text-green-600">
+                      95%
+                    </div>
                     <div className="text-sm text-muted-foreground">
                       On-time submissions
                     </div>
