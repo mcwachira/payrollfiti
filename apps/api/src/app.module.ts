@@ -17,6 +17,7 @@ import { AuthModule } from './auth/auth.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { EmployeesModule } from './employees/employees.module';
 import { PayrollModule } from './payroll/payroll.module';
+import { PayrollCalculatorModule } from './payroll-calculator/payroll-calculator.module';
 import { PayslipsModule } from './payslips/payslips.module';
 import { BillingModule } from './billing/billing.module';
 import { BankExportModule } from './bank-export/bank-export.module';
@@ -98,6 +99,7 @@ import { AppController } from './app.controller';
     TenantsModule,
     EmployeesModule,
     PayrollModule,
+    PayrollCalculatorModule,
     PayslipsModule,
     BillingModule,
     BankExportModule,
