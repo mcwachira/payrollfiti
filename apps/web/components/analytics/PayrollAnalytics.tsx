@@ -42,6 +42,8 @@ import {
 } from '@/lib/employees-api';
 import { listPayrollRuns } from '@/lib/payroll-api';
 import { ApiError } from '@/lib/api-client';
+import { CardsSkeleton } from '@/components/ui/loading-skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -148,8 +150,12 @@ const PayrollAnalytics = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="space-y-6">
+        <CardsSkeleton count={4} />
+        <div className="grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-72 w-full" />
+          <Skeleton className="h-72 w-full" />
+        </div>
       </div>
     );
   }
@@ -158,7 +164,9 @@ const PayrollAnalytics = () => {
     return (
       <Card>
         <CardContent className="p-6">
-          <p className="text-red-600">Error loading analytics: {error}</p>
+          <p className="text-red-600 dark:text-red-400">
+            Error loading analytics: {error}
+          </p>
         </CardContent>
       </Card>
     );
@@ -178,7 +186,7 @@ const PayrollAnalytics = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-extrabold">
               {currentSummary?.employeeCount ?? 0}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -195,7 +203,7 @@ const PayrollAnalytics = () => {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-extrabold">
               {formatCurrency(currentSummary?.totalGross ?? 0, currency)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -212,7 +220,7 @@ const PayrollAnalytics = () => {
             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-extrabold">
               {formatCurrency(currentSummary?.totalDeductions ?? 0, currency)}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -227,7 +235,7 @@ const PayrollAnalytics = () => {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-extrabold">
               {formatCurrency(currentSummary?.totalNet ?? 0, currency)}
             </div>
             <p className="text-xs text-muted-foreground">

@@ -33,6 +33,7 @@ import { ApiError } from '@/lib/api-client';
 import { fetchWithOfflineCache } from '@/lib/offline/offline-cache';
 import { useResyncOnReconnect } from '@/lib/offline/use-resync-on-reconnect';
 import { OfflineDataBanner } from '@/components/offline/OfflineDataBanner';
+import { PageSkeleton } from '@/components/ui/loading-skeleton';
 
 export default function EmployeeSelfService() {
   const { user } = useAuth();
@@ -73,7 +74,8 @@ export default function EmployeeSelfService() {
       );
       if (!isMountedRef.current) return;
       setEmployee(toEmployeeListItem(profileResult.data) as Employee);
-      if (profileResult.fromCache) setOfflineCachedAt(profileResult.cachedAt ?? Date.now());
+      if (profileResult.fromCache)
+        setOfflineCachedAt(profileResult.cachedAt ?? Date.now());
 
       try {
         const payslipsResult = await fetchWithOfflineCache(
@@ -84,7 +86,9 @@ export default function EmployeeSelfService() {
           setPayslips(payslipsResult.data);
           setPayslipsError(null);
           if (payslipsResult.fromCache) {
-            setOfflineCachedAt((prev) => prev ?? payslipsResult.cachedAt ?? Date.now());
+            setOfflineCachedAt(
+              (prev) => prev ?? payslipsResult.cachedAt ?? Date.now(),
+            );
           }
         }
       } catch (payslipErr) {
@@ -131,18 +135,14 @@ export default function EmployeeSelfService() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageSkeleton cards={4} rows={4} />;
   }
 
   if (error) {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center gap-2 text-red-600">
+          <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
             <AlertTriangle className="h-5 w-5" />
             <p>{error}</p>
           </div>
@@ -170,7 +170,7 @@ export default function EmployeeSelfService() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Employee Portal</h1>
+          <h1 className="text-2xl font-extrabold">Employee Portal</h1>
           <p className="text-muted-foreground">
             Welcome, {employee.first_name} {employee.last_name}
           </p>
@@ -265,7 +265,9 @@ export default function EmployeeSelfService() {
             </CardHeader>
             <CardContent>
               {payslipsError ? (
-                <p className="text-red-600">{payslipsError}</p>
+                <p className="text-red-600 dark:text-red-400">
+                  {payslipsError}
+                </p>
               ) : payslips.length > 0 ? (
                 <div className="space-y-2">
                   {payslips.map((payslip) => (

@@ -10,6 +10,7 @@ import { RoleGuard } from '@/components/RoleGuard';
 import { useBranding } from '@/contexts/BrandingContext';
 import { getBranding, updateBranding } from '@/lib/branding-api';
 import { ApiError } from '@/lib/api-client';
+import { FormSkeleton } from '@/components/ui/loading-skeleton';
 
 function SettingsPageContent() {
   const { refreshBranding } = useBranding();
@@ -76,8 +77,21 @@ function SettingsPageContent() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-extrabold">Settings</h1>
+          <p className="text-muted-foreground">
+            Customize your organization&apos;s branding
+          </p>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Branding</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FormSkeleton fields={4} />
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -86,7 +100,9 @@ function SettingsPageContent() {
     return (
       <Card>
         <CardContent className="p-6">
-          <p className="text-red-600">Error loading settings: {error}</p>
+          <p className="text-red-600 dark:text-red-400">
+            Error loading settings: {error}
+          </p>
         </CardContent>
       </Card>
     );
@@ -95,7 +111,7 @@ function SettingsPageContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
+        <h1 className="text-2xl font-extrabold">Settings</h1>
         <p className="text-muted-foreground">
           Customize your organization&apos;s branding
         </p>

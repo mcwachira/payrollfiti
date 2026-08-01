@@ -34,6 +34,8 @@ import {
   type Invoice,
 } from '@/lib/billing-api';
 import { ApiError } from '@/lib/api-client';
+import { getInvoiceStatusColor } from '@/lib/status-styles';
+import { PageSkeleton } from '@/components/ui/loading-skeleton';
 
 function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat('en-KE', {
@@ -41,20 +43,6 @@ function formatCurrency(amount: number, currency: string) {
     currency,
     minimumFractionDigits: 2,
   }).format(amount);
-}
-
-function invoiceStatusColor(status: Invoice['status']) {
-  switch (status) {
-    case 'PAID':
-      return 'bg-green-100 text-green-800';
-    case 'OPEN':
-      return 'bg-blue-100 text-blue-800';
-    case 'VOID':
-    case 'UNCOLLECTIBLE':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
 }
 
 function BillingPageContent() {
@@ -142,18 +130,16 @@ function BillingPageContent() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+    return <PageSkeleton cards={3} rows={4} />;
   }
 
   if (error) {
     return (
       <Card>
         <CardContent className="p-6">
-          <p className="text-red-600">Error loading billing data: {error}</p>
+          <p className="text-red-600 dark:text-red-400">
+            Error loading billing data: {error}
+          </p>
         </CardContent>
       </Card>
     );
@@ -162,7 +148,7 @@ function BillingPageContent() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Billing</h1>
+        <h1 className="text-2xl font-extrabold">Billing</h1>
         <p className="text-muted-foreground">
           Manage your subscription plan and invoices
         </p>
@@ -230,7 +216,7 @@ function BillingPageContent() {
                     <CardTitle className="text-base">{plan.name}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <p className="text-2xl font-bold">
+                    <p className="text-2xl font-extrabold">
                       {formatCurrency(plan.pricePerEmployee, plan.currency)}
                       <span className="text-sm font-normal text-muted-foreground">
                         {' '}
@@ -289,7 +275,7 @@ function BillingPageContent() {
                       {formatCurrency(invoice.amount, invoice.currency)}
                     </TableCell>
                     <TableCell>
-                      <Badge className={invoiceStatusColor(invoice.status)}>
+                      <Badge className={getInvoiceStatusColor(invoice.status)}>
                         {invoice.status}
                       </Badge>
                     </TableCell>
