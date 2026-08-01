@@ -51,7 +51,7 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">{branding.appName}</CardTitle>
@@ -106,7 +106,11 @@ export default function SignupPage() {
                 onChange={(e) => setAdminPassword(e.target.value)}
               />
             </div>
-            {error ? <p className="text-sm text-red-600">{error}</p> : null}
+            {error ? (
+              <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+                {error}
+              </p>
+            ) : null}
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? 'Creating workspace…' : 'Create workspace'}
             </Button>
