@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bullmq';
 import { NotificationsService } from './notifications.service';
@@ -9,10 +10,12 @@ import { PayslipEmailService } from './payslip-email.service';
 import { PayrollReminderService } from './payroll-reminder.service';
 import { PayslipsModule } from '../payslips/payslips.module';
 import { NOTIFICATIONS_QUEUE } from './notifications.queue';
-import { SMS_PROVIDER } from './sms-provider.interface';
+import { SMS_PROVIDER, SmsProvider } from './sms-provider.interface';
 import { NoopSmsProvider } from './providers/noop-sms.provider';
+import { AfricasTalkingSmsProvider } from './providers/africas-talking-sms.provider';
 import { PUSH_PROVIDER } from './push-provider.interface';
 import { NoopPushProvider } from './providers/noop-push.provider';
+import { AppConfig } from '../config/configuration';
 
 @Module({
   imports: [
@@ -27,7 +30,20 @@ import { NoopPushProvider } from './providers/noop-push.provider';
     PayslipEmailService,
     PayrollReminderService,
     NotificationsProcessor,
-    { provide: SMS_PROVIDER, useClass: NoopSmsProvider },
+    NoopSmsProvider,
+    AfricasTalkingSmsProvider,
+    {
+      provide: SMS_PROVIDER,
+      useFactory: (
+        configService: ConfigService<AppConfig, true>,
+        africasTalking: AfricasTalkingSmsProvider,
+        noop: NoopSmsProvider,
+      ): SmsProvider => {
+        const config = configService.get('africasTalking', { infer: true });
+        return config.apiKey && config.username ? africasTalking : noop;
+      },
+      inject: [ConfigService, AfricasTalkingSmsProvider, NoopSmsProvider],
+    },
     { provide: PUSH_PROVIDER, useClass: NoopPushProvider },
   ],
   exports: [NotificationsService, MailService, PayslipEmailService],

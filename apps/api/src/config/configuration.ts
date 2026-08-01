@@ -35,6 +35,11 @@ export interface AppConfig {
     pass?: string;
     from: string;
   };
+  africasTalking: {
+    apiKey?: string;
+    username?: string;
+    senderId?: string;
+  };
 }
 
 export default (): AppConfig => ({
@@ -75,5 +80,10 @@ export default (): AppConfig => ({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
     from: process.env.SMTP_FROM ?? 'PayrollFiti <noreply@payrollfiti.com>',
+  },
+  africasTalking: {
+    apiKey: process.env.AFRICAS_TALKING_API_KEY,
+    username: process.env.AFRICAS_TALKING_USERNAME,
+    senderId: process.env.AFRICAS_TALKING_SENDER_ID,
   },
 });

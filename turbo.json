@@ -30,7 +30,10 @@
     "SMTP_PORT",
     "SMTP_USER",
     "SMTP_PASS",
-    "SMTP_FROM"
+    "SMTP_FROM",
+    "AFRICAS_TALKING_API_KEY",
+    "AFRICAS_TALKING_USERNAME",
+    "AFRICAS_TALKING_SENDER_ID"
   ],
   "ui": "tui",
   "tasks": {
