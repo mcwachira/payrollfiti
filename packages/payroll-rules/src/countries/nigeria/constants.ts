@@ -18,3 +18,6 @@ export const CONSOLIDATED_RELIEF_FLAT_RATE = 0.2;
 /** Pension Reform Act — employee contribution rate on gross pay (basic support) */
 export const PENSION_EMPLOYEE_RATE = 0.08;
 export const PENSION_EMPLOYER_RATE = 0.1;
+
+/** National Housing Fund Act — 2.5% of basic salary, employee-funded (no employer match) */
+export const NHF_EMPLOYEE_RATE = 0.025;

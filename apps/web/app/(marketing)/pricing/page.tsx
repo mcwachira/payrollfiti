@@ -70,7 +70,9 @@ const DEDUCTION_TOOLTIPS: Record<string, string> = {
   HOUSING_LEVY:
     'Affordable Housing Levy — 1.5% of gross pay, per the Finance Act 2023.',
   PENSION: 'Mandatory employee pension contribution.',
+  NHF: 'National Housing Fund — 2.5% of basic salary, employee-funded.',
   UIF: 'Unemployment Insurance Fund — mandatory contribution covering unemployment benefits.',
+  SDL: 'Skills Development Levy — 1% of payroll, paid entirely by the employer.',
 };
 
 function AmountRowEditor({
@@ -465,13 +467,19 @@ export default function PricingPage() {
                               </Tooltip>
                             )}
                           </span>
-                          <span className="text-red-600 dark:text-red-400">
-                            -
-                            {formatMoney(
-                              deduction.employeeAmount,
-                              result.currency,
-                            )}
-                          </span>
+                          {deduction.employeeAmount > 0 ? (
+                            <span className="text-red-600 dark:text-red-400">
+                              -
+                              {formatMoney(
+                                deduction.employeeAmount,
+                                result.currency,
+                              )}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs italic">
+                              Employer-paid
+                            </span>
+                          )}
                         </div>
                       ))}
                     </div>

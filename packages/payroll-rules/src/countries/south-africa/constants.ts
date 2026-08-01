@@ -18,3 +18,6 @@ export const ANNUAL_PRIMARY_REBATE = 17_235;
 /** UIF — 1% employee + 1% employer, capped at the remuneration ceiling */
 export const UIF_RATE = 0.01;
 export const UIF_MONTHLY_CEILING = 17_712;
+
+/** Skills Development Levy — 1% of leviable payroll, employer-only */
+export const SDL_RATE = 0.01;
