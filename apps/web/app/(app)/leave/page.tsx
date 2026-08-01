@@ -68,7 +68,7 @@ const LeaveManagementPage = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-extrabold">
               {leaveStats?.totalApplications || 0}
             </div>
             <p className="text-xs text-muted-foreground">This year</p>
@@ -83,7 +83,7 @@ const LeaveManagementPage = () => {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-extrabold">
               {leaveStats?.pendingApplications || 0}
             </div>
             <p className="text-xs text-muted-foreground">Awaiting approval</p>
@@ -96,7 +96,7 @@ const LeaveManagementPage = () => {
             <Check className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-extrabold">
               {leaveStats?.approvalRate || 0}%
             </div>
             <p className="text-xs text-muted-foreground">
@@ -113,7 +113,7 @@ const LeaveManagementPage = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-extrabold">
               {leaveStats?.totalLeaveDays || 0}
             </div>
             <p className="text-xs text-muted-foreground">Days approved</p>
