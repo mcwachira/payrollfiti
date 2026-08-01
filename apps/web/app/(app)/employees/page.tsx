@@ -1,63 +1,50 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { EmployeeList } from '@/components/employees/EmployeeList';
-import { listCompanies, listEmployees, toEmployeeListItem } from '@/lib/employees-api';
+import {
+  listCompanies,
+  listEmployees,
+  toEmployeeListItem,
+} from '@/lib/employees-api';
 import { ApiError } from '@/lib/api-client';
+import { PageSkeleton } from '@/components/ui/loading-skeleton';
+
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof ApiError ? error.message : fallback;
+}
 
 const EmployeesPage = () => {
-  const [employees, setEmployees] = useState<ReturnType<typeof toEmployeeListItem>[]>([]);
-  const [companyId, setCompanyId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [reloadToken, setReloadToken] = useState(0);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    let cancelled = false;
+  const companiesQuery = useQuery({
+    queryKey: ['companies'],
+    queryFn: listCompanies,
+  });
+  const companyId = companiesQuery.data?.[0]?.id ?? null;
 
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const companies = await listCompanies();
-        if (companies.length === 0) {
-          if (!cancelled) {
-            setEmployees([]);
-            setCompanyId(null);
-          }
-          return;
-        }
-        const results = await listEmployees(companies[0]!.id);
-        if (!cancelled) {
-          setCompanyId(companies[0]!.id);
-          setEmployees(results.map(toEmployeeListItem));
-        }
-      } catch (err) {
-        if (!cancelled) setError(err instanceof ApiError ? err.message : 'Failed to load employees');
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
+  const employeesQuery = useQuery({
+    queryKey: ['employees', companyId],
+    queryFn: () => listEmployees(companyId!),
+    enabled: !!companyId,
+  });
 
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [reloadToken]);
+  const isLoading =
+    companiesQuery.isPending || (!!companyId && employeesQuery.isPending);
+  const error = companiesQuery.error ?? employeesQuery.error;
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageSkeleton cards={4} rows={6} />;
   }
 
   if (error) {
     return (
       <Card>
         <CardContent className="p-6">
-          <p className="text-red-600">Error loading employees: {error}</p>
+          <p className="text-red-600 dark:text-red-400">
+            Error loading employees:{' '}
+            {errorMessage(error, 'Failed to load employees')}
+          </p>
         </CardContent>
       </Card>
     );
@@ -68,19 +55,24 @@ const EmployeesPage = () => {
       <Card>
         <CardContent className="p-6">
           <p className="text-muted-foreground">
-            No company set up for this tenant yet. Create a company under Settings before adding employees.
+            No company set up for this tenant yet. Create a company under
+            Settings before adding employees.
           </p>
         </CardContent>
       </Card>
     );
   }
 
+  const employees = (employeesQuery.data ?? []).map(toEmployeeListItem);
+
   return (
     <div className="container mx-auto p-6">
       <EmployeeList
         employees={employees}
         companyId={companyId}
-        onEmployeeSaved={() => setReloadToken((token) => token + 1)}
+        onEmployeeSaved={() =>
+          queryClient.invalidateQueries({ queryKey: ['employees', companyId] })
+        }
       />
     </div>
   );

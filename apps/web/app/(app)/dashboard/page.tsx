@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Card,
   CardContent,
@@ -18,19 +18,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Users, DollarSign, Calendar, TrendingUp } from 'lucide-react';
-import {
-  listCompanies,
-  listEmployees,
-  type Company,
-  type Employee,
-} from '@/lib/employees-api';
-import {
-  listPayrollRuns,
-  getPayrollRun,
-  type PayrollRun,
-  type PayrollRunDetail,
-} from '@/lib/payroll-api';
+import { listCompanies, listEmployees } from '@/lib/employees-api';
+import { listPayrollRuns, getPayrollRun } from '@/lib/payroll-api';
 import { ApiError } from '@/lib/api-client';
+import { getPayrollStatusColor } from '@/lib/status-styles';
+import { PageSkeleton } from '@/components/ui/loading-skeleton';
 
 function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat('en-KE', {
@@ -40,93 +32,69 @@ function formatCurrency(amount: number, currency: string) {
   }).format(amount);
 }
 
-function statusColor(status: PayrollRun['status']) {
-  switch (status) {
-    case 'COMPLETED':
-      return 'bg-green-100 text-green-800';
-    case 'PROCESSING':
-      return 'bg-blue-100 text-blue-800';
-    case 'FAILED':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof ApiError ? error.message : fallback;
 }
 
 const Dashboard = () => {
-  const [company, setCompany] = useState<Company | null>(null);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [runs, setRuns] = useState<PayrollRun[]>([]);
-  const [latestRun, setLatestRun] = useState<PayrollRunDetail | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const companiesQuery = useQuery({
+    queryKey: ['companies'],
+    queryFn: listCompanies,
+  });
+  const company = companiesQuery.data?.[0] ?? null;
 
-  useEffect(() => {
-    let cancelled = false;
+  const employeesQuery = useQuery({
+    queryKey: ['employees', company?.id],
+    queryFn: () => listEmployees(company!.id),
+    enabled: !!company,
+  });
 
-    async function load() {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const companies = await listCompanies();
-        if (companies.length === 0) {
-          if (!cancelled) setCompany(null);
-          return;
-        }
-        const primaryCompany = companies[0]!;
-        if (cancelled) return;
-        setCompany(primaryCompany);
+  const runsQuery = useQuery({
+    queryKey: ['payrollRuns', company?.id],
+    queryFn: () => listPayrollRuns(company!.id),
+    enabled: !!company,
+  });
 
-        const [employeeList, runList] = await Promise.all([
-          listEmployees(primaryCompany.id),
-          listPayrollRuns(primaryCompany.id),
-        ]);
-        if (cancelled) return;
-        setEmployees(employeeList);
-        setRuns(runList);
+  const mostRecentCompleted = runsQuery.data?.find(
+    (r) => r.status === 'COMPLETED',
+  );
 
-        const mostRecentCompleted = runList.find(
-          (r) => r.status === 'COMPLETED',
-        );
-        if (mostRecentCompleted) {
-          const detail = await getPayrollRun(mostRecentCompleted.id);
-          if (!cancelled) setLatestRun(detail);
-        }
-      } catch (err) {
-        if (!cancelled)
-          setError(
-            err instanceof ApiError
-              ? err.message
-              : 'Failed to load dashboard data',
-          );
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
+  const latestRunQuery = useQuery({
+    queryKey: ['payrollRun', mostRecentCompleted?.id],
+    queryFn: () => getPayrollRun(mostRecentCompleted!.id),
+    enabled: !!mostRecentCompleted,
+  });
 
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const isLoading =
+    companiesQuery.isPending ||
+    (!!company && (employeesQuery.isPending || runsQuery.isPending));
+
+  const error =
+    companiesQuery.error ??
+    employeesQuery.error ??
+    runsQuery.error ??
+    latestRunQuery.error;
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
+    return <PageSkeleton cards={4} rows={5} />;
   }
 
   if (error) {
     return (
       <Card>
         <CardContent className="p-6">
-          <p className="text-red-600">Error loading dashboard: {error}</p>
+          <p className="text-red-600 dark:text-red-400">
+            Error loading dashboard:{' '}
+            {errorMessage(error, 'Failed to load dashboard data')}
+          </p>
         </CardContent>
       </Card>
     );
   }
+
+  const employees = employeesQuery.data ?? [];
+  const runs = runsQuery.data ?? [];
+  const latestRun = latestRunQuery.data ?? null;
 
   const activeEmployees = employees.filter((e) => e.status === 'ACTIVE');
   const currency = company?.currency ?? 'KES';
@@ -161,8 +129,8 @@ const Dashboard = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">
+        <h1 className="text-2xl font-extrabold text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground">
           Welcome to your payroll management system
         </p>
       </div>
@@ -182,17 +150,17 @@ const Dashboard = () => {
         {stats.map((stat) => (
           <Card key={stat.name} className="h-full">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
                 {stat.name}
               </CardTitle>
-              <stat.icon className="h-4 w-4 text-gray-400" />
+              <stat.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div
                 className={
                   stat.value === 'Coming soon'
                     ? 'text-sm text-muted-foreground italic'
-                    : 'text-2xl font-bold'
+                    : 'text-2xl font-extrabold'
                 }
               >
                 {stat.value}
@@ -221,13 +189,13 @@ const Dashboard = () => {
                 <div key={run.id} className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">{run.period} Payroll</p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       {run.totals
                         ? `${run.totals.employeeCount} employee(s)`
                         : 'Processing'}
                     </p>
                   </div>
-                  <Badge className={statusColor(run.status)}>
+                  <Badge className={getPayrollStatusColor(run.status)}>
                     {run.status}
                   </Badge>
                 </div>

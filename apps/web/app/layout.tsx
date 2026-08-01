@@ -8,6 +8,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { BrandingProvider } from '@/contexts/BrandingContext';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/components/theme-provider';
+import { QueryProvider } from '@/components/query-provider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -41,10 +42,12 @@ export default function RootLayout({ children }: Readonly<PropsWithChildren>) {
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <BrandingProvider>{children}</BrandingProvider>
-          </AuthProvider>
-          <Toaster />
+          <QueryProvider>
+            <AuthProvider>
+              <BrandingProvider>{children}</BrandingProvider>
+            </AuthProvider>
+            <Toaster />
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>
