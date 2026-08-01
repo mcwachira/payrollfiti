@@ -5,6 +5,7 @@ import { LeaveRequestStatus, Role } from '@prisma/client';
 import { LeaveService } from './leave.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { HolidaysService } from '../holidays/holidays.service';
 
 // jest.fn() with no type args resolves to Mock<UnknownFunction>, whose return
 // type is `unknown` rather than `Promise<unknown>` — that makes the conditional
@@ -66,6 +67,9 @@ describe('LeaveService', () => {
         findUnique: asyncMock(null),
         update: asyncMock({}),
       },
+      tenant: {
+        findUniqueOrThrow: asyncMock({ id: 'tenant-1', countryCode: 'KE' }),
+      },
     };
 
     notificationsService = {
@@ -76,6 +80,7 @@ describe('LeaveService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         LeaveService,
+        HolidaysService,
         { provide: PrismaService, useValue: prisma },
         { provide: NotificationsService, useValue: notificationsService },
       ],
@@ -200,6 +205,28 @@ describe('LeaveService', () => {
       await expect(
         service.createLeaveRequest('tenant-1', 'emp-1', dto),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it("excludes the tenant's country public holidays from daysRequested", async () => {
+      prisma.leaveBalance.upsert.mockResolvedValueOnce({
+        accruedDays: 12,
+        usedDays: 0,
+      });
+      // Dec 11-13, 2026 inclusive = 3 calendar days; Dec 12 is Kenya's
+      // Jamhuri Day, so only 2 should count against the balance.
+      const holidayDto = {
+        leaveTypeId: 'lt-annual',
+        startDate: '2026-12-11',
+        endDate: '2026-12-13',
+      };
+
+      await service.createLeaveRequest('tenant-1', 'emp-1', holidayDto);
+
+      expect(prisma.leaveRequest.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ daysRequested: 2 }),
+        }),
+      );
     });
   });
 

@@ -33,6 +33,7 @@ import { AccountingModule } from './accounting/accounting.module';
 import { SalaryComponentsModule } from './salary-components/salary-components.module';
 import { DocumentsModule } from './documents/documents.module';
 import { LeaveModule } from './leave/leave.module';
+import { HolidaysModule } from './holidays/holidays.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { LoansModule } from './loans/loans.module';
@@ -115,6 +116,7 @@ import { AppController } from './app.controller';
     SalaryComponentsModule,
     DocumentsModule,
     LeaveModule,
+    HolidaysModule,
     AttendanceModule,
     AnalyticsModule,
     LoansModule,

@@ -6,6 +6,7 @@ import {
 import { LeaveRequestStatus, Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { HolidaysService } from '../holidays/holidays.service';
 import { CreateLeaveTypeDto } from './dto/create-leave-type.dto';
 import { CreateLeaveRequestDto } from './dto/create-leave-request.dto';
 
@@ -28,6 +29,7 @@ export class LeaveService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly holidaysService: HolidaysService,
   ) {}
 
   async createLeaveType(tenantId: string, dto: CreateLeaveTypeDto) {
@@ -135,9 +137,19 @@ export class LeaveService {
     if (endDate < startDate) {
       throw new BadRequestException('endDate cannot be before startDate');
     }
-    // Calendar days inclusive — simplification: no weekend/public-holiday exclusion.
-    const daysRequested =
+    // Calendar days inclusive, minus public holidays for the tenant's country.
+    // Simplification: weekends are still not excluded.
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+    });
+    const calendarDays =
       Math.round((endDate.getTime() - startDate.getTime()) / MS_PER_DAY) + 1;
+    const holidaysInRange = this.holidaysService.countHolidaysInRange(
+      tenant.countryCode,
+      startDate,
+      endDate,
+    );
+    const daysRequested = Math.max(0, calendarDays - holidaysInRange);
 
     if (leaveType.isPaid) {
       const balance = await this.getOrCreateBalance(
