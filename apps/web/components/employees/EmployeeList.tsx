@@ -44,44 +44,16 @@ import {
   UserPlus,
   Calendar,
   Building,
-  TrendingUp,
 } from 'lucide-react';
 
 import { toast } from 'sonner';
 import { EmployeeForm } from './EmployeeForm';
 import { EmployeeDetails } from './EmployeeDetails';
+import EmployeeDocuments from './EmployeeDocuments';
 import { removeEmployee } from '@/lib/employees-api';
 import { ApiError } from '@/lib/api-client';
+import { getEmployeeStatusColor } from '@/lib/status-styles';
 import type { Employee } from '@/types/types';
-
-// import { EmployeeDocuments } from './EmployeeDocuments';
-
-const employeeStats = [
-  {
-    name: 'Total Employees',
-    value: '134',
-    change: '+2 from last month',
-    icon: Users,
-  },
-  {
-    name: 'New Hires This Month',
-    value: '5',
-    change: '+2 from last month',
-    icon: UserPlus,
-  },
-  {
-    name: 'Average Tenure (Years)',
-    value: '2.8',
-    change: '+1.2% from last year',
-    icon: Calendar,
-  },
-  {
-    name: 'Active Departments',
-    value: '7',
-    change: '7 from last year',
-    icon: Building,
-  },
-];
 
 interface EmployeeListProps {
   employees: Employee[];
@@ -89,7 +61,11 @@ interface EmployeeListProps {
   onEmployeeSaved: () => void;
 }
 
-export const EmployeeList = ({ employees, companyId, onEmployeeSaved }: EmployeeListProps) => {
+export const EmployeeList = ({
+  employees,
+  companyId,
+  onEmployeeSaved,
+}: EmployeeListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null,
@@ -105,7 +81,9 @@ export const EmployeeList = ({ employees, companyId, onEmployeeSaved }: Employee
       toast.success('Employee removed');
       onEmployeeSaved();
     } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : 'Failed to remove employee');
+      toast.error(
+        error instanceof ApiError ? error.message : 'Failed to remove employee',
+      );
     }
   };
 
@@ -126,42 +104,60 @@ export const EmployeeList = ({ employees, companyId, onEmployeeSaved }: Employee
         employee.email?.toLowerCase().includes(searchTerm.toLowerCase()),
     ) || [];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'terminated':
-        return 'bg-red-100 text-red-800';
-      case 'suspended':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'on_leave':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const now = new Date();
+  const newHiresThisMonth = employees.filter((employee) => {
+    if (!employee.hire_date) return false;
+    const hireDate = new Date(employee.hire_date);
+    return (
+      hireDate.getFullYear() === now.getFullYear() &&
+      hireDate.getMonth() === now.getMonth()
+    );
+  }).length;
+
+  const tenuredEmployees = employees.filter((employee) => employee.hire_date);
+  const averageTenureYears =
+    tenuredEmployees.length > 0
+      ? tenuredEmployees.reduce((sum, employee) => {
+          const years =
+            (now.getTime() - new Date(employee.hire_date!).getTime()) /
+            (1000 * 60 * 60 * 24 * 365.25);
+          return sum + years;
+        }, 0) / tenuredEmployees.length
+      : 0;
+
+  const activeDepartments = new Set(
+    employees.map((employee) => employee.department).filter(Boolean),
+  ).size;
+
+  const employeeStats = [
+    { name: 'Total Employees', value: String(employees.length), icon: Users },
+    {
+      name: 'New Hires This Month',
+      value: String(newHiresThisMonth),
+      icon: UserPlus,
+    },
+    {
+      name: 'Average Tenure (Years)',
+      value: averageTenureYears.toFixed(1),
+      icon: Calendar,
+    },
+    {
+      name: 'Active Departments',
+      value: String(activeDepartments),
+      icon: Building,
+    },
+  ];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Employee List</h2>
+          <h2 className="text-2xl font-extrabold">Employee List</h2>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <FileText className="h-4 w-4 mr-2" />
-            Bulk Import
-          </Button>
-          <Button variant="outline">
-            <FileText className="h-4 w-4 mr-2" />
-            Export Directory
-          </Button>
           <Dialog open={showForm} onOpenChange={setShowForm}>
             <DialogTrigger asChild>
-              <Button
-                onClick={() => setSelectedEmployee(null)}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
+              <Button onClick={() => setSelectedEmployee(null)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add a New Employee
               </Button>
@@ -194,10 +190,7 @@ export const EmployeeList = ({ employees, companyId, onEmployeeSaved }: Employee
               <stat.icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">
-                <span className="text-green-600">{stat.change}</span>
-              </p>
+              <div className="text-2xl font-extrabold">{stat.value}</div>
             </CardContent>
           </Card>
         ))}
@@ -220,7 +213,7 @@ export const EmployeeList = ({ employees, companyId, onEmployeeSaved }: Employee
             </div>
             <div className="flex gap-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Search employee"
                   value={searchTerm}
@@ -228,7 +221,11 @@ export const EmployeeList = ({ employees, companyId, onEmployeeSaved }: Employee
                   className="pl-10 w-64"
                 />
               </div>
-              <Button variant="outline" size="icon">
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Filter employees"
+              >
                 <Filter className="h-4 w-4" />
               </Button>
             </div>
@@ -240,7 +237,11 @@ export const EmployeeList = ({ employees, companyId, onEmployeeSaved }: Employee
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">
-                    <input type="checkbox" className="rounded" />
+                    <input
+                      type="checkbox"
+                      className="rounded"
+                      aria-label="Select all employees"
+                    />
                   </TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Department</TableHead>
@@ -254,12 +255,16 @@ export const EmployeeList = ({ employees, companyId, onEmployeeSaved }: Employee
                 {filteredEmployees.map((employee) => (
                   <TableRow key={employee.id}>
                     <TableCell>
-                      <input type="checkbox" className="rounded" />
+                      <input
+                        type="checkbox"
+                        className="rounded"
+                        aria-label={`Select ${employee.first_name} ${employee.last_name}`}
+                      />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-medium text-blue-600">
+                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-primary">
                             {employee.first_name.charAt(0)}
                             {employee.last_name.charAt(0)}
                           </span>
@@ -275,7 +280,7 @@ export const EmployeeList = ({ employees, companyId, onEmployeeSaved }: Employee
                     <TableCell>{employee.job_title || 'N/A'}</TableCell>
                     <TableCell>
                       <Badge
-                        className={getStatusColor(
+                        className={getEmployeeStatusColor(
                           employee.employment_status || 'active',
                         )}
                       >
@@ -296,7 +301,11 @@ export const EmployeeList = ({ employees, companyId, onEmployeeSaved }: Employee
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label={`Actions for ${employee.first_name} ${employee.last_name}`}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
@@ -319,13 +328,18 @@ export const EmployeeList = ({ employees, companyId, onEmployeeSaved }: Employee
                             <Edit className="h-4 w-4 mr-2" />
                             Edit Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <TrendingUp className="h-4 w-4 mr-2" />
-                            View Sales Performance
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedEmployee(employee);
+                              setShowDocuments(true);
+                            }}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            View Documents
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDelete(employee.id)}
-                            className="text-red-600"
+                            className="text-red-600 dark:text-red-400"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete Employee
@@ -365,9 +379,9 @@ export const EmployeeList = ({ employees, companyId, onEmployeeSaved }: Employee
               {selectedEmployee?.last_name}
             </DialogTitle>
           </DialogHeader>
-          {/*{selectedEmployee && (
+          {selectedEmployee && (
             <EmployeeDocuments employeeId={selectedEmployee.id} />
-          )}*/}
+          )}
         </DialogContent>
       </Dialog>
     </div>
