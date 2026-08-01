@@ -7,7 +7,7 @@ const withSerwist = require('@serwist/next').default({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  transpilePackages: ['@repo/ui', '@repo/api'],
+  transpilePackages: ['@repo/api'],
   images: {
     domains: ['images.unsplash.com'],
   },
