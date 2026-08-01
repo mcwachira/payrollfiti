@@ -1,5 +1,7 @@
 'use client';
-import React, { useState, useRef } from 'react';
+import React, { useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,12 +42,20 @@ import {
   MoreHorizontal,
   Eye,
 } from 'lucide-react';
+import {
+  downloadEmployeeDocument,
+  listEmployeeDocuments,
+  removeEmployeeDocument,
+  uploadEmployeeDocument,
+  viewEmployeeDocument,
+  type EmployeeDocument,
+} from '@/lib/documents-api';
+import { ApiError } from '@/lib/api-client';
+import { TableSkeleton } from '@/components/ui/loading-skeleton';
 
 interface EmployeeDocumentsProps {
   employeeId: string;
 }
-
-// type EmployeeDocument = Tables<'employee_documents'>;
 
 const DOCUMENT_TYPES = [
   { value: 'id_copy', label: 'ID Copy' },
@@ -58,163 +68,86 @@ const DOCUMENT_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof ApiError ? error.message : fallback;
+}
+
 const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
   employeeId,
 }) => {
+  const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
   const [selectedDocType, setSelectedDocType] = useState('');
-  const [documentName, setDocumentName] = useState('');
 
-  const documents = [
-    {
-      id: '8a1f2b33-2fbc-4a7c-8f7d-9a9f91a63a01',
-      employee_id: '11111111-1111-1111-1111-111111111111',
-      document_type: 'ID Proof',
-      document_name: 'Passport.pdf',
-      file_url: 'https://example.com/docs/passport.pdf',
-      uploaded_by: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-      uploaded_at: '2024-07-01T10:00:00Z',
-    },
-    {
-      id: '3c5f3d88-a4b2-4d75-b4c6-487bdf51beed',
-      employee_id: '22222222-2222-2222-2222-222222222222',
-      document_type: 'Contract',
-      document_name: 'EmploymentContract.pdf',
-      file_url: 'https://example.com/docs/contract.pdf',
-      uploaded_by: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-      uploaded_at: '2024-07-02T14:15:00Z',
-    },
-    {
-      id: '5fd2784f-f2a6-4e70-a829-1e6c1b6eb3a1',
-      employee_id: '11111111-1111-1111-1111-111111111111',
-      document_type: 'Certification',
-      document_name: 'ReactCourseCert.pdf',
-      file_url: 'https://example.com/docs/react-cert.pdf',
-      uploaded_by: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-      uploaded_at: '2024-07-03T09:30:00Z',
-    },
-    {
-      id: '73287c99-31e2-4f25-8f90-7b672f4fd0b7',
-      employee_id: '33333333-3333-3333-3333-333333333333',
-      document_type: 'Performance Review',
-      document_name: 'Q2Review.pdf',
-      file_url: 'https://example.com/docs/q2-review.pdf',
-      uploaded_by: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
-      uploaded_at: '2024-07-05T12:45:00Z',
-    },
-    {
-      id: '9be21f06-66d4-42e2-9ec7-755e17c8fc0c',
-      employee_id: '44444444-4444-4444-4444-444444444444',
-      document_type: 'ID Proof',
-      document_name: 'DriverLicense.pdf',
-      file_url: 'https://example.com/docs/license.pdf',
-      uploaded_by: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
-      uploaded_at: '2024-07-06T16:20:00Z',
-    },
-  ];
+  const documentsQuery = useQuery({
+    queryKey: ['employee-documents', employeeId],
+    queryFn: () => listEmployeeDocuments(employeeId),
+  });
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) =>
+      uploadEmployeeDocument(employeeId, file, selectedDocType),
+    onSuccess: () => {
+      toast.success('Document uploaded');
+      queryClient.invalidateQueries({
+        queryKey: ['employee-documents', employeeId],
+      });
+      setSelectedDocType('');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    },
+    onError: (error) => {
+      toast.error(errorMessage(error, 'Failed to upload document'));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: removeEmployeeDocument,
+    onSuccess: () => {
+      toast.success('Document deleted');
+      queryClient.invalidateQueries({
+        queryKey: ['employee-documents', employeeId],
+      });
+    },
+    onError: (error) => {
+      toast.error(errorMessage(error, 'Failed to delete document'));
+    },
+  });
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    // if (!file || !selectedDocType || !documentName.trim()) {
-    //   toast({
-    //     title: 'Missing Information',
-    //     description: 'Please select document type, enter document name, and choose a file.',
-    //     variant: 'destructive',
-    //   });
-    //   return;
-    // }
-
-    // setUploading(true);
-    // try {
-    // Upload file to Supabase Storage
-    //   const fileExt = file.name.split('.').pop();
-    //   const fileName = `${employeeId}/${selectedDocType}_${Date.now()}.${fileExt}`;
-
-    //   const { data: uploadData, error: uploadError } = await supabase.storage
-    //     .from('employee-documents')
-    //     .upload(fileName, file);
-
-    //   if (uploadError) throw uploadError;
-
-    //   // Get public URL
-    //   const { data: { publicUrl } } = supabase.storage
-    //     .from('employee-documents')
-    //     .getPublicUrl(fileName);
-
-    //   // Save document record
-    //   const { error: dbError } = await supabase
-    //     .from('employee_documents')
-    //     .insert([{
-    //       employee_id: employeeId,
-    //       document_type: selectedDocType,
-    //       document_name: documentName,
-    //       file_url: publicUrl,
-    //     }]);
-
-    //   if (dbError) throw dbError;
-
-    //   toast({ title: 'Document uploaded successfully' });
-    //   queryClient.invalidateQueries({ queryKey: ['employee-documents', employeeId] });
-
-    //   // Reset form
-    //   setSelectedDocType('');
-    //   setDocumentName('');
-    //   if (fileInputRef.current) fileInputRef.current.value = '';
-
-    // } catch (error: any) {
-    //   toast({
-    //     title: 'Upload Failed',
-    //     description: error.message,
-    //     variant: 'destructive',
-    //   });
-    // } finally {
-    //   setUploading(false);
-    // }
+    if (!file || !selectedDocType) {
+      toast.error('Select a document type before choosing a file');
+      return;
+    }
+    uploadMutation.mutate(file);
   };
 
-  const handleDeleteDocument = async (documentId: string, fileUrl: string) => {
+  const handleView = async (doc: EmployeeDocument) => {
+    try {
+      await viewEmployeeDocument(doc.id);
+    } catch (error) {
+      toast.error(errorMessage(error, 'Failed to open document'));
+    }
+  };
+
+  const handleDownload = async (doc: EmployeeDocument) => {
+    try {
+      await downloadEmployeeDocument(doc.id, doc.fileName);
+    } catch (error) {
+      toast.error(errorMessage(error, 'Failed to download document'));
+    }
+  };
+
+  const handleDeleteDocument = (documentId: string) => {
     if (!confirm('Are you sure you want to delete this document?')) return;
-
-    // try {
-    //   // Extract file path from URL
-    //   const urlParts = fileUrl.split('/');
-    //   const filePath = urlParts.slice(-2).join('/'); // Get last two parts (employeeId/filename)
-
-    //   // Delete from storage
-    //   await supabase.storage
-    //     .from('employee-documents')
-    //     .remove([filePath]);
-
-    //   // Delete from database
-    //   const { error } = await supabase
-    //     .from('employee_documents')
-    //     .delete()
-    //     .eq('id', documentId);
-
-    //   if (error) throw error;
-
-    //   toast({ title: 'Document deleted successfully' });
-    //   queryClient.invalidateQueries({ queryKey: ['employee-documents', employeeId] });
-
-    // } catch (error: any) {
-    //   toast({
-    //     title: 'Delete Failed',
-    //     description: error.message,
-    //     variant: 'destructive',
-    //   });
-    // }
+    deleteMutation.mutate(documentId);
   };
 
   const getDocumentTypeLabel = (type: string) => {
     return DOCUMENT_TYPES.find((dt) => dt.value === type)?.label || type;
   };
 
-  //   if (isLoading) {
-  //     return <div className="flex justify-center p-4">Loading documents...</div>;
-  //   }
+  const documents = documentsQuery.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -237,7 +170,7 @@ const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                 value={selectedDocType}
                 onValueChange={setSelectedDocType}
               >
-                <SelectTrigger>
+                <SelectTrigger id="docType">
                   <SelectValue placeholder="Select document type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -250,29 +183,20 @@ const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
               </Select>
             </div>
             <div>
-              <Label htmlFor="docName">Document Name</Label>
+              <Label htmlFor="file">Choose File</Label>
               <Input
-                id="docName"
-                value={documentName}
-                onChange={(e) => setDocumentName(e.target.value)}
-                placeholder="Enter document name"
+                id="file"
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                disabled={uploadMutation.isPending || !selectedDocType}
               />
             </div>
           </div>
-          <div>
-            <Label htmlFor="file">Choose File</Label>
-            <Input
-              id="file"
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-              disabled={uploading}
-            />
-          </div>
-          {uploading && (
+          {uploadMutation.isPending && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
               Uploading document...
             </div>
           )}
@@ -284,11 +208,13 @@ const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Documents ({documents?.length || 0})
+            Documents ({documents.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {documents && documents.length > 0 ? (
+          {documentsQuery.isPending ? (
+            <TableSkeleton rows={3} />
+          ) : documents.length > 0 ? (
             <Table>
               <TableHeader>
                 <TableRow>
@@ -302,46 +228,39 @@ const EmployeeDocuments: React.FC<EmployeeDocumentsProps> = ({
                 {documents.map((doc) => (
                   <TableRow key={doc.id}>
                     <TableCell className="font-medium">
-                      {doc.document_name}
+                      {doc.fileName}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {getDocumentTypeLabel(doc.document_type)}
+                        {getDocumentTypeLabel(doc.type)}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {new Date(doc.uploaded_at || '').toLocaleDateString()}
+                      {new Date(doc.uploadedAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label={`Actions for ${doc.fileName}`}
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => window.open(doc.file_url, '_blank')}
-                          >
+                          <DropdownMenuItem onClick={() => handleView(doc)}>
                             <Eye className="h-4 w-4 mr-2" />
                             View
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              const link = document.createElement('a');
-                              link.href = doc.file_url;
-                              link.download = doc.document_name;
-                              link.click();
-                            }}
-                          >
+                          <DropdownMenuItem onClick={() => handleDownload(doc)}>
                             <Download className="h-4 w-4 mr-2" />
                             Download
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() =>
-                              handleDeleteDocument(doc.id, doc.file_url)
-                            }
-                            className="text-red-600"
+                            onClick={() => handleDeleteDocument(doc.id)}
+                            className="text-red-600 dark:text-red-400"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
