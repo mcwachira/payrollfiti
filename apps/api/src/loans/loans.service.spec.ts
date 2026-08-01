@@ -145,7 +145,9 @@ describe('LoansService', () => {
 
     it('approves a pending loan, generating an even repayment schedule with the last installment absorbing rounding', async () => {
       const txLoanRepayment = { createMany: asyncMock({ count: 3 }) };
-      const txLoan = { update: asyncMock({ ...loan, status: LoanStatus.ACTIVE }) };
+      const txLoan = {
+        update: asyncMock({ ...loan, status: LoanStatus.ACTIVE }),
+      };
       prisma.$transaction.mockImplementation((cb: any) =>
         cb({ loanRepayment: txLoanRepayment, loan: txLoan }),
       );
@@ -159,9 +161,24 @@ describe('LoansService', () => {
 
       const repaymentsData = txLoanRepayment.createMany.mock.calls[0][0].data;
       expect(repaymentsData).toEqual([
-        { loanId: 'loan-1', installmentNo: 1, period: '2026-08', amountDue: 33_333.33 },
-        { loanId: 'loan-1', installmentNo: 2, period: '2026-09', amountDue: 33_333.33 },
-        { loanId: 'loan-1', installmentNo: 3, period: '2026-10', amountDue: 33_333.34 },
+        {
+          loanId: 'loan-1',
+          installmentNo: 1,
+          period: '2026-08',
+          amountDue: 33_333.33,
+        },
+        {
+          loanId: 'loan-1',
+          installmentNo: 2,
+          period: '2026-09',
+          amountDue: 33_333.33,
+        },
+        {
+          loanId: 'loan-1',
+          installmentNo: 3,
+          period: '2026-10',
+          amountDue: 33_333.34,
+        },
       ]);
       const sumOfInstallments = repaymentsData.reduce(
         (total: number, r: any) => total + r.amountDue,
@@ -245,9 +262,9 @@ describe('LoansService', () => {
     });
 
     it('throws BadRequestException for a loan that is not ACTIVE', async () => {
-      await expect(
-        service.payoff('tenant-1', 'loan-1', {}),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.payoff('tenant-1', 'loan-1', {})).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -276,7 +293,11 @@ describe('LoansService', () => {
         where: {
           period: '2026-08',
           status: LoanRepaymentStatus.PENDING,
-          loan: { employeeId: 'emp-1', tenantId: 'tenant-1', status: LoanStatus.ACTIVE },
+          loan: {
+            employeeId: 'emp-1',
+            tenantId: 'tenant-1',
+            status: LoanStatus.ACTIVE,
+          },
         },
       });
     });
@@ -304,7 +325,11 @@ describe('LoansService', () => {
 
     it('closes the loan and notifies the employee once every installment is paid', async () => {
       prisma.loanRepayment.count.mockResolvedValueOnce(0); // no more pending -> fully repaid
-      const closed = { ...loan, tenantId: 'tenant-1', status: LoanStatus.PAID_OFF };
+      const closed = {
+        ...loan,
+        tenantId: 'tenant-1',
+        status: LoanStatus.PAID_OFF,
+      };
       prisma.loan.update.mockResolvedValueOnce(closed);
 
       await service.markRepaymentsPaid(

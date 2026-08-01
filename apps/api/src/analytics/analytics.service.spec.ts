@@ -149,7 +149,12 @@ describe('AnalyticsService', () => {
       );
       expect(result).toEqual({
         byPeriod: [],
-        totals: { grossPay: 0, totalDeductions: 0, netPay: 0, employeeCount: 0 },
+        totals: {
+          grossPay: 0,
+          totalDeductions: 0,
+          netPay: 0,
+          employeeCount: 0,
+        },
       });
     });
   });
@@ -163,13 +168,28 @@ describe('AnalyticsService', () => {
       prisma.payrollEntry.findMany.mockResolvedValue([
         {
           statutoryDeductions: [
-            { code: 'NSSF', label: 'NSSF', employeeAmount: 100, employerAmount: 100 },
-            { code: 'NHIF', label: 'NHIF', employeeAmount: 50, employerAmount: 0 },
+            {
+              code: 'NSSF',
+              label: 'NSSF',
+              employeeAmount: 100,
+              employerAmount: 100,
+            },
+            {
+              code: 'NHIF',
+              label: 'NHIF',
+              employeeAmount: 50,
+              employerAmount: 0,
+            },
           ],
         },
         {
           statutoryDeductions: [
-            { code: 'NSSF', label: 'NSSF', employeeAmount: 100, employerAmount: 100 },
+            {
+              code: 'NSSF',
+              label: 'NSSF',
+              employeeAmount: 100,
+              employerAmount: 100,
+            },
           ],
         },
       ]);

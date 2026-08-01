@@ -156,12 +156,14 @@ export class PayrollService {
           salaryStructure.basicSalary,
           salaryStructure.allowances as Record<string, number> | null,
         );
-      const { voluntaryDeductions: loanDeductions, repayments: loanRepayments } =
-        await this.loansService.resolvePayrollDeductions(
-          tenantId,
-          employee.id,
-          period,
-        );
+      const {
+        voluntaryDeductions: loanDeductions,
+        repayments: loanRepayments,
+      } = await this.loansService.resolvePayrollDeductions(
+        tenantId,
+        employee.id,
+        period,
+      );
       const voluntaryDeductions = { ...componentDeductions, ...loanDeductions };
 
       // Only set `deductions` when there's something in it — omitting the
@@ -298,7 +300,13 @@ export class PayrollService {
       [Role.ADMIN, Role.HR],
       'PAYROLL_RUN_COMPLETED',
       `Payroll run for ${run.period} has completed. Net pay total: ${totals.netPay} ${run.currency}.`,
-      { metadata: { runId: run.id, companyId: run.companyId, period: run.period } },
+      {
+        metadata: {
+          runId: run.id,
+          companyId: run.companyId,
+          period: run.period,
+        },
+      },
     );
 
     // Best-effort webhook dispatch for a run that has already been

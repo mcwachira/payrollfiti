@@ -9,7 +9,8 @@ const asyncMock = (value?: unknown) =>
 
 const makeJob = (
   data: NotificationDeliverJobData,
-): Job<NotificationDeliverJobData> => ({ data }) as Job<NotificationDeliverJobData>;
+): Job<NotificationDeliverJobData> =>
+  ({ data }) as Job<NotificationDeliverJobData>;
 
 describe('NotificationsProcessor', () => {
   let processor: NotificationsProcessor;

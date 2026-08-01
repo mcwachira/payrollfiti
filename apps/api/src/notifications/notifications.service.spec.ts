@@ -5,7 +5,10 @@ import { getQueueToken } from '@nestjs/bullmq';
 import { Role } from '@prisma/client';
 import { NotificationsService } from './notifications.service';
 import { NotificationChannel } from './notification-channel.enum';
-import { NOTIFICATIONS_QUEUE, NOTIFICATION_DELIVER_JOB } from './notifications.queue';
+import {
+  NOTIFICATIONS_QUEUE,
+  NOTIFICATION_DELIVER_JOB,
+} from './notifications.queue';
 import { PrismaService } from '../prisma/prisma.service';
 
 const asyncMock = (value?: unknown) =>
@@ -162,10 +165,16 @@ describe('NotificationsService', () => {
     });
 
     it('honors explicit channels and metadata', async () => {
-      await service.dispatch('tenant-1', 'user-1', 'PAYROLL_RUN_COMPLETED', 'msg', {
-        metadata: { runId: 'run-1' },
-        channels: [NotificationChannel.SMS, NotificationChannel.PUSH],
-      });
+      await service.dispatch(
+        'tenant-1',
+        'user-1',
+        'PAYROLL_RUN_COMPLETED',
+        'msg',
+        {
+          metadata: { runId: 'run-1' },
+          channels: [NotificationChannel.SMS, NotificationChannel.PUSH],
+        },
+      );
 
       expect(queue.add).toHaveBeenCalledWith(
         NOTIFICATION_DELIVER_JOB,

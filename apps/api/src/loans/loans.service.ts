@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { LoanStatus, LoanRepaymentStatus } from '@prisma/client';
 import { round2 } from '@repo/payroll-rules';
 import { PrismaService } from '../prisma/prisma.service';
@@ -141,21 +146,18 @@ export class LoansService {
     }
 
     const installmentAmount = round2(loan.principal / loan.installments);
-    const repaymentsData = Array.from(
-      { length: loan.installments },
-      (_, i) => {
-        const isLast = i === loan.installments - 1;
-        const amountDue = isLast
-          ? round2(loan.principal - installmentAmount * (loan.installments - 1))
-          : installmentAmount;
-        return {
-          loanId,
-          installmentNo: i + 1,
-          period: addMonthsToPeriod(loan.startPeriod, i),
-          amountDue,
-        };
-      },
-    );
+    const repaymentsData = Array.from({ length: loan.installments }, (_, i) => {
+      const isLast = i === loan.installments - 1;
+      const amountDue = isLast
+        ? round2(loan.principal - installmentAmount * (loan.installments - 1))
+        : installmentAmount;
+      return {
+        loanId,
+        installmentNo: i + 1,
+        period: addMonthsToPeriod(loan.startPeriod, i),
+        amountDue,
+      };
+    });
 
     const updated = await this.prisma.$transaction(async (tx) => {
       await tx.loanRepayment.createMany({ data: repaymentsData });
@@ -186,11 +188,7 @@ export class LoansService {
    * Remaining PENDING installments are marked SKIPPED, not PAID — the
    * balance was settled by other means, not deducted from payroll.
    */
-  async payoff(
-    tenantId: string,
-    loanId: string,
-    dto: PayoffLoanDto,
-  ) {
+  async payoff(tenantId: string, loanId: string, dto: PayoffLoanDto) {
     const loan = await this.findLoanOrThrow(tenantId, loanId);
     if (loan.status !== LoanStatus.ACTIVE) {
       throw new BadRequestException('Only active loans can be paid off early');

@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { LoanStatus, Role } from '@prisma/client';
 import { LoansService } from './loans.service';
 import { CreateLoanDto } from './dto/create-loan.dto';

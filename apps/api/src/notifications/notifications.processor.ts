@@ -4,7 +4,10 @@ import { Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from './mail.service';
 import { NotificationChannel } from './notification-channel.enum';
-import { NOTIFICATIONS_QUEUE, NotificationDeliverJobData } from './notifications.queue';
+import {
+  NOTIFICATIONS_QUEUE,
+  NotificationDeliverJobData,
+} from './notifications.queue';
 import { renderNotificationTemplate } from './templates/notification-templates';
 import { SMS_PROVIDER, SmsProvider } from './sms-provider.interface';
 import { PUSH_PROVIDER, PushProvider } from './push-provider.interface';

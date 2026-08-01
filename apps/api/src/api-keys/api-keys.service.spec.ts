@@ -24,10 +24,7 @@ describe('ApiKeysService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ApiKeysService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [ApiKeysService, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
     service = module.get(ApiKeysService);
