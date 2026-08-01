@@ -40,6 +40,7 @@ export interface AppConfig {
     username?: string;
     senderId?: string;
   };
+  sentryDsn?: string;
 }
 
 export default (): AppConfig => ({
@@ -86,4 +87,5 @@ export default (): AppConfig => ({
     username: process.env.AFRICAS_TALKING_USERNAME,
     senderId: process.env.AFRICAS_TALKING_SENDER_ID,
   },
+  sentryDsn: process.env.SENTRY_DSN,
 });

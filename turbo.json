@@ -33,7 +33,8 @@
     "SMTP_FROM",
     "AFRICAS_TALKING_API_KEY",
     "AFRICAS_TALKING_USERNAME",
-    "AFRICAS_TALKING_SENDER_ID"
+    "AFRICAS_TALKING_SENDER_ID",
+    "SENTRY_DSN"
   ],
   "ui": "tui",
   "tasks": {
