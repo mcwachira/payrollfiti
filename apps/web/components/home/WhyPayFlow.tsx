@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/card';
-import { Check, MapPin, Zap, Shield, Clock } from 'lucide-react';
+import { MapPin, Zap, Shield, Clock } from 'lucide-react';
 
 const benefits = [
   {
@@ -34,7 +34,7 @@ const WhyPayFlow = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-6">
               Why Choose PayFlow Africa?
             </h2>
 
@@ -46,11 +46,11 @@ const WhyPayFlow = () => {
             <div className="space-y-6">
               {benefits.map((benefit, index) => (
                 <div key={index} className="flex items-start space-x-4">
-                  <div className="bg-primary/10 p-2 rounded-lg flex-shrink-0">
+                  <div className="bg-primary/10 border-2 border-border p-2 rounded-lg flex-shrink-0">
                     <benefit.icon className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground mb-2">
+                    <h3 className="font-extrabold text-foreground mb-2">
                       {benefit.title}
                     </h3>
                     <p className="text-muted-foreground">
@@ -65,22 +65,22 @@ const WhyPayFlow = () => {
           {/* Statistics */}
           <div className="grid grid-cols-2 gap-6">
             <Card className="p-6 text-center bg-primary text-primary-foreground">
-              <div className="text-3xl font-bold mb-2">1,000+</div>
+              <div className="text-3xl font-extrabold mb-2">1,000+</div>
               <div className="text-sm opacity-90">Businesses Served</div>
             </Card>
 
             <Card className="p-6 text-center bg-green-600 text-white">
-              <div className="text-3xl font-bold mb-2">50,000+</div>
+              <div className="text-3xl font-extrabold mb-2">50,000+</div>
               <div className="text-sm opacity-90">Employees Managed</div>
             </Card>
 
             <Card className="p-6 text-center bg-orange-500 text-white">
-              <div className="text-3xl font-bold mb-2">99.9%</div>
+              <div className="text-3xl font-extrabold mb-2">99.9%</div>
               <div className="text-sm opacity-90">Uptime Guarantee</div>
             </Card>
 
             <Card className="p-6 text-center bg-purple-600 text-white">
-              <div className="text-3xl font-bold mb-2">5</div>
+              <div className="text-3xl font-extrabold mb-2">5</div>
               <div className="text-sm opacity-90">Countries Supported</div>
             </Card>
           </div>

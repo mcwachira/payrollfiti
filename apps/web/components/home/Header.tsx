@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-// import { ThemeToggle } from '../theme/ThemeToggle';
-import { FileText, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { MobileMenu } from './MobileMenu';
+import { Button } from '@/components/ui/button';
+import { ModeToggle } from '@/components/mode-toggle';
+import { Logo } from '@/components/Logo';
 import { useBranding } from '@/contexts/BrandingContext';
 
 function Header() {
@@ -12,56 +14,62 @@ function Header() {
   const branding = useBranding();
 
   return (
-    <header className="border-b border-b-primary bg-gradient-to-br from-blue-50 via-green-50 to-orange-50 backdrop-blur-md sticky top-0 z-50">
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-green-600/5" />
+    <header className="border-b-2 border-border bg-background sticky top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             {branding.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={branding.logoUrl} alt={branding.appName} className="h-8 w-8 object-contain" />
+              <img
+                src={branding.logoUrl}
+                alt={branding.appName}
+                className="h-8 w-8 object-contain"
+              />
             ) : (
-              <FileText className="h-7 w-7" style={{ color: branding.primaryColor ?? undefined }} />
+              <Logo
+                className="h-8 w-8"
+                color={branding.primaryColor ?? undefined}
+              />
             )}
-            <span className="text-xl font-bold">{branding.appName}</span>
+            <span className="text-xl font-extrabold">{branding.appName}</span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-10">
             <Link
-              href="#features"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              href="/features"
+              className="font-bold text-muted-foreground hover:text-foreground transition-colors"
             >
               Features
             </Link>
             <Link
-              href="#pricing"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              href="/pricing"
+              className="font-bold text-muted-foreground hover:text-foreground transition-colors"
             >
               Pricing
             </Link>
             <Link
               href="#testimonials"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className="font-bold text-muted-foreground hover:text-foreground transition-colors"
             >
               Reviews
             </Link>
             <Link
-              href="#contact"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              href="/contact"
+              className="font-bold text-muted-foreground hover:text-foreground transition-colors"
             >
               Contact
             </Link>
           </nav>
 
-          <div className="flex items-center space-x-4">
-            {/* Dark Mode Toggle */}
-            {/* <ThemeToggle /> */}
+          <div className="flex items-center space-x-3">
+            <ModeToggle />
 
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-md hover:bg-accent transition-colors"
+              className="lg:hidden p-2 rounded-md border-2 border-border hover:bg-accent transition-colors"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
             >
               {mobileMenuOpen ? (
                 <X className="h-5 w-5" />
@@ -70,14 +78,16 @@ function Header() {
               )}
             </button>
 
-            <button className="hidden md:block bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors">
-              Try It Free
-            </button>
+            <Button asChild className="hidden lg:inline-flex">
+              <Link href="/signup">Try It Free</Link>
+            </Button>
           </div>
         </div>
 
         {/* Mobile Menu */}
-        {mobileMenuOpen && <MobileMenu />}
+        {mobileMenuOpen && (
+          <MobileMenu onNavigate={() => setMobileMenuOpen(false)} />
+        )}
       </div>
     </header>
   );

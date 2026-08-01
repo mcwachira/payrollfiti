@@ -37,10 +37,10 @@ const testimonials = [
 
 const TestimonialsSection = () => {
   return (
-    <section className="py-20 bg-muted/30">
+    <section id="testimonials" className="py-20 bg-muted/30 scroll-mt-20">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
             Trusted by Growing Businesses Across Africa
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -51,7 +51,7 @@ const TestimonialsSection = () => {
 
         <div className="grid md:grid-cols-3 gap-8">
           {testimonials.map((testimonial, index) => (
-            <Card key={index} className="p-6 bg-card border-0 shadow-lg">
+            <Card key={index} className="p-6 bg-card">
               {/* Rating */}
               <div className="flex mb-4">
                 {Array.from({ length: testimonial.rating }).map((_, i) => (
@@ -69,7 +69,7 @@ const TestimonialsSection = () => {
 
               {/* Author */}
               <div className="flex items-center">
-                <Avatar className="h-12 w-12 mr-4">
+                <Avatar className="h-12 w-12 mr-4 border-2 border-border">
                   <AvatarImage src={testimonial.image} alt={testimonial.name} />
                   <AvatarFallback>
                     {testimonial.name
@@ -80,7 +80,7 @@ const TestimonialsSection = () => {
                 </Avatar>
 
                 <div>
-                  <div className="font-semibold text-card-foreground">
+                  <div className="font-extrabold text-card-foreground">
                     {testimonial.name}
                   </div>
                   <div className="text-sm text-muted-foreground">

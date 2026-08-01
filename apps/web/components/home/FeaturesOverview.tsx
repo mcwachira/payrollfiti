@@ -58,7 +58,7 @@ const FeaturesOverview = () => {
     <section className="py-20 bg-background">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
             Everything You Need for Modern HR & Payroll
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -71,15 +71,15 @@ const FeaturesOverview = () => {
           {features.map((feature, index) => (
             <Card
               key={index}
-              className="p-6 hover:shadow-lg transition-shadow border-0 bg-card"
+              className="p-6 bg-card transition-transform hover:-translate-x-1 hover:-translate-y-1 hover:shadow-brutal-lg"
             >
               <div
-                className={`w-12 h-12 ${feature.color} rounded-lg flex items-center justify-center mb-4`}
+                className={`w-12 h-12 ${feature.color} rounded-lg border-2 border-border flex items-center justify-center mb-4`}
               >
                 <feature.icon className="h-6 w-6 text-white" />
               </div>
 
-              <h3 className="text-xl font-semibold text-card-foreground mb-3">
+              <h3 className="text-xl font-extrabold text-card-foreground mb-3">
                 {feature.title}
               </h3>
 
