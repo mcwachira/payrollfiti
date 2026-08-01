@@ -8,7 +8,10 @@ import {
 } from './constants';
 
 function calculateConsolidatedReliefAllowance(annualGross: number): number {
-  const grossBased = Math.max(CONSOLIDATED_RELIEF_MINIMUM, annualGross * CONSOLIDATED_RELIEF_GROSS_RATE);
+  const grossBased = Math.max(
+    CONSOLIDATED_RELIEF_MINIMUM,
+    annualGross * CONSOLIDATED_RELIEF_GROSS_RATE,
+  );
   return grossBased + annualGross * CONSOLIDATED_RELIEF_FLAT_RATE;
 }
 

@@ -20,7 +20,8 @@ export function stableStringify(value: unknown): string {
   }
   const keys = Object.keys(value as Record<string, unknown>).sort();
   const entries = keys.map(
-    (key) => `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`,
+    (key) =>
+      `${JSON.stringify(key)}:${stableStringify((value as Record<string, unknown>)[key])}`,
   );
   return `{${entries.join(',')}}`;
 }

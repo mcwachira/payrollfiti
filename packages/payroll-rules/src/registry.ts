@@ -12,7 +12,9 @@ export class UnsupportedCountryError extends Error {
 
 export class NoApplicableRuleVersionError extends Error {
   constructor(countryCode: string, effectiveDate: Date) {
-    super(`No "${countryCode}" ruleset is effective on ${effectiveDate.toISOString()}`);
+    super(
+      `No "${countryCode}" ruleset is effective on ${effectiveDate.toISOString()}`,
+    );
     this.name = 'NoApplicableRuleVersionError';
   }
 }
@@ -28,7 +30,10 @@ export function getSupportedCountries(): string[] {
   return Object.keys(REGISTRY);
 }
 
-export function getRuleSetByVersion(countryCode: string, version: string): CountryRuleSet {
+export function getRuleSetByVersion(
+  countryCode: string,
+  version: string,
+): CountryRuleSet {
   const ruleSets = REGISTRY[countryCode.toUpperCase()];
   const ruleSet = ruleSets?.find((rs) => rs.version === version);
   if (!ruleSet) {
@@ -44,15 +49,24 @@ export function getRuleSetByVersion(countryCode: string, version: string): Count
  * version it used, and re-running the same period later reproduces it by
  * pinning `effectiveDate` to the period rather than "now".
  */
-export function getCountryRuleSet(countryCode: string, effectiveDate: Date = new Date()): CountryRuleSet {
+export function getCountryRuleSet(
+  countryCode: string,
+  effectiveDate: Date = new Date(),
+): CountryRuleSet {
   const ruleSets = REGISTRY[countryCode.toUpperCase()];
   if (!ruleSets || ruleSets.length === 0) {
     throw new UnsupportedCountryError(countryCode);
   }
 
   const applicable = ruleSets
-    .filter((rs) => new Date(rs.effectiveFrom).getTime() <= effectiveDate.getTime())
-    .sort((a, b) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime());
+    .filter(
+      (rs) => new Date(rs.effectiveFrom).getTime() <= effectiveDate.getTime(),
+    )
+    .sort(
+      (a, b) =>
+        new Date(b.effectiveFrom).getTime() -
+        new Date(a.effectiveFrom).getTime(),
+    );
 
   const ruleSet = applicable[0];
   if (!ruleSet) {

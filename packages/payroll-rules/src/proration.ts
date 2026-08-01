@@ -17,11 +17,19 @@ export function calculateProrationFactor(period: EmploymentPeriod): number {
   const totalDays = diffDaysInclusive(periodStart, periodEnd);
   if (totalDays <= 0) return 0;
 
-  const employmentStart = period.employmentStartDate ? new Date(period.employmentStartDate) : undefined;
-  const employmentEnd = period.employmentEndDate ? new Date(period.employmentEndDate) : undefined;
+  const employmentStart = period.employmentStartDate
+    ? new Date(period.employmentStartDate)
+    : undefined;
+  const employmentEnd = period.employmentEndDate
+    ? new Date(period.employmentEndDate)
+    : undefined;
 
-  const effectiveStart = employmentStart && employmentStart > periodStart ? employmentStart : periodStart;
-  const effectiveEnd = employmentEnd && employmentEnd < periodEnd ? employmentEnd : periodEnd;
+  const effectiveStart =
+    employmentStart && employmentStart > periodStart
+      ? employmentStart
+      : periodStart;
+  const effectiveEnd =
+    employmentEnd && employmentEnd < periodEnd ? employmentEnd : periodEnd;
 
   if (effectiveEnd < effectiveStart) return 0;
 
@@ -35,7 +43,10 @@ export function calculateProrationFactor(period: EmploymentPeriod): number {
  * untouched — they represent actuals already tied to days worked or
  * one-off events, not a rate that should be scaled by attendance.
  */
-export function prorateEarnings(earnings: EarningsResult, factor: number): EarningsResult {
+export function prorateEarnings(
+  earnings: EarningsResult,
+  factor: number,
+): EarningsResult {
   if (factor >= 1) return earnings;
   const allowanceBreakdown: Record<string, number> = {};
   for (const [key, value] of Object.entries(earnings.allowanceBreakdown)) {
@@ -51,6 +62,12 @@ export function prorateEarnings(earnings: EarningsResult, factor: number): Earni
     commissionAmount,
     bonusAmount,
     allowanceBreakdown,
-    grossPay: round2(basicSalary + totalAllowances + overtimeAmount + commissionAmount + bonusAmount),
+    grossPay: round2(
+      basicSalary +
+        totalAllowances +
+        overtimeAmount +
+        commissionAmount +
+        bonusAmount,
+    ),
   };
 }

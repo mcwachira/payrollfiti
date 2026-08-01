@@ -4,7 +4,9 @@ import { ANNUAL_PAYE_BRACKETS, ANNUAL_PRIMARY_REBATE } from './constants';
 
 function calculateAnnualGrossTax(annualTaxableIncome: number): number {
   const income = Math.max(0, annualTaxableIncome);
-  const bracket = [...ANNUAL_PAYE_BRACKETS].reverse().find((b) => income > b.min) ?? ANNUAL_PAYE_BRACKETS[0]!;
+  const bracket =
+    [...ANNUAL_PAYE_BRACKETS].reverse().find((b) => income > b.min) ??
+    ANNUAL_PAYE_BRACKETS[0]!;
   return bracket.base + (income - bracket.min) * bracket.rate;
 }
 

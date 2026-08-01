@@ -26,17 +26,31 @@ function calculateEarnings(input: EarningsInput): EarningsResult {
     commissionAmount,
     bonusAmount,
     allowanceBreakdown,
-    grossPay: round2(basicSalary + totalAllowances + overtimeAmount + commissionAmount + bonusAmount),
+    grossPay: round2(
+      basicSalary +
+        totalAllowances +
+        overtimeAmount +
+        commissionAmount +
+        bonusAmount,
+    ),
   };
 }
 
 function validate(input: PayrollCalculationInput): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   if (input.earnings.basicSalary < 0) {
-    issues.push({ field: 'basicSalary', message: 'Basic salary cannot be negative', severity: 'error' });
+    issues.push({
+      field: 'basicSalary',
+      message: 'Basic salary cannot be negative',
+      severity: 'error',
+    });
   }
   if (input.currency !== 'KES') {
-    issues.push({ field: 'currency', message: 'Kenya payroll must be run in KES', severity: 'error' });
+    issues.push({
+      field: 'currency',
+      message: 'Kenya payroll must be run in KES',
+      severity: 'error',
+    });
   }
   return issues;
 }
@@ -48,7 +62,11 @@ export const kenyaV1: CountryRuleSet = {
   currency: 'KES',
   calculateEarnings,
   calculateStatutoryDeductions({ grossPay }) {
-    return [calculateNssf(grossPay), calculateNhif(grossPay), calculateHousingLevy(grossPay)];
+    return [
+      calculateNssf(grossPay),
+      calculateNhif(grossPay),
+      calculateHousingLevy(grossPay),
+    ];
   },
   calculateTax({ grossPay, statutoryDeductions }) {
     // NSSF, NHIF and Housing Levy contributions are all pre-tax deductible (Finance Act 2023)

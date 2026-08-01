@@ -1,4 +1,8 @@
-import { runPayrollCalculation, computeInputHash, getCountryRuleSet } from '../index';
+import {
+  runPayrollCalculation,
+  computeInputHash,
+  getCountryRuleSet,
+} from '../index';
 import { PayrollCalculationInput } from '../types';
 
 const kenya = getCountryRuleSet('KE', new Date('2026-07-01'));
@@ -33,18 +37,27 @@ describe('payroll engine determinism & idempotency', () => {
       earnings: input.earnings,
       deductions: input.deductions,
     };
-    expect(computeInputHash(reordered, kenya.version)).toBe(computeInputHash(input, kenya.version));
+    expect(computeInputHash(reordered, kenya.version)).toBe(
+      computeInputHash(input, kenya.version),
+    );
   });
 
   it('produces a different hash when the input changes', () => {
     const input = baseInput();
-    const changed = { ...input, earnings: { ...input.earnings, basicSalary: 80_001 } };
-    expect(computeInputHash(changed, kenya.version)).not.toBe(computeInputHash(input, kenya.version));
+    const changed = {
+      ...input,
+      earnings: { ...input.earnings, basicSalary: 80_001 },
+    };
+    expect(computeInputHash(changed, kenya.version)).not.toBe(
+      computeInputHash(input, kenya.version),
+    );
   });
 
   it('produces a different hash when the rule version changes, even with identical input', () => {
     const input = baseInput();
-    expect(computeInputHash(input, 'KE-2024.1')).not.toBe(computeInputHash(input, 'KE-2025.1'));
+    expect(computeInputHash(input, 'KE-2024.1')).not.toBe(
+      computeInputHash(input, 'KE-2025.1'),
+    );
   });
 
   it('includes voluntary deductions in net pay', () => {

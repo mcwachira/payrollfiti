@@ -7,8 +7,13 @@ import {
 import { calculateProrationFactor, prorateEarnings } from './proration';
 import { round2, sum, stableStringify } from './money';
 
-export function computeInputHash(input: PayrollCalculationInput, ruleVersion: string): string {
-  return createHash('sha256').update(stableStringify({ input, ruleVersion })).digest('hex');
+export function computeInputHash(
+  input: PayrollCalculationInput,
+  ruleVersion: string,
+): string {
+  return createHash('sha256')
+    .update(stableStringify({ input, ruleVersion }))
+    .digest('hex');
 }
 
 /**
@@ -31,13 +36,22 @@ export function runPayrollCalculation(
     grossPay: earnings.grossPay,
     earnings,
   });
-  const tax = ruleSet.calculateTax({ grossPay: earnings.grossPay, statutoryDeductions });
+  const tax = ruleSet.calculateTax({
+    grossPay: earnings.grossPay,
+    statutoryDeductions,
+  });
 
   const voluntaryDeductions = input.deductions?.voluntary ?? {};
-  const totalVoluntaryDeductions = round2(sum(Object.values(voluntaryDeductions)));
+  const totalVoluntaryDeductions = round2(
+    sum(Object.values(voluntaryDeductions)),
+  );
 
-  const totalStatutoryEmployeeAmount = sum(statutoryDeductions.map((d) => d.employeeAmount));
-  const totalDeductions = round2(totalStatutoryEmployeeAmount + tax.netTax + totalVoluntaryDeductions);
+  const totalStatutoryEmployeeAmount = sum(
+    statutoryDeductions.map((d) => d.employeeAmount),
+  );
+  const totalDeductions = round2(
+    totalStatutoryEmployeeAmount + tax.netTax + totalVoluntaryDeductions,
+  );
   const netPay = round2(earnings.grossPay - totalDeductions);
 
   return {

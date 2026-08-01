@@ -1,4 +1,9 @@
-import { getCountryRuleSet, getSupportedCountries, UnsupportedCountryError, NoApplicableRuleVersionError } from '../registry';
+import {
+  getCountryRuleSet,
+  getSupportedCountries,
+  UnsupportedCountryError,
+  NoApplicableRuleVersionError,
+} from '../registry';
 
 describe('country rule registry (strategy pattern)', () => {
   it('lists all supported countries', () => {
@@ -14,7 +19,9 @@ describe('country rule registry (strategy pattern)', () => {
   });
 
   it('throws when no version is effective yet for the given date', () => {
-    expect(() => getCountryRuleSet('KE', new Date('2020-01-01'))).toThrow(NoApplicableRuleVersionError);
+    expect(() => getCountryRuleSet('KE', new Date('2020-01-01'))).toThrow(
+      NoApplicableRuleVersionError,
+    );
   });
 
   it('picks the most recent version effective on or before the given date', () => {
