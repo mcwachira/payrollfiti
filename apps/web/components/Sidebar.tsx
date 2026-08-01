@@ -6,6 +6,15 @@ import { Role } from '@repo/api';
 import { cn } from '@/lib/utils';
 import { useBranding } from '@/contexts/BrandingContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMobileSidebar } from '@/contexts/MobileSidebarContext';
+import { Logo } from '@/components/Logo';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import {
   LayoutDashboard,
   Users,
@@ -14,7 +23,6 @@ import {
   BarChart3,
   UserCircle,
   FileCheck,
-  Building,
   CreditCard,
   Settings,
 } from 'lucide-react';
@@ -33,57 +41,88 @@ const navigation = [
   { name: 'Settings', href: '/settings', icon: Settings, roles: [Role.ADMIN] },
 ];
 
-export default function Sidebar() {
-  const pathname = usePathname();
+function SidebarBrand() {
   const branding = useBranding();
+  return (
+    <div className="flex items-center gap-2">
+      {branding.logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={branding.logoUrl}
+          alt={branding.appName}
+          className="h-8 w-8 object-contain"
+        />
+      ) : (
+        <Logo className="h-8 w-8" color={branding.primaryColor ?? undefined} />
+      )}
+      <span className="text-xl font-extrabold text-sidebar-foreground">
+        {branding.appName}
+      </span>
+    </div>
+  );
+}
+
+function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname();
   const { user } = useAuth();
   const visibleNavigation = navigation.filter(
     (item) => !item.roles || (user && item.roles.includes(user.role)),
   );
 
   return (
-    <div className="flex h-full w-64 flex-col fixed inset-y-0 z-50 bg-white border-r border-gray-200">
-      <div className="flex items-center h-16 px-6 border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          {branding.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={branding.logoUrl}
-              alt={branding.appName}
-              className="h-8 w-8 object-contain"
-            />
-          ) : (
-            <Building
-              className="h-8 w-8"
-              style={{ color: branding.primaryColor ?? undefined }}
-            />
-          )}
-          <span className="text-xl font-bold text-gray-900">
-            {branding.appName}
-          </span>
+    <nav className="flex-1 px-4 py-6 space-y-2">
+      {visibleNavigation.map((item) => {
+        const isActive = pathname === item.href;
+        return (
+          <Link
+            key={item.name}
+            href={item.href}
+            onClick={onNavigate}
+            className={cn(
+              'flex items-center gap-3 px-3 py-2 text-sm font-bold rounded-lg border-2 transition-colors',
+              isActive
+                ? 'bg-primary text-primary-foreground border-border shadow-brutal-sm'
+                : 'border-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+            )}
+          >
+            <item.icon className="h-5 w-5" />
+            {item.name}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+export default function Sidebar() {
+  const { open, setOpen } = useMobileSidebar();
+
+  return (
+    <>
+      {/* Desktop sidebar */}
+      <div className="hidden lg:flex h-full w-64 flex-col fixed inset-y-0 z-40 bg-sidebar border-r-2 border-sidebar-border">
+        <div className="flex items-center h-16 px-6 border-b-2 border-sidebar-border">
+          <SidebarBrand />
         </div>
+        <SidebarNav />
       </div>
 
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        {visibleNavigation.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-                isActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-              )}
-            >
-              <item.icon className="h-5 w-5" />
-              {item.name}
-            </Link>
-          );
-        })}
-      </nav>
-    </div>
+      {/* Mobile sidebar drawer */}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          side="left"
+          className="bg-sidebar text-sidebar-foreground w-72 p-0 [&>button]:hidden"
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Navigation</SheetTitle>
+            <SheetDescription>App navigation menu</SheetDescription>
+          </SheetHeader>
+          <div className="flex items-center h-16 px-6 border-b-2 border-sidebar-border">
+            <SidebarBrand />
+          </div>
+          <SidebarNav onNavigate={() => setOpen(false)} />
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar';
 import AppHeader from '@/components/AppHeader';
 import { AuthGuard } from '@/components/AuthGuard';
 import { APP_NAME } from '@/lib/config';
+import { MobileSidebarProvider } from '@/contexts/MobileSidebarContext';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -27,18 +28,20 @@ export default function AppLayout({
 }>) {
   return (
     <div
-      className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-gray-50`}
+      className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background`}
     >
       <AuthGuard>
-        <Sidebar />
-        <div className="lg:pl-64">
-          <AppHeader />
-          <main className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              {children}
-            </div>
-          </main>
-        </div>
+        <MobileSidebarProvider>
+          <Sidebar />
+          <div className="lg:pl-64">
+            <AppHeader />
+            <main className="py-6">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                {children}
+              </div>
+            </main>
+          </div>
+        </MobileSidebarProvider>
       </AuthGuard>
     </div>
   );
