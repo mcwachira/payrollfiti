@@ -38,6 +38,13 @@ export class MailService {
   /**
    * Never throws — a failed email must never break the request that
    * triggered it. Mirrors AuditService.record's try/catch/log pattern.
+   *
+   * Config-gated, same pattern as PaystackProvider/MpesaProvider: with no
+   * SMTP_HOST set, this logs the full email (including any links, e.g. an
+   * accept-invite URL) instead of attempting — and failing — a real send.
+   * Without this, there would be no way to read an invite/notification link
+   * in local dev short of querying the database directly, since only a
+   * one-way hash of an invite token is ever persisted.
    */
   async sendMail(
     to: string,
@@ -45,8 +52,14 @@ export class MailService {
     html: string,
     attachments?: MailAttachment[],
   ): Promise<void> {
+    const smtp = this.configService.get('smtp', { infer: true });
+    if (!smtp.host) {
+      this.logger.warn(
+        `SMTP_HOST not set — logging mail instead of sending.\nTo: ${to}\nSubject: ${subject}\n${html}`,
+      );
+      return;
+    }
     try {
-      const smtp = this.configService.get('smtp', { infer: true });
       await this.getTransporter().sendMail({
         from: smtp.from,
         to,

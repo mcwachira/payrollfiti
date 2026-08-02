@@ -63,4 +63,36 @@ describe('MailService', () => {
       service.sendMail('user@example.com', 'Subject', '<p>hi</p>'),
     ).resolves.toBeUndefined();
   });
+
+  describe('with no SMTP_HOST configured', () => {
+    beforeEach(async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          MailService,
+          {
+            provide: ConfigService,
+            useValue: {
+              get: (key: string) =>
+                key === 'smtp' ? { host: '', port: 587, from: 'x' } : undefined,
+            },
+          },
+        ],
+      }).compile();
+      service = module.get(MailService);
+    });
+
+    it('logs the mail instead of attempting a real send, and never throws', async () => {
+      await expect(
+        service.sendMail(
+          'employee@example.com',
+          'Invite',
+          '<a href="http://localhost:4200/accept-invite?token=abc123">link</a>',
+        ),
+      ).resolves.toBeUndefined();
+      // The whole point is a developer can read the link from the log —
+      // asserting the transport was never touched is what actually proves
+      // this path doesn't attempt (and silently fail) a real send.
+      expect(sendMailMock).not.toHaveBeenCalled();
+    });
+  });
 });
