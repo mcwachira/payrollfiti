@@ -74,6 +74,19 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      # No curl/wget in the node:20-alpine runtime image — hit the real
+      # /health endpoint (Terminus: Postgres + Redis) via Node's built-in
+      # http module instead of adding a package just for this.
+      test:
+        [
+          'CMD-SHELL',
+          "node -e \"require('http').get('http://localhost:3000/health', res => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
 
   web:
     build:
@@ -89,7 +102,18 @@ services:
     ports:
       - '3001:3001'
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          "node -e \"require('http').get('http://localhost:3001/', res => process.exit(res.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
 
 volumes:
   db-data:
