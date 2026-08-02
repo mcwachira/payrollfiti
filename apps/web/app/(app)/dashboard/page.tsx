@@ -25,14 +25,12 @@ import {
   Calendar,
   TrendingUp,
   AlertTriangle,
-  Bell,
   Clock,
 } from 'lucide-react';
 import { Role } from '@repo/api';
 import { listCompanies, listEmployees } from '@/lib/employees-api';
 import { listPayrollRuns, getPayrollRun } from '@/lib/payroll-api';
 import { listInvoices, getSubscription } from '@/lib/billing-api';
-import { listNotifications } from '@/lib/notifications-api';
 import { useAuth } from '@/contexts/AuthContext';
 import { RoleRedirectGuard } from '@/components/RoleRedirectGuard';
 import { ApiError } from '@/lib/api-client';
@@ -114,11 +112,6 @@ const Dashboard = () => {
     enabled: user?.role === Role.ADMIN,
   });
 
-  const unreadNotificationsQuery = useQuery({
-    queryKey: ['notifications', 'unread'],
-    queryFn: () => listNotifications(true),
-  });
-
   const isLoading =
     companiesQuery.isPending ||
     (!!company && (employeesQuery.isPending || runsQuery.isPending));
@@ -158,8 +151,6 @@ const Dashboard = () => {
     (invoice) =>
       invoice.status === 'OPEN' && new Date(invoice.dueDate) < new Date(),
   );
-  const unreadCount = unreadNotificationsQuery.data?.length ?? 0;
-
   // Next payroll is estimated as one calendar month after the last
   // COMPLETED run's period end — there's no separate "payroll schedule"
   // concept in the backend to read this from, so this is a projection, not
@@ -182,14 +173,6 @@ const Dashboard = () => {
       href: '/billing',
     });
   }
-  if (unreadCount > 0) {
-    alerts.push({
-      icon: Bell,
-      text: `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}`,
-      href: '/dashboard',
-    });
-  }
-
   const stats = [
     {
       name: 'Total Employees',

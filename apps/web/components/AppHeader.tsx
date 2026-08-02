@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMobileSidebar } from '@/contexts/MobileSidebarContext';
 import { ModeToggle } from '@/components/mode-toggle';
 import { PushNotificationToggle } from '@/components/pwa/PushNotificationToggle';
+import { NotificationBell } from '@/components/NotificationBell';
 import { LogOut, Menu, User } from 'lucide-react';
 import {
   DropdownMenu,
@@ -34,6 +35,7 @@ const AppHeader = () => {
             </Button>
           </div>
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <PushNotificationToggle />
             <ModeToggle />
             <DropdownMenu>
