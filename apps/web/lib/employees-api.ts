@@ -74,6 +74,27 @@ export function removeEmployee(id: string): Promise<Employee> {
   return apiFetch<Employee>(`/employees/${id}`, { method: 'DELETE' });
 }
 
+export interface AddSalaryStructureInput {
+  basicSalary: number;
+  allowances?: Record<string, number>;
+  currency: string;
+  effectiveFrom: string;
+  effectiveTo?: string;
+}
+
+export function addSalaryStructure(
+  employeeId: string,
+  input: AddSalaryStructureInput,
+): Promise<SalaryStructure> {
+  return apiFetch<SalaryStructure>(
+    `/employees/${employeeId}/salary-structures`,
+    {
+      method: 'POST',
+      body: JSON.stringify(input),
+    },
+  );
+}
+
 export function updateEmployee(
   id: string,
   input: Partial<Omit<CreateEmployeeInput, 'companyId'>>,

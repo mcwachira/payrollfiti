@@ -6,7 +6,13 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Select,
   SelectContent,
@@ -46,9 +52,13 @@ export default function SignupPage() {
     setIsSubmitting(true);
     try {
       await signup({ tenantName, countryCode, adminEmail, adminPassword });
-      router.push('/dashboard');
+      // A brand-new tenant has no Company yet — send them into the guided
+      // setup wizard rather than an empty dashboard with no obvious next step.
+      router.push('/onboarding');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Unable to create account');
+      setError(
+        err instanceof ApiError ? err.message : 'Unable to create account',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -59,7 +69,9 @@ export default function SignupPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">{branding.appName}</CardTitle>
-          <CardDescription>Set up your company&apos;s payroll workspace</CardDescription>
+          <CardDescription>
+            Set up your company&apos;s payroll workspace
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -111,7 +123,10 @@ export default function SignupPage() {
               />
             </div>
             {error ? (
-              <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+              <p
+                role="alert"
+                className="text-sm text-red-600 dark:text-red-400"
+              >
                 {error}
               </p>
             ) : null}
