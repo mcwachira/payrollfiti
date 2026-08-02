@@ -35,3 +35,40 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+interface PushPayload {
+  title: string;
+  body: string;
+}
+
+// Serwist only handles caching/offline; the push channel itself is plain
+// Web Push (see WebPushProvider on the API side) and isn't something
+// Serwist wires up on its own.
+self.addEventListener('push', (event) => {
+  const payload: PushPayload = event.data?.json() ?? {
+    title: 'PayrollFiti',
+    body: 'You have a new notification',
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+    }),
+  );
+});
+
+// Focuses an already-open app tab rather than always opening a new one.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clients) => {
+        const existing = clients.find((client) => 'focus' in client);
+        if (existing) return (existing as WindowClient).focus();
+        return self.clients.openWindow('/');
+      }),
+  );
+});
