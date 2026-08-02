@@ -10,6 +10,8 @@ import { Role } from '@repo/api';
 import { RoleGuard } from '@/components/RoleGuard';
 import { SalaryComponentsSettings } from '@/components/settings/SalaryComponentsSettings';
 import { AccountingIntegrationsSettings } from '@/components/settings/AccountingIntegrationsSettings';
+import { ApiKeysSettings } from '@/components/settings/ApiKeysSettings';
+import { WebhooksSettings } from '@/components/settings/WebhooksSettings';
 import { useBranding } from '@/contexts/BrandingContext';
 import { getBranding, updateBranding } from '@/lib/branding-api';
 import { getMyTenant, type Tenant } from '@/lib/tenants-api';
@@ -242,6 +244,10 @@ function SettingsPageContent() {
       <SalaryComponentsSettings />
 
       <AccountingIntegrationsSettings />
+
+      <ApiKeysSettings />
+
+      <WebhooksSettings />
     </div>
   );
 }

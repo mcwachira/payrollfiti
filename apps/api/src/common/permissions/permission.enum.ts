@@ -22,4 +22,5 @@ export enum Permission {
   ATTENDANCE_MANAGE = 'attendance:manage',
   LOAN_MANAGE = 'loan:manage',
   SALARY_COMPONENT_MANAGE = 'salary-component:manage',
+  AUDIT_LOG_READ = 'audit-log:read',
 }

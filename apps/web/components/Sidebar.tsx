@@ -26,6 +26,7 @@ import {
   CreditCard,
   Settings,
   Wallet,
+  History,
 } from 'lucide-react';
 
 // `roles` mirrors each page's own server-side @Roles() gate — every entry
@@ -77,8 +78,10 @@ const navigation = [
     icon: FileCheck,
     roles: [Role.ADMIN, Role.HR],
   },
-  // Billing and Settings are ADMIN-only server- and UI-gated; hide the
-  // links themselves too so non-admins don't see a permission-denied page.
+  // Billing, Audit Log, and Settings are ADMIN-only server- and UI-gated;
+  // hide the links themselves too so non-admins don't see a
+  // permission-denied page.
+  { name: 'Audit Log', href: '/audit-log', icon: History, roles: [Role.ADMIN] },
   { name: 'Billing', href: '/billing', icon: CreditCard, roles: [Role.ADMIN] },
   { name: 'Settings', href: '/settings', icon: Settings, roles: [Role.ADMIN] },
 ];
