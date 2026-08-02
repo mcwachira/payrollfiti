@@ -1,6 +1,7 @@
 'use client';
 
 import { TwoFactorSettings } from '@/components/settings/TwoFactorSettings';
+import { SessionsSettings } from '@/components/settings/SessionsSettings';
 
 // Unlike /settings (ADMIN-only tenant configuration), this page is personal
 // account security — every role gets here, so it isn't wrapped in a
@@ -15,6 +16,8 @@ export default function AccountPage() {
       </div>
 
       <TwoFactorSettings />
+
+      <SessionsSettings />
     </div>
   );
 }

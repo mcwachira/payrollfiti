@@ -25,6 +25,7 @@ export class JwtAccessStrategy extends PassportStrategy(
       role: payload.role,
       tenantId: payload.tenantId,
       employeeId: payload.employeeId,
+      sessionId: payload.sessionId,
     };
   }
 }

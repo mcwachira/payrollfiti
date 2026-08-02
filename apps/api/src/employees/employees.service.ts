@@ -357,8 +357,12 @@ export class EmployeesService {
 
       await tx.user.updateMany({
         where: { employeeId },
-        data: { isActive: false, refreshTokenHash: null },
+        data: { isActive: false },
       });
+      // Sessions aren't cascade-deleted by isActive going false — a
+      // terminated employee's already-issued tokens must stop working
+      // immediately, not just future logins being blocked.
+      await tx.session.deleteMany({ where: { user: { employeeId } } });
 
       return result;
     });

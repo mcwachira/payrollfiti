@@ -25,6 +25,6 @@ export class JwtRefreshStrategy extends PassportStrategy(
         'authorization'
       ] ?? '';
     const refreshToken = authHeader.replace('Bearer ', '');
-    return { userId: payload.sub, refreshToken };
+    return { userId: payload.sub, sessionId: payload.sessionId, refreshToken };
   }
 }

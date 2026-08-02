@@ -34,6 +34,7 @@ describe('DocumentsService', () => {
     role: Role.ADMIN,
     tenantId: 'tenant-1',
     employeeId: null,
+    sessionId: 'session-1',
   };
   const selfEmployeeActor = {
     id: 'user-2',
@@ -41,6 +42,7 @@ describe('DocumentsService', () => {
     role: Role.EMPLOYEE,
     tenantId: 'tenant-1',
     employeeId: 'emp-1',
+    sessionId: 'session-2',
   };
   const otherEmployeeActor = {
     id: 'user-3',
@@ -48,6 +50,7 @@ describe('DocumentsService', () => {
     role: Role.EMPLOYEE,
     tenantId: 'tenant-1',
     employeeId: 'emp-2',
+    sessionId: 'session-3',
   };
 
   const document = {

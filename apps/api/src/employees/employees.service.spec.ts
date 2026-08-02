@@ -55,6 +55,9 @@ describe('EmployeesService', () => {
         updateMany: asyncMock({ count: 1 }),
         findUnique: asyncMock(null),
       },
+      session: {
+        deleteMany: asyncMock({ count: 1 }),
+      },
       salaryStructure: { findFirst: asyncMock(null) },
       onboardingTask: {
         createMany: asyncMock({ count: 7 }),
@@ -483,7 +486,10 @@ describe('EmployeesService', () => {
       });
       expect(prisma.user.updateMany).toHaveBeenCalledWith({
         where: { employeeId: 'emp-1' },
-        data: { isActive: false, refreshTokenHash: null },
+        data: { isActive: false },
+      });
+      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
+        where: { user: { employeeId: 'emp-1' } },
       });
     });
 

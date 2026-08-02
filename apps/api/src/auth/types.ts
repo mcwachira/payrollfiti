@@ -6,6 +6,8 @@ export interface AuthenticatedRequestUser {
   role: Role;
   tenantId: string;
   employeeId: string | null;
+  /** Which Session row this access token belongs to — lets /auth/sessions mark "this device". */
+  sessionId: string;
 }
 
 export interface JwtAccessPayload {
@@ -14,8 +16,10 @@ export interface JwtAccessPayload {
   role: Role;
   tenantId: string;
   employeeId: string | null;
+  sessionId: string;
 }
 
 export interface JwtRefreshPayload {
   sub: string;
+  sessionId: string;
 }

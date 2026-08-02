@@ -170,7 +170,6 @@ model User {
   passwordHash              String
   role                      Role                @default(EMPLOYEE)
   isActive                  Boolean             @default(true)
-  refreshTokenHash          String?
   phone                     String? // E.164 format; used only as an SMS delivery target (see SmsProvider)
   // TOTP secret, encrypted at rest via EncryptionService — same treatment as
   // accounting OAuth tokens. Set as soon as setup() runs but twoFactorEnabled
@@ -186,6 +185,7 @@ model User {
   twoFactorBackupCodes      String[]            @default([])
   employeeId                String?             @unique
   employee                  Employee?           @relation(fields: [employeeId], references: [id])
+  sessions                  Session[]
   auditLogs                 AuditLog[]
   notifications             Notification[]
   pushSubscriptions         PushSubscription[]
@@ -276,6 +276,27 @@ model PasswordResetToken {
   tokenHash String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+// One row per active login (a user with two tabs open on two phones has two
+// rows) — replaces the old single User.refreshTokenHash field, which meant
+// logging in on a second device silently logged the first one out.
+// refreshTokenHash is SHA-256, same as every other one-way token in this
+// schema — NOT bcrypt, which silently truncates its input to 72 bytes and
+// would make every refresh token issued for a session hash identically
+// (the part that varies falls past the truncation point), defeating
+// rotation-reuse detection entirely.
+model Session {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String
+  userAgent        String?
+  ipAddress        String?
+  createdAt        DateTime @default(now())
+  lastUsedAt       DateTime @default(now())
+
+  @@index([userId])
 }
 
 // Onboarding checklist item for a newly-created employee. A default set is

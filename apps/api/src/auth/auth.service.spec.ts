@@ -1,8 +1,10 @@
+import { createHash } from 'crypto';
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   BadRequestException,
   ConflictException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -41,6 +43,11 @@ const qrcodeMock = QRCode as jest.Mocked<typeof QRCode>;
 const asyncMock = (value?: unknown) =>
   jest.fn<(...args: any[]) => Promise<any>>().mockResolvedValue(value);
 
+// Mirrors AuthService's private hashRefreshToken() — refresh-token hashing is
+// plain SHA-256 (not bcrypt), so tests compute real hashes rather than mocking.
+const hashRefreshToken = (token: string) =>
+  createHash('sha256').update(token).digest('hex');
+
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: any;
@@ -57,7 +64,6 @@ describe('AuthService', () => {
     role: Role.ADMIN,
     isActive: true,
     employeeId: null,
-    refreshTokenHash: null as string | null,
     twoFactorEnabled: false,
     twoFactorSecretEncrypted: null as string | null,
     twoFactorBackupCodes: [] as string[],
@@ -69,7 +75,21 @@ describe('AuthService', () => {
       user: {
         findUnique: asyncMock(user),
         findUniqueOrThrow: asyncMock(user),
-        update: asyncMock({ ...user, refreshTokenHash: 'new-hash' }),
+        update: asyncMock(user),
+      },
+      session: {
+        create: asyncMock({
+          id: 'session-1',
+          userId: user.id,
+          refreshTokenHash: '',
+          userAgent: undefined,
+          ipAddress: undefined,
+        }),
+        update: asyncMock({ id: 'session-1' }),
+        findUnique: asyncMock(null),
+        findMany: asyncMock([]),
+        delete: asyncMock(undefined),
+        deleteMany: asyncMock({ count: 1 }),
       },
       employeeInvite: {
         findUnique: asyncMock(null),
@@ -387,6 +407,7 @@ describe('AuthService', () => {
       const txPrisma = {
         user: { update: asyncMock({ ...user, passwordHash: 'new-hash' }) },
         passwordResetToken: { delete: asyncMock(undefined) },
+        session: { deleteMany: asyncMock({ count: 2 }) },
       };
       prisma.$transaction.mockImplementation((cb: any) => cb(txPrisma));
 
@@ -398,6 +419,9 @@ describe('AuthService', () => {
       });
       expect(txPrisma.passwordResetToken.delete).toHaveBeenCalledWith({
         where: { id: resetToken.id },
+      });
+      expect(txPrisma.session.deleteMany).toHaveBeenCalledWith({
+        where: { userId: resetToken.userId },
       });
       expect(result.user.email).toBe(user.email);
       expect(result.accessToken).toBe('signed-token');
@@ -672,61 +696,132 @@ describe('AuthService', () => {
   });
 
   describe('refresh', () => {
-    it('returns new tokens when the refresh token matches the stored hash', async () => {
-      prisma.user.findUnique.mockResolvedValueOnce({
-        ...user,
-        refreshTokenHash: 'stored-hash',
-      });
+    const session = {
+      id: 'session-1',
+      userId: user.id,
+      refreshTokenHash: hashRefreshToken('valid-refresh-token'),
+      userAgent: 'Mozilla/5.0',
+      ipAddress: '127.0.0.1',
+    };
 
-      const result = await service.refresh(user.id, 'valid-refresh-token');
+    it('returns new tokens and rotates the same session when the refresh token matches', async () => {
+      prisma.session.findUnique.mockResolvedValueOnce(session);
+
+      const result = await service.refresh(
+        user.id,
+        session.id,
+        'valid-refresh-token',
+      );
 
       expect(result.accessToken).toBe('signed-token');
-      expect(prisma.user.update).toHaveBeenCalledWith(
+      expect(prisma.session.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: user.id },
-          data: { refreshTokenHash: expect.any(String) },
+          where: { id: session.id },
+          data: expect.objectContaining({
+            // jwtService.signAsync is mocked to always resolve 'signed-token',
+            // so the freshly-issued refresh token is that literal string.
+            refreshTokenHash: hashRefreshToken('signed-token'),
+          }),
         }),
       );
+      expect(prisma.session.delete).not.toHaveBeenCalled();
     });
 
-    it('revokes the session (nulls refreshTokenHash) when a stale/reused refresh token is presented', async () => {
-      prisma.user.findUnique.mockResolvedValueOnce({
-        ...user,
-        refreshTokenHash: 'stored-hash',
-      });
-      (bcryptMock.compare as jest.Mock).mockResolvedValueOnce(false as never);
+    it('deletes the session (revoking it outright) when a stale/reused refresh token is presented', async () => {
+      // Regression coverage for a real bug: this used to be compared via
+      // bcrypt.compare, which silently truncates input past 72 bytes — every
+      // JWT refresh token for a session hashed identically, so a stale token
+      // was wrongly accepted. SHA-256 has no such truncation, so a merely
+      // different token string (no special "stale" mocking needed) already
+      // proves the point.
+      prisma.session.findUnique.mockResolvedValueOnce(session);
 
       await expect(
-        service.refresh(user.id, 'stale-refresh-token'),
+        service.refresh(user.id, session.id, 'stale-refresh-token'),
       ).rejects.toThrow(UnauthorizedException);
 
-      expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: user.id },
-        data: { refreshTokenHash: null },
+      expect(prisma.session.delete).toHaveBeenCalledWith({
+        where: { id: session.id },
       });
     });
 
-    it('throws UnauthorizedException when the user has no stored refresh token hash', async () => {
-      prisma.user.findUnique.mockResolvedValueOnce({
-        ...user,
-        refreshTokenHash: null,
+    it('throws UnauthorizedException when the session does not exist', async () => {
+      prisma.session.findUnique.mockResolvedValueOnce(null);
+
+      await expect(
+        service.refresh(user.id, 'missing-session', 'whatever'),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(prisma.session.update).not.toHaveBeenCalled();
+    });
+
+    it('throws UnauthorizedException when the session belongs to a different user', async () => {
+      prisma.session.findUnique.mockResolvedValueOnce({
+        ...session,
+        userId: 'someone-elses-user-id',
       });
 
-      await expect(service.refresh(user.id, 'whatever')).rejects.toThrow(
-        UnauthorizedException,
-      );
-      expect(prisma.user.update).not.toHaveBeenCalled();
+      await expect(
+        service.refresh(user.id, session.id, 'valid-refresh-token'),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(prisma.session.update).not.toHaveBeenCalled();
     });
   });
 
   describe('logout', () => {
-    it('clears the stored refreshTokenHash', async () => {
-      await service.logout(user.id);
+    it('deletes only the current session, scoped to the requesting user', async () => {
+      await service.logout(user.id, 'session-1');
 
-      expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: user.id },
-        data: { refreshTokenHash: null },
+      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
+        where: { id: 'session-1', userId: user.id },
       });
+    });
+  });
+
+  describe('listSessions', () => {
+    it('marks the caller-provided session id as current', async () => {
+      prisma.session.findMany.mockResolvedValueOnce([
+        {
+          id: 'session-1',
+          userAgent: 'Chrome',
+          ipAddress: '1.1.1.1',
+          createdAt: new Date(),
+          lastUsedAt: new Date(),
+        },
+        {
+          id: 'session-2',
+          userAgent: 'Firefox',
+          ipAddress: '2.2.2.2',
+          createdAt: new Date(),
+          lastUsedAt: new Date(),
+        },
+      ]);
+
+      const result = await service.listSessions(user.id, 'session-2');
+
+      expect(result.map((s) => [s.id, s.isCurrent])).toEqual([
+        ['session-1', false],
+        ['session-2', true],
+      ]);
+    });
+  });
+
+  describe('revokeSession', () => {
+    it('deletes the given session when it belongs to the caller', async () => {
+      prisma.session.deleteMany.mockResolvedValueOnce({ count: 1 });
+
+      await service.revokeSession(user.id, 'session-1');
+
+      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
+        where: { id: 'session-1', userId: user.id },
+      });
+    });
+
+    it('throws NotFoundException when nothing matched (wrong user or unknown session)', async () => {
+      prisma.session.deleteMany.mockResolvedValueOnce({ count: 0 });
+
+      await expect(service.revokeSession(user.id, 'not-mine')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

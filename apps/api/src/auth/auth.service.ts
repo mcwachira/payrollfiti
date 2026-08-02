@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -10,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as otplib from 'otplib';
 import QRCode from 'qrcode';
-import { Prisma, Role, User } from '@prisma/client';
+import { Prisma, Role, Session, User } from '@prisma/client';
 import { getPricingForCountry } from '@repo/pricing';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
@@ -38,6 +39,13 @@ const BACKUP_CODE_COUNT = 10;
 // Excludes 0/O/1/I — ambiguous when handwritten/misread from a printed sheet.
 const BACKUP_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
+/** Captured from the HTTP request at the controller layer — where a Session
+ *  actually originated (browser/device), not something a DTO body carries. */
+export interface SessionMeta {
+  userAgent?: string;
+  ipAddress?: string;
+}
+
 function generateBackupCode(): string {
   const chars = Array.from(
     randomBytes(8),
@@ -52,6 +60,21 @@ function normalizeBackupCode(code: string): string {
 
 function hashBackupCode(code: string): string {
   return createHash('sha256').update(normalizeBackupCode(code)).digest('hex');
+}
+
+/**
+ * SHA-256, not bcrypt — same choice as ApiKey/EmployeeInvite/
+ * PasswordResetToken elsewhere in this schema, and for the same reason
+ * (a high-entropy, machine-generated token has no brute-force risk bcrypt's
+ * deliberate slowness defends against). Unlike those tokens, this one isn't
+ * optional here: bcrypt silently truncates its input to 72 bytes, and a JWT
+ * refresh token is far longer than that with the part that actually varies
+ * between issuances (iat/exp/signature) falling past the truncation point —
+ * every token for a given session would hash identically, silently
+ * defeating rotation-reuse detection.
+ */
+function hashRefreshToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
 }
 
 /**
@@ -86,7 +109,7 @@ export class AuthService {
     private readonly encryptionService: EncryptionService,
   ) {}
 
-  async signup(dto: SignupDto) {
+  async signup(dto: SignupDto, meta: SessionMeta = {}) {
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.adminEmail },
     });
@@ -123,8 +146,12 @@ export class AuthService {
     // must never roll back account creation (see BillingService.startTrial).
     await this.billingService.startTrial(tenant.id);
 
-    const tokens = await this.issueTokens(user);
-    return { tenant, user: this.toAuthenticatedUser(user), ...tokens };
+    const { session, ...tokens } = await this.createSession(user, meta);
+    return {
+      tenant,
+      user: this.toAuthenticatedUser(user, session.id),
+      ...tokens,
+    };
   }
 
   async validateUser(email: string, password: string): Promise<User> {
@@ -139,7 +166,7 @@ export class AuthService {
     return user;
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, meta: SessionMeta = {}) {
     const user = await this.validateUser(dto.email, dto.password);
     if (user.twoFactorEnabled) {
       // Password alone doesn't issue tokens — the caller gets a short-lived
@@ -154,33 +181,61 @@ export class AuthService {
       );
       return { twoFactorRequired: true as const, challengeToken };
     }
-    const tokens = await this.issueTokens(user);
-    return { user: this.toAuthenticatedUser(user), ...tokens };
+    const { session, ...tokens } = await this.createSession(user, meta);
+    return { user: this.toAuthenticatedUser(user, session.id), ...tokens };
   }
 
-  async refresh(userId: string, refreshToken: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user?.refreshTokenHash) {
+  async refresh(userId: string, sessionId: string, refreshToken: string) {
+    const session = await this.prisma.session.findUnique({
+      where: { id: sessionId },
+    });
+    if (!session || session.userId !== userId) {
       throw new UnauthorizedException('Session expired, please log in again');
     }
-    const matches = await bcrypt.compare(refreshToken, user.refreshTokenHash);
+    const matches = hashRefreshToken(refreshToken) === session.refreshTokenHash;
     if (!matches) {
-      // Reuse of a rotated-out refresh token — revoke the session outright.
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: { refreshTokenHash: null },
-      });
+      // Reuse of a rotated-out refresh token — revoke the session outright
+      // rather than just rejecting, on the theory that a mismatched refresh
+      // token is a signal the token may have leaked.
+      await this.prisma.session.delete({ where: { id: session.id } });
       throw new UnauthorizedException('Invalid refresh token');
     }
-    const tokens = await this.issueTokens(user);
-    return { user: this.toAuthenticatedUser(user), ...tokens };
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    const tokens = await this.rotateSession(session, user);
+    return { user: this.toAuthenticatedUser(user, session.id), ...tokens };
   }
 
-  async logout(userId: string) {
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshTokenHash: null },
+  async logout(userId: string, sessionId: string): Promise<void> {
+    await this.prisma.session.deleteMany({
+      where: { id: sessionId, userId },
     });
+  }
+
+  async listSessions(userId: string, currentSessionId: string) {
+    const sessions = await this.prisma.session.findMany({
+      where: { userId },
+      orderBy: { lastUsedAt: 'desc' },
+    });
+    return sessions.map((session) => ({
+      id: session.id,
+      userAgent: session.userAgent,
+      ipAddress: session.ipAddress,
+      createdAt: session.createdAt,
+      lastUsedAt: session.lastUsedAt,
+      isCurrent: session.id === currentSessionId,
+    }));
+  }
+
+  /** "Sign out this device" — scoped to the caller's own userId so one user can't revoke another's session. */
+  async revokeSession(userId: string, sessionId: string): Promise<void> {
+    const { count } = await this.prisma.session.deleteMany({
+      where: { id: sessionId, userId },
+    });
+    if (count === 0) {
+      throw new NotFoundException('Session not found');
+    }
   }
 
   /**
@@ -190,7 +245,7 @@ export class AuthService {
    * of response as signup/login, so the frontend can treat it identically.
    * Public — the token itself, not a session, is what's being verified.
    */
-  async acceptInvite(dto: AcceptInviteDto) {
+  async acceptInvite(dto: AcceptInviteDto, meta: SessionMeta = {}) {
     const tokenHash = createHash('sha256').update(dto.token).digest('hex');
     const invite = await this.prisma.employeeInvite.findUnique({
       where: { tokenHash },
@@ -234,8 +289,8 @@ export class AuthService {
       throw error;
     }
 
-    const tokens = await this.issueTokens(user);
-    return { user: this.toAuthenticatedUser(user), ...tokens };
+    const { session, ...tokens } = await this.createSession(user, meta);
+    return { user: this.toAuthenticatedUser(user, session.id), ...tokens };
   }
 
   /**
@@ -275,12 +330,12 @@ export class AuthService {
 
   /**
    * Redeems a PasswordResetToken (see forgotPassword) and logs the user in
-   * immediately, same shape of response as login/acceptInvite. Reissuing
-   * tokens here overwrites refreshTokenHash, which as a side effect
-   * invalidates any refresh token from a session issued before the reset —
-   * exactly the behavior you want after a password compromise/recovery.
+   * immediately, same shape of response as login/acceptInvite. Every other
+   * session is deleted as part of this — exactly the behavior you want
+   * after a password compromise/recovery, where any session from before
+   * the reset should stop working.
    */
-  async resetPassword(dto: ResetPasswordDto) {
+  async resetPassword(dto: ResetPasswordDto, meta: SessionMeta = {}) {
     const tokenHash = createHash('sha256').update(dto.token).digest('hex');
     const resetToken = await this.prisma.passwordResetToken.findUnique({
       where: { tokenHash },
@@ -298,11 +353,12 @@ export class AuthService {
         data: { passwordHash },
       });
       await tx.passwordResetToken.delete({ where: { id: resetToken.id } });
+      await tx.session.deleteMany({ where: { userId: resetToken.userId } });
       return updated;
     });
 
-    const tokens = await this.issueTokens(user);
-    return { user: this.toAuthenticatedUser(user), ...tokens };
+    const { session, ...tokens } = await this.createSession(user, meta);
+    return { user: this.toAuthenticatedUser(user, session.id), ...tokens };
   }
 
   async getTwoFactorStatus(userId: string): Promise<{ enabled: boolean }> {
@@ -409,7 +465,7 @@ export class AuthService {
   }
 
   /** Redeems the challenge from login() into real tokens — same response shape as login/acceptInvite. */
-  async verifyTwoFactor(dto: TwoFactorVerifyDto) {
+  async verifyTwoFactor(dto: TwoFactorVerifyDto, meta: SessionMeta = {}) {
     let payload: { purpose: string; sub: string };
     try {
       payload = await this.jwtService.verifyAsync(dto.challengeToken, {
@@ -440,8 +496,8 @@ export class AuthService {
       throw new UnauthorizedException('Invalid code');
     }
 
-    const tokens = await this.issueTokens(user);
-    return { user: this.toAuthenticatedUser(user), ...tokens };
+    const { session, ...tokens } = await this.createSession(user, meta);
+    return { user: this.toAuthenticatedUser(user, session.id), ...tokens };
   }
 
   /** Tries a live TOTP code first, then falls back to a single-use backup code (consuming it on match). */
@@ -472,7 +528,31 @@ export class AuthService {
     return false;
   }
 
-  private async issueTokens(user: User) {
+  /** Creates a brand-new Session row — every login-shaped entry point (login,
+   *  signup, acceptInvite, resetPassword, verifyTwoFactor) calls this, never
+   *  rotateSession, since none of them have an existing session to rotate. */
+  private async createSession(user: User, meta: SessionMeta) {
+    const session = await this.prisma.session.create({
+      data: {
+        userId: user.id,
+        // Placeholder overwritten immediately below — the real hash needs
+        // the session's own id first (it's embedded in the refresh token
+        // payload), so the row has to exist before it can be signed.
+        refreshTokenHash: '',
+        userAgent: meta.userAgent,
+        ipAddress: meta.ipAddress,
+      },
+    });
+    const tokens = await this.signAndStoreTokens(user, session.id);
+    return { session, ...tokens };
+  }
+
+  /** refresh() calls this instead of createSession — same session id carries forward, only its hash/lastUsedAt change. */
+  private async rotateSession(session: Session, user: User) {
+    return this.signAndStoreTokens(user, session.id);
+  }
+
+  private async signAndStoreTokens(user: User, sessionId: string) {
     const jwtConfig = this.configService.get('jwt', { infer: true });
 
     const accessPayload: JwtAccessPayload = {
@@ -481,8 +561,9 @@ export class AuthService {
       role: user.role,
       tenantId: user.tenantId,
       employeeId: user.employeeId,
+      sessionId,
     };
-    const refreshPayload: JwtRefreshPayload = { sub: user.id };
+    const refreshPayload: JwtRefreshPayload = { sub: user.id, sessionId };
 
     const accessToken = await this.jwtService.signAsync(accessPayload, {
       secret: jwtConfig.accessSecret,
@@ -493,22 +574,26 @@ export class AuthService {
       expiresIn: jwtConfig.refreshExpiresIn,
     });
 
-    const refreshTokenHash = await bcrypt.hash(refreshToken, SALT_ROUNDS);
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { refreshTokenHash },
+    const refreshTokenHash = hashRefreshToken(refreshToken);
+    await this.prisma.session.update({
+      where: { id: sessionId },
+      data: { refreshTokenHash, lastUsedAt: new Date() },
     });
 
     return { accessToken, refreshToken };
   }
 
-  private toAuthenticatedUser(user: User): AuthenticatedRequestUser {
+  private toAuthenticatedUser(
+    user: User,
+    sessionId: string,
+  ): AuthenticatedRequestUser {
     return {
       id: user.id,
       email: user.email,
       role: user.role,
       tenantId: user.tenantId,
       employeeId: user.employeeId,
+      sessionId,
     };
   }
 }
