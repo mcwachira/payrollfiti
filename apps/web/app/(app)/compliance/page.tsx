@@ -1,9 +1,8 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -13,758 +12,404 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Download,
-  Upload,
-  FileText,
-  Calendar,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  Send,
-  Building,
-  DollarSign,
-  TrendingUp,
-  Bell,
-} from 'lucide-react';
-import { formatCurrency } from '@/utils/payrollCalculations';
+import { AlertTriangle, Download, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { listCompanies, listEmployees } from '@/lib/employees-api';
+import { getMyTenant } from '@/lib/tenants-api';
+import {
+  downloadNhifRemittanceCsv,
+  downloadNssfRemittanceCsv,
+  downloadP10Csv,
+  downloadP9,
+  downloadPayeRemittanceCsv,
+  downloadPensionRemittanceCsv,
+  downloadNhfRemittanceCsv,
+  downloadEmp201Csv,
+  downloadIrp5,
+} from '@/lib/compliance-reports-api';
+import { ApiError } from '@/lib/api-client';
+import { PageSkeleton } from '@/components/ui/loading-skeleton';
 
-interface StatutoryReturn {
-  id: string;
-  type: 'PAYE' | 'NSSF' | 'NHIF';
-  period: string;
-  due_date: string;
-  total_amount: number;
-  status: 'pending' | 'submitted' | 'paid' | 'overdue';
-  submission_reference?: string;
-  file_url?: string;
-  submitted_at?: string;
-  paid_at?: string;
+function currentPeriod() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 }
 
-interface ComplianceAlert {
-  id: string;
-  type: 'due_soon' | 'overdue' | 'rule_change';
-  message: string;
-  due_date?: string;
-  priority: 'low' | 'medium' | 'high';
-  acknowledged: boolean;
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof ApiError ? error.message : fallback;
 }
 
-function StatutoryRemittance() {
-  const [returns, setReturns] = useState<StatutoryReturn[]>([]);
-  const [alerts, setAlerts] = useState<ComplianceAlert[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState('2024-12');
-  const [isLoading, setIsLoading] = useState(false);
+export default function CompliancePage() {
+  const [period, setPeriod] = useState(currentPeriod());
+  const [employeeId, setEmployeeId] = useState<string>('');
+  const [taxYear, setTaxYear] = useState(String(new Date().getFullYear()));
 
-  // Mock data for demonstration
-  const mockReturns: StatutoryReturn[] = [
-    {
-      id: '1',
-      type: 'PAYE',
-      period: '2024-12',
-      due_date: '2025-01-09',
-      total_amount: 450000,
-      status: 'pending',
-    },
-    {
-      id: '2',
-      type: 'NSSF',
-      period: '2024-12',
-      due_date: '2025-01-15',
-      total_amount: 180000,
-      status: 'pending',
-    },
-    {
-      id: '3',
-      type: 'NHIF',
-      period: '2024-12',
-      due_date: '2025-01-15',
-      total_amount: 67500,
-      status: 'submitted',
-      submission_reference: 'NHIF-2024-12-001',
-      submitted_at: '2024-12-28',
-    },
-    {
-      id: '4',
-      type: 'PAYE',
-      period: '2024-11',
-      due_date: '2024-12-09',
-      total_amount: 435000,
-      status: 'paid',
-      submission_reference: 'KRA-2024-11-001',
-      submitted_at: '2024-11-30',
-      paid_at: '2024-12-05',
-    },
-  ];
-
-  const mockAlerts: ComplianceAlert[] = [
-    {
-      id: '1',
-      type: 'due_soon',
-      message: 'PAYE return for December 2024 is due on January 9, 2025',
-      due_date: '2025-01-09',
-      priority: 'high',
-      acknowledged: false,
-    },
-    {
-      id: '2',
-      type: 'due_soon',
-      message:
-        'NSSF and NHIF contributions for December 2024 are due on January 15, 2025',
-      due_date: '2025-01-15',
-      priority: 'medium',
-      acknowledged: false,
-    },
-    {
-      id: '3',
-      type: 'rule_change',
-      message:
-        'New tax brackets effective from January 2025 - Update your payroll calculations',
-      priority: 'medium',
-      acknowledged: false,
-    },
-  ];
-
-  useEffect(() => {
-    setReturns(mockReturns);
-    setAlerts(mockAlerts);
-  }, []);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'paid':
-        return (
-          <Badge className="bg-green-100 text-green-800">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Paid
-          </Badge>
-        );
-      case 'submitted':
-        return (
-          <Badge className="bg-blue-100 text-blue-800">
-            <Send className="w-3 h-3 mr-1" />
-            Submitted
-          </Badge>
-        );
-      case 'overdue':
-        return (
-          <Badge className="bg-red-100 text-red-800">
-            <AlertTriangle className="w-3 h-3 mr-1" />
-            Overdue
-          </Badge>
-        );
-      default:
-        return (
-          <Badge className="bg-yellow-100 text-yellow-800">
-            <Clock className="w-3 h-3 mr-1" />
-            Pending
-          </Badge>
-        );
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return 'border-l-red-500';
-      case 'medium':
-        return 'border-l-yellow-500';
-      default:
-        return 'border-l-blue-500';
-    }
-  };
-
-  const handleGenerateFile = async (returnId: string, type: string) => {
-    setIsLoading(true);
-    try {
-      // Mock file generation
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      toast('File Generated', {
-        description: `${type} remittance file has been generated successfully.`,
-      });
-    } catch (error) {
-      toast.error('Error', {
-        description: 'Failed to generate remittance file',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSubmitReturn = async (returnId: string, type: string) => {
-    setIsLoading(true);
-    try {
-      // Mock submission
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Update return status
-      setReturns((prev) =>
-        prev.map((ret) =>
-          ret.id === returnId
-            ? {
-                ...ret,
-                status: 'submitted',
-                submission_reference: `${type}-${Date.now()}`,
-                submitted_at: new Date().toISOString(),
-              }
-            : ret,
-        ),
-      );
-
-      toast('Return Submitted', {
-        description: `${type} return has been submitted successfully.`,
-      });
-    } catch (error) {
-      toast.error('Error', {
-        description: 'Failed to submit return',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const acknowledgeAlert = (alertId: string) => {
-    setAlerts((prev) =>
-      prev.map((alert) =>
-        alert.id === alertId ? { ...alert, acknowledged: true } : alert,
-      ),
-    );
-  };
-
-  const pendingReturns = returns.filter(
-    (r) => r.status === 'pending' || r.status === 'overdue',
-  );
-  const upcomingDue = returns.filter((r) => {
-    const dueDate = new Date(r.due_date);
-    const today = new Date();
-    const daysDiff = Math.ceil(
-      (dueDate.getTime() - today.getTime()) / (1000 * 3600 * 24),
-    );
-    return (
-      daysDiff <= 7 &&
-      daysDiff > 0 &&
-      (r.status === 'pending' || r.status === 'overdue')
-    );
+  const companiesQuery = useQuery({
+    queryKey: ['companies'],
+    queryFn: listCompanies,
   });
+  const company = companiesQuery.data?.[0] ?? null;
+
+  const tenantQuery = useQuery({
+    queryKey: ['tenant', 'me'],
+    queryFn: getMyTenant,
+  });
+  const countryCode = tenantQuery.data?.countryCode;
+
+  const employeesQuery = useQuery({
+    queryKey: ['employees', company?.id],
+    queryFn: () => listEmployees(company!.id),
+    enabled: !!company,
+  });
+
+  const p10Mutation = useMutation({
+    mutationFn: () => downloadP10Csv(company!.id, period),
+    onError: (error) =>
+      toast.error('Could not generate PAYE summary', {
+        description: errorMessage(
+          error,
+          'No payroll run found for that period',
+        ),
+      }),
+  });
+
+  const nssfMutation = useMutation({
+    mutationFn: () => downloadNssfRemittanceCsv(company!.id, period),
+    onError: (error) =>
+      toast.error('Could not generate NSSF remittance file', {
+        description: errorMessage(
+          error,
+          'No payroll run found for that period',
+        ),
+      }),
+  });
+
+  const nhifMutation = useMutation({
+    mutationFn: () => downloadNhifRemittanceCsv(company!.id, period),
+    onError: (error) =>
+      toast.error('Could not generate NHIF/SHIF remittance file', {
+        description: errorMessage(
+          error,
+          'No payroll run found for that period',
+        ),
+      }),
+  });
+
+  const p9Mutation = useMutation({
+    mutationFn: () => downloadP9(company!.id, employeeId, taxYear),
+    onError: (error) =>
+      toast.error('Could not generate P9 certificate', {
+        description: errorMessage(
+          error,
+          'No payroll entries found for this employee in that tax year',
+        ),
+      }),
+  });
+
+  const payeMutation = useMutation({
+    mutationFn: () => downloadPayeRemittanceCsv(company!.id, period),
+    onError: (error) =>
+      toast.error('Could not generate PAYE remittance schedule', {
+        description: errorMessage(
+          error,
+          'No payroll run found for that period',
+        ),
+      }),
+  });
+
+  const pensionMutation = useMutation({
+    mutationFn: () => downloadPensionRemittanceCsv(company!.id, period),
+    onError: (error) =>
+      toast.error('Could not generate pension remittance schedule', {
+        description: errorMessage(
+          error,
+          'No payroll run found for that period',
+        ),
+      }),
+  });
+
+  const nhfMutation = useMutation({
+    mutationFn: () => downloadNhfRemittanceCsv(company!.id, period),
+    onError: (error) =>
+      toast.error('Could not generate NHF remittance schedule', {
+        description: errorMessage(
+          error,
+          'No payroll run found for that period',
+        ),
+      }),
+  });
+
+  const emp201Mutation = useMutation({
+    mutationFn: () => downloadEmp201Csv(company!.id, period),
+    onError: (error) =>
+      toast.error('Could not generate EMP201 declaration', {
+        description: errorMessage(
+          error,
+          'No payroll run found for that period',
+        ),
+      }),
+  });
+
+  const irp5Mutation = useMutation({
+    mutationFn: () => downloadIrp5(company!.id, employeeId, taxYear),
+    onError: (error) =>
+      toast.error('Could not generate IRP5 certificate', {
+        description: errorMessage(
+          error,
+          'No payroll entries found for this employee in that tax year',
+        ),
+      }),
+  });
+
+  if (companiesQuery.isLoading) return <PageSkeleton />;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-yellow-900">
-        <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
-        <p className="text-sm">
-          <span className="font-semibold">Demo data</span> — statutory e-filing
-          integration (KRA, NSSF, NHIF) is not yet implemented. Everything below
-          is illustrative sample data, not connected to a live filing system.
+      <div>
+        <h1 className="text-2xl font-extrabold">
+          Statutory Compliance Reports
+        </h1>
+        <p className="text-muted-foreground">
+          Generate statutory filing documents from real payroll data
         </p>
       </div>
 
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-extrabold">
-            Statutory Remittance & Compliance
-          </h1>
-          <p className="text-muted-foreground">
-            Manage KRA, NSSF, and NHIF submissions
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() =>
-              toast('Data import', {
-                description:
-                  'Bulk data import is not available in this demo environment yet.',
-              })
-            }
-          >
-            <Upload className="mr-2 h-4 w-4" />
-            Import Data
-          </Button>
-          <Button
-            disabled={isLoading}
-            onClick={() => {
-              void handleGenerateFile('1', 'PAYE');
-              void handleGenerateFile('2', 'NSSF');
-              void handleGenerateFile('3', 'NHIF');
-            }}
-          >
-            <FileText className="mr-2 h-4 w-4" />
-            Generate All Files
-          </Button>
-        </div>
+      <div className="flex items-start gap-3 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-yellow-900">
+        <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+        <p className="text-sm">
+          These reports are generated from your actual payroll runs and are
+          ready for manual filing. This app does not submit filings to any tax
+          or statutory authority on your behalf — there is no e-filing
+          integration.
+        </p>
       </div>
 
-      {/* Alert Banner */}
-      {alerts.filter((a) => !a.acknowledged).length > 0 && (
-        <Card className="border-yellow-200 bg-yellow-50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-yellow-600" />
-              <CardTitle className="text-yellow-800">
-                Compliance Alerts
-              </CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {alerts
-              .filter((a) => !a.acknowledged)
-              .slice(0, 3)
-              .map((alert) => (
-                <div
-                  key={alert.id}
-                  className={`flex items-center justify-between p-3 border-l-4 bg-card rounded ${getPriorityColor(alert.priority)}`}
-                >
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
-                    <span className="text-sm">{alert.message}</span>
-                    {alert.due_date && (
-                      <Badge variant="outline" className="text-xs">
-                        Due: {new Date(alert.due_date).toLocaleDateString()}
-                      </Badge>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => acknowledgeAlert(alert.id)}
-                  >
-                    Acknowledge
-                  </Button>
-                </div>
-              ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {!company ? (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pending Returns
-            </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-extrabold">
-              {pendingReturns.length}
-            </div>
-            <p className="text-xs text-muted-foreground">Require submission</p>
+          <CardContent className="pt-6 text-sm text-muted-foreground">
+            No company found. Add a company before generating compliance
+            reports.
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Due This Week</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-extrabold">{upcomingDue.length}</div>
-            <p className="text-xs text-muted-foreground">Upcoming deadlines</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Amount Due
-            </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-extrabold">
-              {formatCurrency(
-                pendingReturns.reduce((sum, ret) => sum + ret.total_amount, 0),
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">Pending payments</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Compliance Score
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-extrabold text-green-600">95%</div>
-            <p className="text-xs text-muted-foreground">On-time submissions</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Tabs defaultValue="returns" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="returns">Statutory Returns</TabsTrigger>
-          <TabsTrigger value="paye">KRA iTax PAYE</TabsTrigger>
-          <TabsTrigger value="contributions">NSSF & NHIF</TabsTrigger>
-          <TabsTrigger value="schedule">Payment Schedule</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="returns" className="space-y-6">
+      ) : countryCode === 'KE' ? (
+        <>
           <Card>
             <CardHeader>
-              <CardTitle>All Statutory Returns</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Due Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Reference</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {returns.map((returnItem) => (
-                    <TableRow key={returnItem.id}>
-                      <TableCell className="font-medium">
-                        {returnItem.type}
-                      </TableCell>
-                      <TableCell>{returnItem.period}</TableCell>
-                      <TableCell>
-                        {formatCurrency(returnItem.total_amount)}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(returnItem.due_date).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(returnItem.status)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {returnItem.submission_reference || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() =>
-                              handleGenerateFile(returnItem.id, returnItem.type)
-                            }
-                            disabled={isLoading}
-                            aria-label={`Download ${returnItem.type} return for ${returnItem.period}`}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
-                          {returnItem.status === 'pending' && (
-                            <Button
-                              size="sm"
-                              onClick={() =>
-                                handleSubmitReturn(
-                                  returnItem.id,
-                                  returnItem.type,
-                                )
-                              }
-                              disabled={isLoading}
-                            >
-                              Submit
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="paye" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>KRA iTax PAYE Returns</CardTitle>
+              <CardTitle>Monthly Statutory Filings</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="max-w-xs space-y-2">
+                <Label htmlFor="period">Payroll period</Label>
+                <Input
+                  id="period"
+                  type="month"
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Uses the most recent completed payroll run for this period.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Button
+                  variant="outline"
+                  disabled={p10Mutation.isPending}
+                  onClick={() => p10Mutation.mutate()}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  PAYE Summary (P10)
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={nssfMutation.isPending}
+                  onClick={() => nssfMutation.mutate()}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  NSSF Remittance
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={nhifMutation.isPending}
+                  onClick={() => nhifMutation.mutate()}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  NHIF/SHIF Remittance
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>P9 Tax Deduction Certificate</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Tax Period</Label>
-                  <Select
-                    value={selectedPeriod}
-                    onValueChange={setSelectedPeriod}
-                  >
+                  <Label>Employee</Label>
+                  <Select value={employeeId} onValueChange={setEmployeeId}>
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Select an employee" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="2024-12">December 2024</SelectItem>
-                      <SelectItem value="2024-11">November 2024</SelectItem>
-                      <SelectItem value="2024-10">October 2024</SelectItem>
+                      {employeesQuery.data?.map((employee) => (
+                        <SelectItem key={employee.id} value={employee.id}>
+                          {employee.firstName} {employee.lastName}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>KRA PIN</Label>
-                  <Input placeholder="Enter KRA PIN" />
+                  <Label htmlFor="taxYear">Tax year</Label>
+                  <Input
+                    id="taxYear"
+                    value={taxYear}
+                    onChange={(e) => setTaxYear(e.target.value)}
+                  />
                 </div>
-              </div>
-
-              <div className="p-4 border rounded-lg bg-muted/50">
-                <h4 className="font-medium mb-2">
-                  PAYE Summary for {selectedPeriod}
-                </h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>Total Employees: 45</div>
-                  <div>Total PAYE: {formatCurrency(450000)}</div>
-                  <div>Due Date: 9th January 2025</div>
-                  <div>Status: Pending Submission</div>
+                <div className="flex items-end">
+                  <Button
+                    disabled={!employeeId || p9Mutation.isPending}
+                    onClick={() => p9Mutation.mutate()}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Generate P9
+                  </Button>
                 </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={() => handleGenerateFile('paye', 'PAYE')}
-                  disabled={isLoading}
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Generate P9A Form
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={isLoading}
-                  onClick={() => handleGenerateFile('1', 'PAYE Excel Template')}
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Excel Template
-                </Button>
-                <Button
-                  variant="outline"
-                  disabled={isLoading}
-                  onClick={() => handleSubmitReturn('1', 'PAYE')}
-                >
-                  <Send className="mr-2 h-4 w-4" />
-                  Submit to iTax
-                </Button>
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </>
+      ) : countryCode === 'NG' ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Monthly Statutory Filings</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="max-w-xs space-y-2">
+              <Label htmlFor="period">Payroll period</Label>
+              <Input
+                id="period"
+                type="month"
+                value={period}
+                onChange={(e) => setPeriod(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Uses the most recent completed payroll run for this period.
+              </p>
+            </div>
 
-        <TabsContent value="contributions" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>NSSF Contributions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 border rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">December 2024</span>
-                    <Badge variant="outline">Tier I & II</Badge>
-                  </div>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span>Employee Contributions:</span>
-                      <span>{formatCurrency(90000)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Employer Contributions:</span>
-                      <span>{formatCurrency(90000)}</span>
-                    </div>
-                    <div className="flex justify-between font-medium">
-                      <span>Total:</span>
-                      <span>{formatCurrency(180000)}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    disabled={isLoading}
-                    onClick={() => handleGenerateFile('2', 'NSSF')}
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    Generate File
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={isLoading}
-                    onClick={() => handleGenerateFile('2', 'NSSF')}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>NHIF Contributions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 border rounded-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-medium">December 2024</span>
-                    <Badge className="bg-blue-100 text-blue-800">
-                      Submitted
-                    </Badge>
-                  </div>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span>Total Deductions:</span>
-                      <span>{formatCurrency(67500)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Reference:</span>
-                      <span>NHIF-2024-12-001</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Submitted:</span>
-                      <span>28 Dec 2024</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      toast('NHIF Receipt', {
-                        description:
-                          'Reference NHIF-2024-12-001 — submitted 28 Dec 2024.',
-                      })
-                    }
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    View Receipt
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={isLoading}
-                    onClick={() => handleGenerateFile('3', 'NHIF')}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="schedule" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Button
+                variant="outline"
+                disabled={payeMutation.isPending}
+                onClick={() => payeMutation.mutate()}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                PAYE Remittance Schedule
+              </Button>
+              <Button
+                variant="outline"
+                disabled={pensionMutation.isPending}
+                onClick={() => pensionMutation.mutate()}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Pension Remittance (PenCom)
+              </Button>
+              <Button
+                variant="outline"
+                disabled={nhfMutation.isPending}
+                onClick={() => nhfMutation.mutate()}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                NHF Remittance (FMBN)
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : countryCode === 'ZA' ? (
+        <>
           <Card>
             <CardHeader>
-              <CardTitle>Payment Schedule & Deadlines</CardTitle>
+              <CardTitle>Monthly Statutory Filings</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-4 border rounded-lg border-yellow-200 bg-yellow-50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Calendar className="h-4 w-4 text-yellow-600" />
-                      <span className="font-medium">PAYE Returns</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground mb-2">
-                      Due: 9th of following month
-                    </div>
-                    <div className="text-sm">
-                      Next: <span className="font-medium">Jan 9, 2025</span>
-                    </div>
-                  </div>
+            <CardContent className="space-y-4">
+              <div className="max-w-xs space-y-2">
+                <Label htmlFor="period">Payroll period</Label>
+                <Input
+                  id="period"
+                  type="month"
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Uses the most recent completed payroll run for this period.
+                </p>
+              </div>
 
-                  <div className="p-4 border rounded-lg border-blue-200 bg-blue-50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Building className="h-4 w-4 text-blue-600" />
-                      <span className="font-medium">NSSF & NHIF</span>
-                    </div>
-                    <div className="text-sm text-muted-foreground mb-2">
-                      Due: 15th of following month
-                    </div>
-                    <div className="text-sm">
-                      Next: <span className="font-medium">Jan 15, 2025</span>
-                    </div>
-                  </div>
+              <Button
+                variant="outline"
+                disabled={emp201Mutation.isPending}
+                onClick={() => emp201Mutation.mutate()}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                EMP201 Declaration (SARS)
+              </Button>
+            </CardContent>
+          </Card>
 
-                  <div className="p-4 border rounded-lg border-green-200 bg-green-50">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="font-medium">Compliance Rate</span>
-                    </div>
-                    <div className="text-2xl font-extrabold text-green-600">
-                      95%
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      On-time submissions
-                    </div>
-                  </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>IRP5 Employee Tax Certificate</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Employee</Label>
+                  <Select value={employeeId} onValueChange={setEmployeeId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an employee" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {employeesQuery.data?.map((employee) => (
+                        <SelectItem key={employee.id} value={employee.id}>
+                          {employee.firstName} {employee.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-
-                <div className="mt-6">
-                  <h4 className="font-medium mb-3">Upcoming Deadlines</h4>
-                  <div className="space-y-2">
-                    {[
-                      {
-                        type: 'PAYE',
-                        period: 'Dec 2024',
-                        due: '2025-01-09',
-                        amount: 450000,
-                      },
-                      {
-                        type: 'NSSF',
-                        period: 'Dec 2024',
-                        due: '2025-01-15',
-                        amount: 180000,
-                      },
-                      {
-                        type: 'NHIF',
-                        period: 'Dec 2024',
-                        due: '2025-01-15',
-                        amount: 67500,
-                      },
-                      {
-                        type: 'PAYE',
-                        period: 'Jan 2025',
-                        due: '2025-02-09',
-                        amount: 465000,
-                      },
-                    ].map((item, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-3 border rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Badge variant="outline">{item.type}</Badge>
-                          <span className="text-sm">{item.period}</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span className="font-medium">
-                            {formatCurrency(item.amount)}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            Due: {new Date(item.due).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="taxYear">Tax year</Label>
+                  <Input
+                    id="taxYear"
+                    value={taxYear}
+                    onChange={(e) => setTaxYear(e.target.value)}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    disabled={!employeeId || irp5Mutation.isPending}
+                    onClick={() => irp5Mutation.mutate()}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Generate IRP5
+                  </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+        </>
+      ) : (
+        <Card>
+          <CardContent className="pt-6 text-sm text-muted-foreground">
+            Statutory compliance reports aren&apos;t available for this
+            tenant&apos;s country yet.
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
-
-export default StatutoryRemittance;

@@ -41,6 +41,14 @@ export class CreateEmployeeDto {
 
   @IsString()
   @IsOptional()
+  taxIdNumber?: string;
+
+  @IsString()
+  @IsOptional()
+  pensionNumber?: string;
+
+  @IsString()
+  @IsOptional()
   jobRole?: string;
 
   @IsEnum(EmploymentType)

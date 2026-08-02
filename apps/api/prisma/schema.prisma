@@ -176,6 +176,12 @@ model Employee {
   kraPin         String?
   nssfNumber     String?
   nhifNumber     String?
+  // Generic government tax ID for non-Kenya countries: Nigeria TIN, South
+  // Africa SARS Income Tax reference number. Kenya uses kraPin instead.
+  taxIdNumber    String?
+  // Generic retirement-scheme member ID for non-Kenya countries: Nigeria
+  // RSA PIN (pension). Kenya uses nssfNumber instead.
+  pensionNumber  String?
   jobRole        String?
   employmentType EmploymentType   @default(PERMANENT)
   currency       String           @default("KES")

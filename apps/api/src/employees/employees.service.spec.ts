@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { EmployeesService } from './employees.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { EncryptionService } from '../common/crypto/encryption.service';
+import { AuditService } from '../audit/audit.service';
 
 // jest.fn() with no type args resolves to Mock<UnknownFunction>, whose return
 // type is `unknown` rather than `Promise<unknown>` — that makes the conditional
@@ -18,6 +19,7 @@ describe('EmployeesService', () => {
   let prisma: any;
   let tenantsService: any;
   let encryptionService: any;
+  let auditService: any;
 
   const company = { id: 'company-1', tenantId: 'tenant-1', name: 'Acme' };
   const employee = {
@@ -41,9 +43,13 @@ describe('EmployeesService', () => {
         findUnique: asyncMock(employee),
         update: asyncMock({ ...employee, status: 'INACTIVE' }),
       },
+      contract: { updateMany: asyncMock({ count: 1 }) },
+      user: { updateMany: asyncMock({ count: 1 }) },
       salaryStructure: { findFirst: asyncMock(null) },
     };
+    prisma.$transaction = jest.fn((fn: any) => fn(prisma));
     tenantsService = { assertCompanyBelongsToTenant: asyncMock(company) };
+    auditService = { record: asyncMock(undefined) };
     // Identity-ish mocks: prefix on encrypt, strip prefix on decrypt — lets
     // tests assert the encrypt/decrypt calls actually happened without
     // duplicating round-trip correctness, which encryption.service.spec.ts
@@ -63,6 +69,7 @@ describe('EmployeesService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: TenantsService, useValue: tenantsService },
         { provide: EncryptionService, useValue: encryptionService },
+        { provide: AuditService, useValue: auditService },
       ],
     }).compile();
 
@@ -104,6 +111,8 @@ describe('EmployeesService', () => {
         kraPin: 'A123456789Z',
         nssfNumber: 'NSSF-1',
         nhifNumber: 'NHIF-1',
+        taxIdNumber: null,
+        pensionNumber: null,
         bankAccountNumber: '1234567890',
       });
     });
@@ -154,6 +163,8 @@ describe('EmployeesService', () => {
         kraPin: 'A123456789Z',
         nssfNumber: 'NSSF-1',
         nhifNumber: 'NHIF-1',
+        taxIdNumber: null,
+        pensionNumber: null,
         bankAccountNumber: '1234567890',
       });
     });
@@ -205,6 +216,92 @@ describe('EmployeesService', () => {
         NotFoundException,
       );
       expect(prisma.employee.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('terminate', () => {
+    beforeEach(() => {
+      prisma.employee.update.mockResolvedValue({
+        ...employee,
+        status: 'TERMINATED',
+        terminatedAt: new Date('2026-07-15'),
+        terminationReason: 'Resignation',
+      });
+    });
+
+    it('marks the employee TERMINATED, closes open contracts, and revokes portal access — all in one transaction', async () => {
+      await service.terminate('tenant-1', 'actor-1', 'emp-1', {
+        terminationDate: '2026-07-15',
+        reason: 'Resignation',
+      });
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(prisma.employee.update).toHaveBeenCalledWith({
+        where: { id: 'emp-1' },
+        data: {
+          status: 'TERMINATED',
+          terminatedAt: new Date('2026-07-15'),
+          terminationReason: 'Resignation',
+        },
+      });
+      expect(prisma.contract.updateMany).toHaveBeenCalledWith({
+        where: { employeeId: 'emp-1', endDate: null },
+        data: { endDate: new Date('2026-07-15') },
+      });
+      expect(prisma.user.updateMany).toHaveBeenCalledWith({
+        where: { employeeId: 'emp-1' },
+        data: { isActive: false, refreshTokenHash: null },
+      });
+    });
+
+    it('defaults the termination date to now when not provided', async () => {
+      await service.terminate('tenant-1', 'actor-1', 'emp-1', {});
+
+      const updateArgs = prisma.employee.update.mock.calls[0][0];
+      expect(updateArgs.data.terminatedAt).toBeInstanceOf(Date);
+    });
+
+    it('records an audit entry with the actor and before/after status', async () => {
+      await service.terminate('tenant-1', 'actor-1', 'emp-1', {
+        terminationDate: '2026-07-15',
+        reason: 'Resignation',
+      });
+
+      expect(auditService.record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenantId: 'tenant-1',
+          actorId: 'actor-1',
+          action: 'employee.terminate',
+          entityType: 'Employee',
+          entityId: 'emp-1',
+          before: { status: 'ACTIVE' },
+          after: expect.objectContaining({
+            status: 'TERMINATED',
+            reason: 'Resignation',
+          }),
+        }),
+      );
+    });
+
+    it('throws BadRequestException if the employee is already terminated', async () => {
+      prisma.employee.findUnique.mockResolvedValueOnce({
+        ...employee,
+        status: 'TERMINATED',
+      });
+
+      await expect(
+        service.terminate('tenant-1', 'actor-1', 'emp-1', {}),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException for a cross-tenant employee before attempting anything', async () => {
+      prisma.employee.findUnique.mockResolvedValueOnce(null);
+
+      await expect(
+        service.terminate('tenant-1', 'actor-1', 'missing-emp', {}),
+      ).rejects.toThrow(NotFoundException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
   });
 

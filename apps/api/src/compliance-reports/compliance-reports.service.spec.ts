@@ -20,6 +20,106 @@ describe('ComplianceReportsService', () => {
     tenant: { countryCode: 'KE' },
   };
 
+  const nigeriaCompany = {
+    id: 'company-ng',
+    tenantId: 'tenant-ng',
+    name: 'Acme NG',
+    tenant: { countryCode: 'NG' },
+  };
+
+  const southAfricaCompany = {
+    id: 'company-za',
+    tenantId: 'tenant-za',
+    name: 'Acme ZA',
+    tenant: { countryCode: 'ZA' },
+  };
+
+  const nigeriaEmployee = (overrides: Partial<any> = {}) => ({
+    id: 'emp-ng-1',
+    employeeNumber: 'EMP-NG-001',
+    firstName: 'Chidi',
+    lastName: 'Okafor',
+    taxIdNumber: 'TIN-123',
+    pensionNumber: 'RSA-456',
+    company: { id: 'company-ng', tenantId: 'tenant-ng', name: 'Acme NG' },
+    ...overrides,
+  });
+
+  const nigeriaStatutoryDeductions = [
+    {
+      code: 'PENSION',
+      label: 'Pension (PRA 2014)',
+      employeeAmount: 6_400,
+      employerAmount: 8_000,
+    },
+    {
+      code: 'NHF',
+      label: 'National Housing Fund',
+      employeeAmount: 1_250,
+      employerAmount: 0,
+    },
+  ];
+  const nigeriaTaxBreakdown = {
+    code: 'PAYE',
+    taxableIncome: 60_000,
+    grossTax: 9_000,
+    relief: 1_000,
+    netTax: 8_000,
+  };
+
+  function makeNigeriaEntry(overrides: Partial<any> = {}) {
+    return {
+      id: 'entry-ng-1',
+      currency: 'NGN',
+      grossPay: 80_000,
+      statutoryDeductions: nigeriaStatutoryDeductions,
+      taxBreakdown: nigeriaTaxBreakdown,
+      employee: nigeriaEmployee(),
+      payrollRun: { period: '2026-01', companyId: 'company-ng' },
+      ...overrides,
+    };
+  }
+
+  const southAfricaEmployee = (overrides: Partial<any> = {}) => ({
+    id: 'emp-za-1',
+    employeeNumber: 'EMP-ZA-001',
+    firstName: 'Thabo',
+    lastName: 'Nkosi',
+    taxIdNumber: 'ITR-789',
+    company: { id: 'company-za', tenantId: 'tenant-za', name: 'Acme ZA' },
+    ...overrides,
+  });
+
+  const southAfricaStatutoryDeductions = [
+    { code: 'UIF', label: 'UIF', employeeAmount: 177.12, employerAmount: 177.12 },
+    {
+      code: 'SDL',
+      label: 'Skills Development Levy',
+      employeeAmount: 0,
+      employerAmount: 800,
+    },
+  ];
+  const southAfricaTaxBreakdown = {
+    code: 'PAYE',
+    taxableIncome: 80_000,
+    grossTax: 12_000,
+    relief: 1_800,
+    netTax: 10_200,
+  };
+
+  function makeSouthAfricaEntry(overrides: Partial<any> = {}) {
+    return {
+      id: 'entry-za-1',
+      currency: 'ZAR',
+      grossPay: 80_000,
+      statutoryDeductions: southAfricaStatutoryDeductions,
+      taxBreakdown: southAfricaTaxBreakdown,
+      employee: southAfricaEmployee(),
+      payrollRun: { period: '2026-01', companyId: 'company-za' },
+      ...overrides,
+    };
+  }
+
   const employee = (overrides: Partial<any> = {}) => ({
     id: 'emp-1',
     employeeNumber: 'EMP-001',
@@ -267,6 +367,142 @@ describe('ComplianceReportsService', () => {
       expect(lines).toHaveLength(3);
       expect(lines[1]).toContain('NHIF-1');
       expect(encryptionService.decrypt).toHaveBeenCalledWith('NHIF-1');
+    });
+  });
+
+  describe('Nigeria reports', () => {
+    beforeEach(() => {
+      prisma.company.findFirst.mockResolvedValue(nigeriaCompany);
+    });
+
+    it('generatePayeRemittanceCsv rejects a non-NG tenant', async () => {
+      prisma.company.findFirst.mockResolvedValue(kenyaCompany);
+
+      await expect(
+        service.generatePayeRemittanceCsv('tenant-1', 'company-1', '2026-01'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('generatePayeRemittanceCsv emits one row per employee with TIN and PAYE', async () => {
+      prisma.payrollRun.findFirst.mockResolvedValue({
+        period: '2026-01',
+        entries: [makeNigeriaEntry()],
+      });
+
+      const csv = await service.generatePayeRemittanceCsv(
+        'tenant-ng',
+        'company-ng',
+        '2026-01',
+      );
+      const lines = csv.split('\n');
+
+      expect(lines[0]).toBe(
+        'employee_number,employee_name,tin,taxable_income,paye',
+      );
+      expect(lines[1]).toContain('TIN-123');
+      expect(lines[1]).toContain('8000.00');
+      expect(encryptionService.decrypt).toHaveBeenCalledWith('TIN-123');
+    });
+
+    it('generatePensionRemittanceCsv sums employee + employer into a total column', async () => {
+      prisma.payrollRun.findFirst.mockResolvedValue({
+        period: '2026-01',
+        entries: [makeNigeriaEntry()],
+      });
+
+      const csv = await service.generatePensionRemittanceCsv(
+        'tenant-ng',
+        'company-ng',
+        '2026-01',
+      );
+      const lines = csv.split('\n');
+
+      expect(lines[0]).toBe(
+        'employee_number,employee_name,rsa_pin,employee_amount,employer_amount,total',
+      );
+      const cols = lines[1]!.split(',');
+      expect(cols[2]).toBe('RSA-456');
+      expect(Number(cols[3])).toBeCloseTo(6_400);
+      expect(Number(cols[4])).toBeCloseTo(8_000);
+      expect(Number(cols[5])).toBeCloseTo(14_400);
+    });
+
+    it('generateNhfRemittanceCsv emits the employee-only NHF amount', async () => {
+      prisma.payrollRun.findFirst.mockResolvedValue({
+        period: '2026-01',
+        entries: [makeNigeriaEntry()],
+      });
+
+      const csv = await service.generateNhfRemittanceCsv(
+        'tenant-ng',
+        'company-ng',
+        '2026-01',
+      );
+      const lines = csv.split('\n');
+
+      expect(lines[0]).toBe('employee_number,employee_name,employee_amount');
+      expect(lines[1]).toContain('1250.00');
+    });
+  });
+
+  describe('South Africa reports', () => {
+    beforeEach(() => {
+      prisma.company.findFirst.mockResolvedValue(southAfricaCompany);
+    });
+
+    it('generateEmp201Csv rejects a non-ZA tenant', async () => {
+      prisma.company.findFirst.mockResolvedValue(kenyaCompany);
+
+      await expect(
+        service.generateEmp201Csv('tenant-1', 'company-1', '2026-01'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('generateEmp201Csv aggregates PAYE, UIF (both sides), and SDL into one row', async () => {
+      prisma.payrollRun.findFirst.mockResolvedValue({
+        period: '2026-01',
+        entries: [makeSouthAfricaEntry(), makeSouthAfricaEntry({ id: 'entry-za-2' })],
+      });
+
+      const csv = await service.generateEmp201Csv(
+        'tenant-za',
+        'company-za',
+        '2026-01',
+      );
+      const [header, row] = csv.split('\n');
+
+      expect(header).toBe(
+        'period,employee_count,total_paye,total_uif_employee,total_uif_employer,total_sdl',
+      );
+      const cols = row!.split(',');
+      expect(cols[1]).toBe('2');
+      expect(Number(cols[2])).toBeCloseTo(10_200 * 2);
+      expect(Number(cols[3])).toBeCloseTo(177.12 * 2);
+      expect(Number(cols[4])).toBeCloseTo(177.12 * 2);
+      expect(Number(cols[5])).toBeCloseTo(800 * 2);
+    });
+
+    it('generateIrp5 renders a PDF using the employee tax ID reference number', async () => {
+      prisma.payrollEntry.findMany.mockResolvedValue([makeSouthAfricaEntry()]);
+
+      const buffer = await service.generateIrp5(
+        'tenant-za',
+        'company-za',
+        'emp-za-1',
+        '2026',
+      );
+
+      expect(Buffer.isBuffer(buffer)).toBe(true);
+      expect(buffer.length).toBeGreaterThan(0);
+      expect(encryptionService.decrypt).toHaveBeenCalledWith('ITR-789');
+    });
+
+    it('generateIrp5 throws NotFoundException when no entries exist for the year', async () => {
+      prisma.payrollEntry.findMany.mockResolvedValue([]);
+
+      await expect(
+        service.generateIrp5('tenant-za', 'company-za', 'emp-za-1', '2026'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

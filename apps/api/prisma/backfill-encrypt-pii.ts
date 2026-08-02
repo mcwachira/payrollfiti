@@ -45,6 +45,8 @@ const PII_FIELDS = [
   'kraPin',
   'nssfNumber',
   'nhifNumber',
+  'taxIdNumber',
+  'pensionNumber',
   'bankAccountNumber',
 ] as const;
 
