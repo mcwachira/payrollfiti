@@ -196,6 +196,12 @@ export class LeaveService {
         ...(filters.employeeId ? { employeeId: filters.employeeId } : {}),
         ...(filters.status ? { status: filters.status } : {}),
       },
+      include: {
+        employee: {
+          select: { firstName: true, lastName: true, employeeNumber: true },
+        },
+        leaveType: { select: { name: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -204,6 +210,7 @@ export class LeaveService {
     if (!employeeId) return [];
     return this.prisma.leaveRequest.findMany({
       where: { employeeId, employee: { company: { tenantId } } },
+      include: { leaveType: { select: { name: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }
