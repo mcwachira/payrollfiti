@@ -21,7 +21,7 @@ interface AfricasTalkingResponse {
 
 /**
  * Africa's Talking SMS gateway — real HTTP API integration, following the
- * same config-gated pattern as StripeProvider/MpesaProvider. Selected in
+ * same config-gated pattern as PaystackProvider/MpesaProvider. Selected in
  * place of NoopSmsProvider by the factory in notifications.module.ts only
  * once AFRICAS_TALKING_API_KEY/USERNAME are set, so it's inert by default.
  */

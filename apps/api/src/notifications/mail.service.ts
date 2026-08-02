@@ -10,7 +10,7 @@ export interface MailAttachment {
 
 /**
  * Thin wrapper directly around the `nodemailer` SDK — mirrors the
- * `StripeProvider`/`MpesaProvider` "wrap the SDK directly" pattern rather
+ * `PaystackProvider`/`MpesaProvider` "wrap the SDK directly" pattern rather
  * than pulling in `@nestjs-modules/mailer`.
  */
 @Injectable()
