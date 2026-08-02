@@ -25,6 +25,7 @@ import {
   FileCheck,
   CreditCard,
   Settings,
+  Wallet,
 } from 'lucide-react';
 
 const navigation = [
@@ -32,6 +33,12 @@ const navigation = [
   { name: 'Employees', href: '/employees', icon: Users },
   { name: 'Payroll', href: '/payroll', icon: Calculator },
   { name: 'Leave Management', href: '/leave', icon: Calendar },
+  {
+    name: 'Loans & Advances',
+    href: '/loans',
+    icon: Wallet,
+    roles: [Role.ADMIN, Role.HR],
+  },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Employee Portal', href: '/employee-portal', icon: UserCircle },
   { name: 'Compliance', href: '/compliance', icon: FileCheck },

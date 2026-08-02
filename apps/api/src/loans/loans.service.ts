@@ -80,6 +80,11 @@ export class LoansService {
         ...(filters.employeeId ? { employeeId: filters.employeeId } : {}),
         ...(filters.status ? { status: filters.status } : {}),
       },
+      include: {
+        employee: {
+          select: { firstName: true, lastName: true, employeeNumber: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -314,7 +319,14 @@ export class LoansService {
   }
 
   private async findLoanOrThrow(tenantId: string, loanId: string) {
-    const loan = await this.prisma.loan.findUnique({ where: { id: loanId } });
+    const loan = await this.prisma.loan.findUnique({
+      where: { id: loanId },
+      include: {
+        employee: {
+          select: { firstName: true, lastName: true, employeeNumber: true },
+        },
+      },
+    });
     if (!loan || loan.tenantId !== tenantId) {
       throw new NotFoundException('Loan not found');
     }

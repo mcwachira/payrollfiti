@@ -39,6 +39,7 @@ describe('LoansService', () => {
       loan: {
         create: asyncMock(loan),
         findUnique: asyncMock(loan),
+        findMany: asyncMock([loan]),
         update: asyncMock({ ...loan }),
       },
       loanRepayment: {
@@ -53,6 +54,44 @@ describe('LoansService', () => {
     notificationsService = { dispatch: asyncMock(undefined) };
 
     service = new LoansService(prisma, notificationsService);
+  });
+
+  describe('findAll', () => {
+    it('includes the employee name/number so the UI can render without an extra lookup', async () => {
+      await service.findAll('tenant-1', {});
+
+      expect(prisma.loan.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { tenantId: 'tenant-1' },
+          include: {
+            employee: {
+              select: {
+                firstName: true,
+                lastName: true,
+                employeeNumber: true,
+              },
+            },
+          },
+        }),
+      );
+    });
+
+    it('applies employeeId and status filters', async () => {
+      await service.findAll('tenant-1', {
+        employeeId: 'emp-1',
+        status: LoanStatus.ACTIVE,
+      });
+
+      expect(prisma.loan.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            tenantId: 'tenant-1',
+            employeeId: 'emp-1',
+            status: LoanStatus.ACTIVE,
+          },
+        }),
+      );
+    });
   });
 
   describe('create', () => {
