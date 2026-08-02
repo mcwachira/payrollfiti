@@ -6,7 +6,7 @@ const components = [
   { name: 'Web Application', status: 'Operational' },
   { name: 'Payroll API', status: 'Operational' },
   { name: 'Employee Portal', status: 'Operational' },
-  { name: 'Payments (Stripe & M-Pesa)', status: 'Operational' },
+  { name: 'Payments (Paystack & M-Pesa)', status: 'Operational' },
   { name: 'Email Notifications', status: 'Operational' },
 ];
 
