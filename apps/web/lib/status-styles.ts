@@ -1,6 +1,7 @@
 import type { PayrollRun } from '@/lib/payroll-api';
 import type { Invoice } from '@/lib/billing-api';
 import type { Loan } from '@/lib/loans-api';
+import type { LeaveRequestStatus } from '@/lib/leave-api';
 
 const badgeColors = {
   green: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400',
@@ -60,6 +61,17 @@ export function getLoanStatusColor(status: Loan['status']) {
     case 'ACTIVE':
       return badgeColors.blue;
     case 'PAID_OFF':
+      return badgeColors.green;
+    case 'REJECTED':
+      return badgeColors.red;
+    default:
+      return badgeColors.yellow;
+  }
+}
+
+export function getLeaveRequestStatusColor(status: LeaveRequestStatus) {
+  switch (status) {
+    case 'APPROVED':
       return badgeColors.green;
     case 'REJECTED':
       return badgeColors.red;

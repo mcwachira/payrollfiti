@@ -23,6 +23,7 @@ import { EmployeeProfile } from '../employees/EmployeeProfile';
 import EmployeeDocuments from '../employees/EmployeeDocuments';
 import LeaveBalance from './LeaveBalance';
 import LeaveApplication from './LeaveApplication';
+import MyApplications from './MyApplications';
 import { useAuth } from '@/contexts/AuthContext';
 import { getEmployee, toEmployeeListItem } from '@/lib/employees-api';
 import {
@@ -309,17 +310,7 @@ export default function EmployeeSelfService() {
         </TabsContent>
 
         <TabsContent value="applications" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>My Applications</CardTitle>
-              <CardDescription>
-                Track your leave applications and other requests
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Feature coming soon...</p>
-            </CardContent>
-          </Card>
+          <MyApplications />
         </TabsContent>
       </Tabs>
     </div>
