@@ -61,6 +61,7 @@ describe('PayrollService', () => {
   let notificationsService: any;
   let webhooksService: any;
   let loansService: any;
+  let employeesService: any;
 
   beforeEach(async () => {
     prisma = {
@@ -92,6 +93,9 @@ describe('PayrollService', () => {
       }),
       markRepaymentsPaid: asyncMock(undefined),
     };
+    employeesService = {
+      getActiveSalaryStructure: asyncMock(salaryStructure),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -103,7 +107,7 @@ describe('PayrollService', () => {
         },
         {
           provide: EmployeesService,
-          useValue: { getActiveSalaryStructure: asyncMock(salaryStructure) },
+          useValue: employeesService,
         },
         {
           provide: RulesCacheService,
@@ -175,6 +179,18 @@ describe('PayrollService', () => {
         metadata: expect.objectContaining({ runId: 'run-1' }),
       }),
     );
+  });
+
+  it('rejects the run when an employee salary structure currency does not match the country currency', async () => {
+    employeesService.getActiveSalaryStructure.mockResolvedValueOnce({
+      ...salaryStructure,
+      currency: 'USD',
+    });
+
+    await expect(
+      service.runPayroll('tenant-1', 'user-1', dto),
+    ).rejects.toThrow(BadRequestException);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('folds due loan installments into voluntary deductions and marks them paid against the created entry', async () => {

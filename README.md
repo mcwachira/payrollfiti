@@ -29,14 +29,24 @@ variables, and production deployment guidance.
 - **Multi-tenant, multi-country payroll runs** — Kenya, Nigeria, and South Africa
   statutory tax/deduction rules, computed by the pure `packages/payroll-rules`
   engine and idempotent per period (re-running the same period is a no-op unless
-  underlying salary data changed).
-- **Employee management** — companies, employees, contracts, and versioned salary
-  structures, all scoped and isolated per tenant.
+  underlying salary data changed). Single-currency-per-tenant: a tenant runs
+  payroll in one currency (its country's) — there's no FX conversion, and
+  PayrollService rejects a run if an employee's salary structure currency
+  doesn't match the run's country currency, rather than silently mixing
+  currencies into one run's totals. See the scope note on `Tenant.defaultCurrency`
+  in `apps/api/prisma/schema.prisma`.
+- **Employee management** — companies, employees, contracts, versioned salary
+  structures, and an onboarding checklist (new employees start in `ONBOARDING`
+  status, excluded from payroll/billing until required tasks are complete) and
+  offboarding/termination flow, all scoped and isolated per tenant.
 - **Payslips** — PDF payslip generation and download per payroll entry.
+- **Compliance reports** — Kenya (P9, P10, NSSF/NHIF remittance), Nigeria (PAYE,
+  PenCom pension, NHF remittance schedules), and South Africa (EMP201, IRP5)
+  statutory filing documents generated from real payroll data.
 - **Bank export** — CSV bank-file generation per payroll run for salary
   disbursement.
-- **Billing** — subscription plans, invoicing, and payment collection via Stripe
-  or M-Pesa.
+- **Billing** — subscription plans priced per country/currency, invoicing, and
+  payment collection via Paystack or M-Pesa.
 - **White-label branding** — per-tenant app name, logo, and color customization.
 - **Role-based access control** — Admin / HR / Employee roles enforced at the API
   layer, plus an employee self-service portal (profile, payslip history, leave).

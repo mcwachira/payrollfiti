@@ -193,6 +193,39 @@ export class PayrollService {
       });
     }
 
+    // Currency is single-currency-per-tenant: every employee in a run must
+    // be paid in the run's country's currency (ruleSet.currency) — there is
+    // no cross-currency conversion anywhere in the system (see the
+    // single-currency-per-tenant note on Employee.currency in schema.prisma).
+    // Each country ruleset's validate() already flags a currency mismatch as
+    // a 'error'-severity ValidationIssue (e.g. "Kenya payroll must be run in
+    // KES"), but nothing previously read `result.validation` — a
+    // misconfigured SalaryStructure.currency would silently corrupt this
+    // run's aggregate totals (aggregateTotals sums netPay/grossPay/
+    // totalDeductions numerically with no currency check). Fail the whole
+    // run rather than silently excluding the mismatched employee, since a
+    // wrong currency on a salary structure is a data error that needs
+    // fixing, not routine payroll behavior.
+    const currencyErrors = computations
+      .flatMap(({ employee, result }) =>
+        result.validation
+          .filter(
+            (issue) => issue.severity === 'error' && issue.field === 'currency',
+          )
+          .map((issue) => ({ employee, issue })),
+      );
+    if (currencyErrors.length > 0) {
+      const details = currencyErrors
+        .map(
+          ({ employee, issue }) =>
+            `${employee.firstName} ${employee.lastName} (${employee.id}): ${issue.message}`,
+        )
+        .join('; ');
+      throw new BadRequestException(
+        `Cannot run payroll — currency mismatch for ${currencyErrors.length} employee(s): ${details}`,
+      );
+    }
+
     const idempotencyKey = this.computeRunIdempotencyKey(
       company.id,
       period,

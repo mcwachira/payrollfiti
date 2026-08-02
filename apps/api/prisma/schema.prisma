@@ -91,6 +91,21 @@ model Tenant {
   id              String         @id @default(uuid())
   name            String
   countryCode     String
+  // Scope: single-currency-per-tenant. This (and every other `currency`
+  // field below — Company, Employee, SalaryStructure, PayrollRun,
+  // PayrollEntry, Invoice, Loan, ...) is a display/accounting label, not a
+  // convertible amount — there is no FX rate lookup or conversion logic
+  // anywhere in this codebase. A tenant is expected to run payroll in one
+  // currency (its country's, derived via @repo/pricing's per-country
+  // catalog — see AuthService.signup and BillingService). Employee/
+  // SalaryStructure.currency exists for flexibility but PayrollService
+  // rejects running payroll for an employee whose salary structure currency
+  // doesn't match the run's country currency (see the currencyErrors check
+  // in PayrollService.executeRun) rather than silently mixing currencies
+  // into one run's aggregate totals. If genuine multi-currency payroll
+  // (e.g. a few USD-paid expats inside a KES tenant) is needed later, that
+  // is a deliberate scope expansion requiring real conversion — not
+  // something to grow into by accident.
   defaultCurrency String         @default("KES")
   settings        Json?
   branding        BrandingConfig?
