@@ -24,7 +24,12 @@ interface SignupInput {
 interface AuthContextValue {
   user: AuthenticatedUserDto | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  // login() returns the authenticated user (not void) specifically so the
+  // caller can redirect by role right away — reading `user` from this hook
+  // immediately after awaiting login() would still see the PREVIOUS render's
+  // value, since the setUser() call here doesn't re-render the caller's
+  // closure synchronously.
+  login: (email: string, password: string) => Promise<AuthenticatedUserDto>;
   signup: (input: SignupInput) => Promise<void>;
   acceptInvite: (token: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -65,6 +70,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       queryClient.clear();
       tokenStorage.setTokens(data.accessToken, data.refreshToken);
       setUser(data.user);
+      return data.user;
     },
     [queryClient],
   );

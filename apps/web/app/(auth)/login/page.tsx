@@ -6,7 +6,14 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Role } from '@repo/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranding } from '@/contexts/BrandingContext';
 import { ApiError } from '@/lib/api-client';
@@ -26,8 +33,13 @@ export default function LoginPage() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await login(email, password);
-      router.push('/dashboard');
+      const user = await login(email, password);
+      // /dashboard calls GET /employees and GET /payroll-runs, both
+      // ADMIN/HR-only server-side — an EMPLOYEE landing there gets two 403s
+      // instead of their portal.
+      router.push(
+        user.role === Role.EMPLOYEE ? '/employee-portal' : '/dashboard',
+      );
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to log in');
     } finally {
@@ -67,7 +79,10 @@ export default function LoginPage() {
               />
             </div>
             {error ? (
-              <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+              <p
+                role="alert"
+                className="text-sm text-red-600 dark:text-red-400"
+              >
                 {error}
               </p>
             ) : null}
