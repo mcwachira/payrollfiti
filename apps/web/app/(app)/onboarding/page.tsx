@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@repo/pricing';
 import { getMyTenant, createCompany, type Tenant } from '@/lib/tenants-api';
 import {
+  listCompanies,
   bulkCreateEmployees,
   addSalaryStructure,
   type Company,
@@ -123,11 +124,11 @@ export default function OnboardingPage() {
   const [drafts, setDrafts] = useState<DraftEmployee[]>([newDraft()]);
   const [selectedPlanCode, setSelectedPlanCode] = useState<string | null>(null);
 
-  // Save & resume: persist just the step index + confirmed company across a
-  // refresh or an accidental tab close. Draft employee rows are
-  // intentionally NOT persisted — they're either already saved server-side
-  // (recoverable via the real employees list) or not worth resurrecting a
-  // half-typed form for.
+  // Save & resume: persist just the step index across a refresh or an
+  // accidental tab close. Draft employee rows are intentionally NOT
+  // persisted — they're either already saved server-side (recoverable via
+  // the real employees list) or not worth resurrecting a half-typed form
+  // for.
   useEffect(() => {
     setStep(readSavedStep());
   }, []);
@@ -142,6 +143,22 @@ export default function OnboardingPage() {
     queryKey: ['tenant', 'me'],
     queryFn: getMyTenant,
   });
+
+  // The actual source of truth for "does a company already exist" — not
+  // localStorage, which only lives in one browser. Without this, returning
+  // to /onboarding after "Skip for now" (or from a different browser/device)
+  // would show the "create company" form again and risk creating a SECOND
+  // Company for the same tenant on submit.
+  const companiesQuery = useQuery({
+    queryKey: ['companies'],
+    queryFn: listCompanies,
+  });
+  useEffect(() => {
+    if (!company && companiesQuery.data && companiesQuery.data.length > 0) {
+      setCompany(companiesQuery.data[0]!);
+      setStep((current) => (current === 0 ? 1 : current));
+    }
+  }, [companiesQuery.data, company]);
   const tenant: Tenant | undefined = tenantQuery.data;
   const currency = company?.currency ?? tenant?.defaultCurrency ?? 'KES';
   const ruleSummary = tenant
@@ -183,8 +200,19 @@ export default function OnboardingPage() {
       }),
   });
 
+  /** True completion (a plan was activated) — nothing left to resume, so the saved step is cleared. */
   function finishOnboarding() {
     window.localStorage.removeItem(STORAGE_KEY);
+    router.push('/dashboard');
+  }
+
+  /**
+   * "Skip for now" / "Decide later" — leaves the saved step in place so
+   * returning to /onboarding (e.g. via the dashboard's "Finish setup" link)
+   * resumes where they left off, instead of restarting from step 0 and
+   * risking a second Company being created for the same tenant.
+   */
+  function goToDashboardForNow() {
     router.push('/dashboard');
   }
 
@@ -351,7 +379,7 @@ export default function OnboardingPage() {
           <button
             type="button"
             className="text-muted-foreground underline"
-            onClick={finishOnboarding}
+            onClick={goToDashboardForNow}
           >
             Skip for now
           </button>
@@ -674,7 +702,7 @@ export default function OnboardingPage() {
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={finishOnboarding}
+                onClick={goToDashboardForNow}
               >
                 Decide later
               </Button>

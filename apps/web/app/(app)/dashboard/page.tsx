@@ -31,7 +31,7 @@ import {
 import { Role } from '@repo/api';
 import { listCompanies, listEmployees } from '@/lib/employees-api';
 import { listPayrollRuns, getPayrollRun } from '@/lib/payroll-api';
-import { listInvoices } from '@/lib/billing-api';
+import { listInvoices, getSubscription } from '@/lib/billing-api';
 import { listNotifications } from '@/lib/notifications-api';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError } from '@/lib/api-client';
@@ -101,6 +101,15 @@ const Dashboard = () => {
   const invoicesQuery = useQuery({
     queryKey: ['invoices'],
     queryFn: listInvoices,
+    enabled: user?.role === Role.ADMIN,
+  });
+
+  // Same ADMIN-only gate as invoicesQuery (BillingController is
+  // @Roles(Role.ADMIN)) — drives the "Finish setup" prompt below for
+  // whoever skipped the onboarding wizard's plan-selection step.
+  const subscriptionQuery = useQuery({
+    queryKey: ['subscription'],
+    queryFn: getSubscription,
     enabled: user?.role === Role.ADMIN,
   });
 
@@ -228,6 +237,26 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Covers skipping the wizard at ANY step, not just before creating a
+          company — e.g. added employees, then skipped plan selection. The
+          wizard itself resumes from wherever localStorage left off. */}
+      {company &&
+        user?.role === Role.ADMIN &&
+        subscriptionQuery.data?.status !== 'ACTIVE' && (
+          <Card>
+            <CardContent className="p-6 flex items-center justify-between gap-4">
+              <p className="text-muted-foreground">
+                {subscriptionQuery.data?.status === 'TRIALING'
+                  ? "You're still on a free trial — finish setup to pick a plan."
+                  : 'Setup looks unfinished — pick up where you left off.'}
+              </p>
+              <Button asChild size="sm" variant="outline">
+                <Link href="/onboarding">Finish setup</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
       {alerts.length > 0 && (
         <div className="flex flex-wrap gap-3">
