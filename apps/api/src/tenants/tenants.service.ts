@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { getPricingForCountry } from '@repo/pricing';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 
@@ -15,9 +16,18 @@ export class TenantsService {
     return tenant;
   }
 
-  createCompany(tenantId: string, dto: CreateCompanyDto) {
+  async createCompany(tenantId: string, dto: CreateCompanyDto) {
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { countryCode: true },
+    });
     return this.prisma.company.create({
-      data: { tenantId, name: dto.name, currency: dto.currency ?? 'KES' },
+      data: {
+        tenantId,
+        name: dto.name,
+        currency:
+          dto.currency ?? getPricingForCountry(tenant.countryCode).currency,
+      },
     });
   }
 

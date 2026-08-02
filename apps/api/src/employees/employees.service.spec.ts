@@ -210,6 +210,30 @@ describe('EmployeesService', () => {
       );
       expect(titles).not.toContain('KRA PIN collected');
     });
+
+    it('defaults currency from the tenant country rather than hardcoding KES', async () => {
+      prisma.tenant.findUniqueOrThrow.mockResolvedValueOnce({
+        countryCode: 'NG',
+      });
+
+      await service.create('tenant-1', dto);
+
+      expect(prisma.employee.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ currency: 'NGN' }),
+        }),
+      );
+    });
+
+    it('uses the provided currency when supplied, regardless of tenant country', async () => {
+      await service.create('tenant-1', { ...dto, currency: 'USD' });
+
+      expect(prisma.employee.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ currency: 'USD' }),
+        }),
+      );
+    });
   });
 
   describe('findOne', () => {

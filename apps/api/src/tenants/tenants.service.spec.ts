@@ -30,7 +30,10 @@ describe('TenantsService', () => {
 
   beforeEach(async () => {
     prisma = {
-      tenant: { findUnique: asyncMock(tenant) },
+      tenant: {
+        findUnique: asyncMock(tenant),
+        findUniqueOrThrow: asyncMock(tenant),
+      },
       company: {
         create: asyncMock(company),
         findMany: asyncMock([company]),
@@ -66,7 +69,7 @@ describe('TenantsService', () => {
   });
 
   describe('createCompany', () => {
-    it('creates a company scoped to the given tenant, defaulting currency to KES', async () => {
+    it('defaults currency from the tenant country (KE -> KES) when not supplied', async () => {
       const result = await service.createCompany('tenant-1', {
         name: 'Acme HQ',
       });
@@ -77,14 +80,27 @@ describe('TenantsService', () => {
       expect(result).toBe(company);
     });
 
-    it('uses the provided currency when supplied', async () => {
+    it('defaults currency from the tenant country for a non-KE tenant (NG -> NGN)', async () => {
+      prisma.tenant.findUniqueOrThrow.mockResolvedValueOnce({
+        ...tenant,
+        countryCode: 'NG',
+      });
+
+      await service.createCompany('tenant-1', { name: 'Acme NG HQ' });
+
+      expect(prisma.company.create).toHaveBeenCalledWith({
+        data: { tenantId: 'tenant-1', name: 'Acme NG HQ', currency: 'NGN' },
+      });
+    });
+
+    it('uses the provided currency when supplied, regardless of tenant country', async () => {
       await service.createCompany('tenant-1', {
         name: 'Acme HQ',
-        currency: 'NGN',
+        currency: 'USD',
       });
 
       expect(prisma.company.create).toHaveBeenCalledWith({
-        data: { tenantId: 'tenant-1', name: 'Acme HQ', currency: 'NGN' },
+        data: { tenantId: 'tenant-1', name: 'Acme HQ', currency: 'USD' },
       });
     });
   });

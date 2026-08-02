@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Employee, Prisma } from '@prisma/client';
+import { getPricingForCountry } from '@repo/pricing';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { EncryptionService } from '../common/crypto/encryption.service';
@@ -70,7 +71,8 @@ export class EmployeesService {
           pensionNumber: this.encryptionService.encrypt(dto.pensionNumber),
           jobRole: dto.jobRole,
           employmentType: dto.employmentType,
-          currency: dto.currency ?? 'KES',
+          currency:
+            dto.currency ?? getPricingForCountry(tenant.countryCode).currency,
           bankName: dto.bankName,
           bankAccountNumber: this.encryptionService.encrypt(
             dto.bankAccountNumber,
