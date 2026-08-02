@@ -19,10 +19,13 @@ import {
   getPayrollRun,
   downloadPayslip,
   downloadBankExport,
+  type PayrollEntry,
 } from '@/lib/payroll-api';
 import { ApiError } from '@/lib/api-client';
 import { getPayrollStatusColor } from '@/lib/status-styles';
 import { PageSkeleton } from '@/components/ui/loading-skeleton';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
+import { useSort } from '@/hooks/use-sort';
 
 function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat('en-KE', {
@@ -46,6 +49,20 @@ export default function PayrollRunDetailPage({
   const runQuery = useQuery({
     queryKey: ['payrollRun', id],
     queryFn: () => getPayrollRun(id),
+  });
+
+  // Called before the loading/error early returns below (hooks can't be
+  // conditional) — falls back to an empty array until runQuery resolves.
+  const {
+    sorted: sortedEntries,
+    sortKey,
+    direction,
+    toggle,
+  } = useSort(runQuery.data?.entries ?? [], {
+    name: (e: PayrollEntry) =>
+      `${e.employee.firstName} ${e.employee.lastName}`.toLowerCase(),
+    gross: (e: PayrollEntry) => e.grossPay,
+    net: (e: PayrollEntry) => e.netPay,
   });
 
   const handleDownloadPayslip = async (entryId: string) => {
@@ -177,16 +194,34 @@ export default function PayrollRunDetailPage({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead>Gross</TableHead>
+                  <SortableTableHead
+                    active={sortKey === 'name'}
+                    direction={direction}
+                    onClick={() => toggle('name')}
+                  >
+                    Employee
+                  </SortableTableHead>
+                  <SortableTableHead
+                    active={sortKey === 'gross'}
+                    direction={direction}
+                    onClick={() => toggle('gross')}
+                  >
+                    Gross
+                  </SortableTableHead>
                   <TableHead>Tax</TableHead>
                   <TableHead>Statutory</TableHead>
-                  <TableHead>Net Pay</TableHead>
+                  <SortableTableHead
+                    active={sortKey === 'net'}
+                    direction={direction}
+                    onClick={() => toggle('net')}
+                  >
+                    Net Pay
+                  </SortableTableHead>
                   <TableHead>Payslip</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {run.entries.map((entry) => (
+                {sortedEntries.map((entry) => (
                   <TableRow key={entry.id}>
                     <TableCell>
                       <div className="font-medium">

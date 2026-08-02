@@ -31,6 +31,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
+import { useSort } from '@/hooks/use-sort';
 import {
   Plus,
   Search,
@@ -106,6 +108,20 @@ export const EmployeeList = ({
           .includes(searchTerm.toLowerCase()) ||
         employee.email?.toLowerCase().includes(searchTerm.toLowerCase()),
     ) || [];
+
+  const {
+    sorted: sortedEmployees,
+    sortKey,
+    direction,
+    toggle,
+  } = useSort(filteredEmployees, {
+    name: (e: Employee) => `${e.first_name} ${e.last_name}`.toLowerCase(),
+    department: (e: Employee) => (e.department || '').toLowerCase(),
+    position: (e: Employee) => (e.job_title || '').toLowerCase(),
+    status: (e: Employee) => (e.employment_status || '').toLowerCase(),
+    joinDate: (e: Employee) =>
+      e.hire_date ? new Date(e.hire_date).getTime() : 0,
+  });
 
   const now = new Date();
   const newHiresThisMonth = employees.filter((employee) => {
@@ -246,16 +262,46 @@ export const EmployeeList = ({
                       aria-label="Select all employees"
                     />
                   </TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Department</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Join Date</TableHead>
+                  <SortableTableHead
+                    active={sortKey === 'name'}
+                    direction={direction}
+                    onClick={() => toggle('name')}
+                  >
+                    Name
+                  </SortableTableHead>
+                  <SortableTableHead
+                    active={sortKey === 'department'}
+                    direction={direction}
+                    onClick={() => toggle('department')}
+                  >
+                    Department
+                  </SortableTableHead>
+                  <SortableTableHead
+                    active={sortKey === 'position'}
+                    direction={direction}
+                    onClick={() => toggle('position')}
+                  >
+                    Position
+                  </SortableTableHead>
+                  <SortableTableHead
+                    active={sortKey === 'status'}
+                    direction={direction}
+                    onClick={() => toggle('status')}
+                  >
+                    Status
+                  </SortableTableHead>
+                  <SortableTableHead
+                    active={sortKey === 'joinDate'}
+                    direction={direction}
+                    onClick={() => toggle('joinDate')}
+                  >
+                    Join Date
+                  </SortableTableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEmployees.map((employee) => (
+                {sortedEmployees.map((employee) => (
                   <TableRow key={employee.id}>
                     <TableCell>
                       <input
