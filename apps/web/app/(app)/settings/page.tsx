@@ -9,6 +9,8 @@ import { Role } from '@repo/api';
 import { RoleGuard } from '@/components/RoleGuard';
 import { useBranding } from '@/contexts/BrandingContext';
 import { getBranding, updateBranding } from '@/lib/branding-api';
+import { getMyTenant, type Tenant } from '@/lib/tenants-api';
+import { getCountryName } from '@/lib/countries';
 import { ApiError } from '@/lib/api-client';
 import { FormSkeleton } from '@/components/ui/loading-skeleton';
 
@@ -18,6 +20,7 @@ function SettingsPageContent() {
   const [logoUrl, setLogoUrl] = useState('');
   const [primaryColor, setPrimaryColor] = useState('#111827');
   const [secondaryColor, setSecondaryColor] = useState('#6b7280');
+  const [tenant, setTenant] = useState<Tenant | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,12 +32,16 @@ function SettingsPageContent() {
       setIsLoading(true);
       setError(null);
       try {
-        const branding = await getBranding();
+        const [branding, myTenant] = await Promise.all([
+          getBranding(),
+          getMyTenant(),
+        ]);
         if (cancelled) return;
         setAppName(branding.appName ?? '');
         setLogoUrl(branding.logoUrl ?? '');
         setPrimaryColor(branding.primaryColor ?? '#111827');
         setSecondaryColor(branding.secondaryColor ?? '#6b7280');
+        setTenant(myTenant);
       } catch (err) {
         if (!cancelled)
           setError(
@@ -116,6 +123,37 @@ function SettingsPageContent() {
           Customize your organization&apos;s branding
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Organization</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 max-w-md">
+          <div className="space-y-2">
+            <Label>Company name</Label>
+            <Input value={tenant?.name ?? ''} disabled />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Country</Label>
+              <Input
+                value={tenant ? getCountryName(tenant.countryCode) : ''}
+                disabled
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Default currency</Label>
+              <Input value={tenant?.defaultCurrency ?? ''} disabled />
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Country and currency are set when your workspace is created and
+            can&apos;t be changed here — they drive statutory tax rules,
+            compliance reports, and billing currency throughout the app. Contact
+            support if this needs to change.
+          </p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

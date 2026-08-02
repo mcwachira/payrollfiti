@@ -104,6 +104,35 @@ describe('AuthService', () => {
           data: expect.objectContaining({ role: Role.ADMIN }),
         }),
       );
+      expect(txPrisma.tenant.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            countryCode: 'KE',
+            defaultCurrency: 'KES',
+          }),
+        }),
+      );
+    });
+
+    it('derives defaultCurrency from the signup country rather than hardcoding KES', async () => {
+      prisma.user.findUnique.mockResolvedValueOnce(null);
+      const tenant = { id: 'tenant-2', name: 'Acme NG', countryCode: 'NG' };
+      const txPrisma = {
+        tenant: { create: asyncMock(tenant) },
+        user: { create: asyncMock(user) },
+      };
+      prisma.$transaction.mockImplementation((cb: any) => cb(txPrisma));
+
+      await service.signup({ ...dto, countryCode: 'NG' });
+
+      expect(txPrisma.tenant.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            countryCode: 'NG',
+            defaultCurrency: 'NGN',
+          }),
+        }),
+      );
     });
 
     it('throws ConflictException when the email is already in use', async () => {

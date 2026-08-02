@@ -14,15 +14,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { getSupportedPricingCountries } from '@repo/pricing';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranding } from '@/contexts/BrandingContext';
 import { ApiError } from '@/lib/api-client';
+import { getCountryName } from '@/lib/countries';
 
-const SUPPORTED_COUNTRIES = [
-  { code: 'KE', name: 'Kenya' },
-  { code: 'NG', name: 'Nigeria' },
-  { code: 'ZA', name: 'South Africa' },
-];
+// Sourced from @repo/pricing (the same catalog the marketing pricing page
+// reads) rather than a separately hardcoded list, so signup never offers a
+// country that isn't actually priced/supported yet.
+const SUPPORTED_COUNTRIES = getSupportedPricingCountries().map((code) => ({
+  code,
+  name: getCountryName(code),
+}));
 
 export default function SignupPage() {
   const { signup } = useAuth();

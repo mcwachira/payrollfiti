@@ -7,6 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { Role, User } from '@prisma/client';
+import { getPricingForCountry } from '@repo/pricing';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppConfig } from '../config/configuration';
 import { SignupDto } from './dto/signup.dto';
@@ -39,7 +40,15 @@ export class AuthService {
 
     const { tenant, user } = await this.prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({
-        data: { name: dto.tenantName, countryCode: dto.countryCode },
+        data: {
+          name: dto.tenantName,
+          countryCode: dto.countryCode,
+          // Falls back to the same default country's currency as
+          // @repo/pricing when the signup country isn't priced yet, rather
+          // than silently defaulting every tenant to KES regardless of
+          // country.
+          defaultCurrency: getPricingForCountry(dto.countryCode).currency,
+        },
       });
       const user = await tx.user.create({
         data: {
