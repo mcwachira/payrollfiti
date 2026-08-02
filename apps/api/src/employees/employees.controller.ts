@@ -21,18 +21,22 @@ import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { AuthenticatedRequestUser } from '../auth/types';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/permissions/require-permission.decorator';
+import { Permission } from '../common/permissions/permission.enum';
 
 @Controller('employees')
 export class EmployeesController {
   constructor(private readonly employeesService: EmployeesService) {}
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.EMPLOYEE_WRITE)
   @Post()
   create(@CurrentTenant() tenantId: string, @Body() dto: CreateEmployeeDto) {
     return this.employeesService.create(tenantId, dto);
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.EMPLOYEE_WRITE)
   @Get()
   findAll(
     @CurrentTenant() tenantId: string,
@@ -47,6 +51,7 @@ export class EmployeesController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.EMPLOYEE_WRITE)
   @Patch(':id')
   update(
     @CurrentTenant() tenantId: string,
@@ -57,12 +62,14 @@ export class EmployeesController {
   }
 
   @Roles(Role.ADMIN)
+  @RequirePermission(Permission.EMPLOYEE_TERMINATE)
   @Delete(':id')
   remove(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.employeesService.remove(tenantId, id);
   }
 
   @Roles(Role.ADMIN)
+  @RequirePermission(Permission.EMPLOYEE_TERMINATE)
   @Post(':id/terminate')
   terminate(
     @CurrentTenant() tenantId: string,
@@ -74,6 +81,7 @@ export class EmployeesController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.EMPLOYEE_WRITE)
   @Post(':id/contracts')
   addContract(
     @CurrentTenant() tenantId: string,
@@ -84,6 +92,7 @@ export class EmployeesController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.EMPLOYEE_WRITE)
   @Post(':id/salary-structures')
   addSalaryStructure(
     @CurrentTenant() tenantId: string,
@@ -94,6 +103,7 @@ export class EmployeesController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.EMPLOYEE_WRITE)
   @Get(':id/onboarding-tasks')
   listOnboardingTasks(
     @CurrentTenant() tenantId: string,
@@ -103,6 +113,7 @@ export class EmployeesController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.EMPLOYEE_WRITE)
   @Post(':id/onboarding-tasks')
   addOnboardingTask(
     @CurrentTenant() tenantId: string,
@@ -113,6 +124,7 @@ export class EmployeesController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.EMPLOYEE_WRITE)
   @Patch(':id/onboarding-tasks/:taskId')
   updateOnboardingTask(
     @CurrentTenant() tenantId: string,
@@ -129,6 +141,7 @@ export class EmployeesController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.EMPLOYEE_WRITE)
   @Post(':id/onboarding/complete')
   completeOnboarding(
     @CurrentTenant() tenantId: string,

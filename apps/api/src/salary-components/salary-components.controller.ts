@@ -14,9 +14,12 @@ import { CreateSalaryComponentDto } from './dto/create-salary-component.dto';
 import { UpdateSalaryComponentDto } from './dto/update-salary-component.dto';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/permissions/require-permission.decorator';
+import { Permission } from '../common/permissions/permission.enum';
 
 @Controller('salary-components')
 @Roles(Role.ADMIN, Role.HR)
+@RequirePermission(Permission.SALARY_COMPONENT_MANAGE)
 export class SalaryComponentsController {
   constructor(
     private readonly salaryComponentsService: SalaryComponentsService,

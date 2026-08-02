@@ -88,5 +88,40 @@ describe('PermissionsGuard', () => {
         ROLE_PERMISSIONS.HR.length,
       );
     });
+
+    it('grants EMPLOYEE no permissions', () => {
+      expect(ROLE_PERMISSIONS.EMPLOYEE).toEqual([]);
+    });
+
+    it('keeps admin-only actions (tenant/company management, employee termination, branding, billing, API keys, webhooks) out of HR', () => {
+      expect(ROLE_PERMISSIONS.HR).not.toContain(Permission.TENANT_MANAGE);
+      expect(ROLE_PERMISSIONS.HR).not.toContain(
+        Permission.EMPLOYEE_TERMINATE,
+      );
+      expect(ROLE_PERMISSIONS.HR).not.toContain(Permission.BRANDING_MANAGE);
+      expect(ROLE_PERMISSIONS.HR).not.toContain(Permission.BILLING_MANAGE);
+      expect(ROLE_PERMISSIONS.HR).not.toContain(Permission.API_KEY_MANAGE);
+      expect(ROLE_PERMISSIONS.HR).not.toContain(Permission.WEBHOOK_MANAGE);
+    });
+
+    it('grants HR the day-to-day HR/payroll operations', () => {
+      expect(ROLE_PERMISSIONS.HR).toContain(Permission.EMPLOYEE_WRITE);
+      expect(ROLE_PERMISSIONS.HR).toContain(Permission.PAYROLL_RUN);
+      expect(ROLE_PERMISSIONS.HR).toContain(Permission.PAYROLL_CORRECT);
+      expect(ROLE_PERMISSIONS.HR).toContain(Permission.PAYROLL_READ);
+      expect(ROLE_PERMISSIONS.HR).toContain(Permission.LEAVE_APPROVE);
+      expect(ROLE_PERMISSIONS.HR).toContain(Permission.LEAVE_TYPE_MANAGE);
+      expect(ROLE_PERMISSIONS.HR).toContain(Permission.DOCUMENT_DELETE);
+      expect(ROLE_PERMISSIONS.HR).toContain(Permission.REPORTS_READ);
+      expect(ROLE_PERMISSIONS.HR).toContain(Permission.ATTENDANCE_MANAGE);
+      expect(ROLE_PERMISSIONS.HR).toContain(Permission.LOAN_MANAGE);
+      expect(ROLE_PERMISSIONS.HR).toContain(
+        Permission.SALARY_COMPONENT_MANAGE,
+      );
+    });
+
+    it('grants ADMIN every declared permission', () => {
+      expect(ROLE_PERMISSIONS.ADMIN).toEqual(Object.values(Permission));
+    });
   });
 });

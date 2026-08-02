@@ -4,6 +4,8 @@ import { TenantsService } from './tenants.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/permissions/require-permission.decorator';
+import { Permission } from '../common/permissions/permission.enum';
 
 @Controller('tenants')
 export class TenantsController {
@@ -20,6 +22,7 @@ export class TenantsController {
   }
 
   @Roles(Role.ADMIN)
+  @RequirePermission(Permission.TENANT_MANAGE)
   @Post('companies')
   createCompany(
     @CurrentTenant() tenantId: string,

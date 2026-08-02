@@ -6,9 +6,12 @@ import { GenerateInvoiceDto } from './dto/generate-invoice.dto';
 import { PayInvoiceDto } from './dto/pay-invoice.dto';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/permissions/require-permission.decorator';
+import { Permission } from '../common/permissions/permission.enum';
 
 @Controller('billing')
 @Roles(Role.ADMIN)
+@RequirePermission(Permission.BILLING_MANAGE)
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 

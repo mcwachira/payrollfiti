@@ -17,6 +17,8 @@ import { CreateDocumentDto } from './dto/create-document.dto';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/permissions/require-permission.decorator';
+import { Permission } from '../common/permissions/permission.enum';
 import { AuthenticatedRequestUser } from '../auth/types';
 
 /** Upload/list documents for a specific employee — ownership is enforced in the service, not via @Roles(), so ADMIN/HR/EMPLOYEE can all hit these */
@@ -79,6 +81,7 @@ export class DocumentsController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.DOCUMENT_DELETE)
   @Delete(':id')
   remove(
     @CurrentTenant() tenantId: string,

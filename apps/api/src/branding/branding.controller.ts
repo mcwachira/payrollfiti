@@ -5,6 +5,8 @@ import { UpdateBrandingDto } from './dto/update-branding.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/permissions/require-permission.decorator';
+import { Permission } from '../common/permissions/permission.enum';
 
 @Controller('branding')
 export class BrandingController {
@@ -23,6 +25,7 @@ export class BrandingController {
   }
 
   @Roles(Role.ADMIN)
+  @RequirePermission(Permission.BRANDING_MANAGE)
   @Patch()
   updateBranding(
     @CurrentTenant() tenantId: string,

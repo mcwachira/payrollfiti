@@ -15,6 +15,8 @@ import { PayoffLoanDto } from './dto/payoff-loan.dto';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/permissions/require-permission.decorator';
+import { Permission } from '../common/permissions/permission.enum';
 import { AuthenticatedRequestUser } from '../auth/types';
 
 @Controller('loans')
@@ -22,6 +24,7 @@ export class LoansController {
   constructor(private readonly loansService: LoansService) {}
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.LOAN_MANAGE)
   @Post()
   create(
     @CurrentTenant() tenantId: string,
@@ -32,6 +35,7 @@ export class LoansController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.LOAN_MANAGE)
   @Get()
   findAll(
     @CurrentTenant() tenantId: string,
@@ -51,12 +55,14 @@ export class LoansController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.LOAN_MANAGE)
   @Get(':id')
   findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.loansService.findOne(tenantId, id);
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.LOAN_MANAGE)
   @Patch(':id/decision')
   decide(
     @CurrentTenant() tenantId: string,
@@ -68,6 +74,7 @@ export class LoansController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.LOAN_MANAGE)
   @Patch(':id/payoff')
   payoff(
     @CurrentTenant() tenantId: string,

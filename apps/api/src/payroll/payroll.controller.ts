@@ -7,6 +7,8 @@ import { CreateCorrectionDto } from './dto/create-correction.dto';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/permissions/require-permission.decorator';
+import { Permission } from '../common/permissions/permission.enum';
 import { AuthenticatedRequestUser } from '../auth/types';
 
 @Controller('payroll-runs')
@@ -14,6 +16,7 @@ export class PayrollController {
   constructor(private readonly payrollService: PayrollService) {}
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.PAYROLL_RUN)
   @Post()
   run(
     @CurrentTenant() tenantId: string,
@@ -24,6 +27,7 @@ export class PayrollController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.PAYROLL_RUN)
   @Post('off-cycle')
   runOffCycle(
     @CurrentTenant() tenantId: string,
@@ -34,6 +38,7 @@ export class PayrollController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.PAYROLL_READ)
   @Get()
   findAll(
     @CurrentTenant() tenantId: string,
@@ -53,6 +58,7 @@ export class PayrollController {
 
   /** Literal 'entries/...' segments must be registered before ':id' so they don't get swallowed by it */
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.PAYROLL_CORRECT)
   @Post('entries/:entryId/corrections')
   correct(
     @CurrentTenant() tenantId: string,
@@ -69,6 +75,7 @@ export class PayrollController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.PAYROLL_READ)
   @Get('entries/:entryId/corrections')
   listCorrections(
     @CurrentTenant() tenantId: string,
@@ -78,6 +85,7 @@ export class PayrollController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.PAYROLL_READ)
   @Get(':id')
   findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.payrollService.findOne(tenantId, id);

@@ -13,9 +13,12 @@ import { PeriodQueryDto } from './dto/period-query.dto';
 import { EmployeeTaxYearQueryDto } from './dto/employee-tax-year-query.dto';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/permissions/require-permission.decorator';
+import { Permission } from '../common/permissions/permission.enum';
 
 @Controller('companies/:companyId/compliance-reports')
 @Roles(Role.ADMIN, Role.HR)
+@RequirePermission(Permission.REPORTS_READ)
 export class ComplianceReportsController {
   constructor(
     private readonly complianceReportsService: ComplianceReportsService,

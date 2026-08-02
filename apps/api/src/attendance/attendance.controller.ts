@@ -15,12 +15,15 @@ import { UpdateAttendanceDto } from './dto/update-attendance.dto';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/permissions/require-permission.decorator';
+import { Permission } from '../common/permissions/permission.enum';
 import { AuthenticatedRequestUser } from '../auth/types';
 
 // Manual-entry CRUD only — real biometric/clock-in hardware integration is out of scope,
 // this just ships a data model + write target for a future integration.
 @Controller('attendance')
 @Roles(Role.ADMIN, Role.HR)
+@RequirePermission(Permission.ATTENDANCE_MANAGE)
 export class AttendanceController {
   constructor(private readonly attendanceService: AttendanceService) {}
 

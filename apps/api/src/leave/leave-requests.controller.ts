@@ -16,6 +16,8 @@ import { DecideLeaveRequestDto } from './dto/decide-leave-request.dto';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RequirePermission } from '../common/permissions/require-permission.decorator';
+import { Permission } from '../common/permissions/permission.enum';
 import { AuthenticatedRequestUser } from '../auth/types';
 
 @Controller('leave-requests')
@@ -60,6 +62,7 @@ export class LeaveRequestsController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.LEAVE_APPROVE)
   @Get()
   findAll(
     @CurrentTenant() tenantId: string,
@@ -70,6 +73,7 @@ export class LeaveRequestsController {
   }
 
   @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.LEAVE_APPROVE)
   @Patch(':id/decision')
   decide(
     @CurrentTenant() tenantId: string,
