@@ -72,6 +72,51 @@ export function updateEmployee(
   });
 }
 
+export interface OnboardingTask {
+  id: string;
+  employeeId: string;
+  title: string;
+  isRequired: boolean;
+  completed: boolean;
+  completedAt: string | null;
+  order: number;
+}
+
+export function listOnboardingTasks(
+  employeeId: string,
+): Promise<OnboardingTask[]> {
+  return apiFetch<OnboardingTask[]>(
+    `/employees/${employeeId}/onboarding-tasks`,
+  );
+}
+
+export function addOnboardingTask(
+  employeeId: string,
+  input: { title: string; isRequired?: boolean },
+): Promise<OnboardingTask> {
+  return apiFetch<OnboardingTask>(
+    `/employees/${employeeId}/onboarding-tasks`,
+    { method: 'POST', body: JSON.stringify(input) },
+  );
+}
+
+export function updateOnboardingTask(
+  employeeId: string,
+  taskId: string,
+  completed: boolean,
+): Promise<OnboardingTask> {
+  return apiFetch<OnboardingTask>(
+    `/employees/${employeeId}/onboarding-tasks/${taskId}`,
+    { method: 'PATCH', body: JSON.stringify({ completed }) },
+  );
+}
+
+export function completeOnboarding(employeeId: string): Promise<Employee> {
+  return apiFetch<Employee>(`/employees/${employeeId}/onboarding/complete`, {
+    method: 'POST',
+  });
+}
+
 /** Bridges the API's Employee shape to the flat shape EmployeeList already renders */
 export function toEmployeeListItem(employee: Employee) {
   return {

@@ -14,7 +14,12 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { CreateSalaryStructureDto } from './dto/create-salary-structure.dto';
+import { TerminateEmployeeDto } from './dto/terminate-employee.dto';
+import { CreateOnboardingTaskDto } from './dto/create-onboarding-task.dto';
+import { UpdateOnboardingTaskDto } from './dto/update-onboarding-task.dto';
 import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { AuthenticatedRequestUser } from '../auth/types';
 import { Roles } from '../common/decorators/roles.decorator';
 
 @Controller('employees')
@@ -57,6 +62,17 @@ export class EmployeesController {
     return this.employeesService.remove(tenantId, id);
   }
 
+  @Roles(Role.ADMIN)
+  @Post(':id/terminate')
+  terminate(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthenticatedRequestUser,
+    @Param('id') id: string,
+    @Body() dto: TerminateEmployeeDto,
+  ) {
+    return this.employeesService.terminate(tenantId, user.id, id, dto);
+  }
+
   @Roles(Role.ADMIN, Role.HR)
   @Post(':id/contracts')
   addContract(
@@ -75,5 +91,50 @@ export class EmployeesController {
     @Body() dto: CreateSalaryStructureDto,
   ) {
     return this.employeesService.addSalaryStructure(tenantId, id, dto);
+  }
+
+  @Roles(Role.ADMIN, Role.HR)
+  @Get(':id/onboarding-tasks')
+  listOnboardingTasks(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+  ) {
+    return this.employeesService.listOnboardingTasks(tenantId, id);
+  }
+
+  @Roles(Role.ADMIN, Role.HR)
+  @Post(':id/onboarding-tasks')
+  addOnboardingTask(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: CreateOnboardingTaskDto,
+  ) {
+    return this.employeesService.addOnboardingTask(tenantId, id, dto);
+  }
+
+  @Roles(Role.ADMIN, Role.HR)
+  @Patch(':id/onboarding-tasks/:taskId')
+  updateOnboardingTask(
+    @CurrentTenant() tenantId: string,
+    @Param('id') id: string,
+    @Param('taskId') taskId: string,
+    @Body() dto: UpdateOnboardingTaskDto,
+  ) {
+    return this.employeesService.updateOnboardingTask(
+      tenantId,
+      id,
+      taskId,
+      dto,
+    );
+  }
+
+  @Roles(Role.ADMIN, Role.HR)
+  @Post(':id/onboarding/complete')
+  completeOnboarding(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthenticatedRequestUser,
+    @Param('id') id: string,
+  ) {
+    return this.employeesService.completeOnboarding(tenantId, user.id, id);
   }
 }

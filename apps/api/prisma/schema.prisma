@@ -201,10 +201,32 @@ model Employee {
   leaveRequests     LeaveRequest[]
   attendanceRecords AttendanceRecord[]
   loans             Loan[]
+  onboardingTasks   OnboardingTask[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
   @@index([companyId])
+}
+
+// Onboarding checklist item for a newly-created employee. A default set is
+// seeded on Employee.create (universal + country-specific, e.g. "collect
+// KRA PIN" for KE), and ADMIN/HR can add more. An employee stays in the
+// ONBOARDING status — excluded from payroll runs and active-employee billing
+// counts — until every isRequired task is completed and onboarding is
+// explicitly marked complete.
+model OnboardingTask {
+  id          String    @id @default(uuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  title       String
+  isRequired  Boolean   @default(true)
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([employeeId])
 }
 
 model Contract {

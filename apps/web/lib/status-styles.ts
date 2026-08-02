@@ -33,6 +33,8 @@ export function getEmployeeStatusColor(status: string) {
       return badgeColors.yellow;
     case 'on_leave':
       return badgeColors.blue;
+    case 'onboarding':
+      return badgeColors.yellow;
     default:
       return badgeColors.gray;
   }

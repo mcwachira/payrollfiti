@@ -44,12 +44,14 @@ import {
   UserPlus,
   Calendar,
   Building,
+  ClipboardCheck,
 } from 'lucide-react';
 
 import { toast } from 'sonner';
 import { EmployeeForm } from './EmployeeForm';
 import { EmployeeDetails } from './EmployeeDetails';
 import EmployeeDocuments from './EmployeeDocuments';
+import { EmployeeOnboardingDialog } from './EmployeeOnboardingDialog';
 import { removeEmployee } from '@/lib/employees-api';
 import { ApiError } from '@/lib/api-client';
 import { getEmployeeStatusColor } from '@/lib/status-styles';
@@ -73,6 +75,7 @@ export const EmployeeList = ({
   const [showForm, setShowForm] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showDocuments, setShowDocuments] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const handleDelete = async (employeeId: string) => {
     if (!confirm('Are you sure you want to delete this employee?')) return;
@@ -290,7 +293,9 @@ export const EmployeeList = ({
                             ? 'On Leave'
                             : employee.employment_status === 'terminated'
                               ? 'Inactive'
-                              : 'Active'}
+                              : employee.employment_status === 'onboarding'
+                                ? 'Onboarding'
+                                : 'Active'}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -336,6 +341,15 @@ export const EmployeeList = ({
                           >
                             <FileText className="h-4 w-4 mr-2" />
                             View Documents
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedEmployee(employee);
+                              setShowOnboarding(true);
+                            }}
+                          >
+                            <ClipboardCheck className="h-4 w-4 mr-2" />
+                            Onboarding Checklist
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDelete(employee.id)}
@@ -384,6 +398,17 @@ export const EmployeeList = ({
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Onboarding Checklist Dialog */}
+      {selectedEmployee && (
+        <EmployeeOnboardingDialog
+          employeeId={selectedEmployee.id}
+          employeeName={`${selectedEmployee.first_name} ${selectedEmployee.last_name}`}
+          open={showOnboarding}
+          onOpenChange={setShowOnboarding}
+          onOnboardingCompleted={onEmployeeSaved}
+        />
+      )}
     </div>
   );
 };

@@ -43,9 +43,36 @@ describe('EmployeesService', () => {
         findUnique: asyncMock(employee),
         update: asyncMock({ ...employee, status: 'INACTIVE' }),
       },
+      tenant: { findUniqueOrThrow: asyncMock({ countryCode: 'KE' }) },
       contract: { updateMany: asyncMock({ count: 1 }) },
       user: { updateMany: asyncMock({ count: 1 }) },
       salaryStructure: { findFirst: asyncMock(null) },
+      onboardingTask: {
+        createMany: asyncMock({ count: 7 }),
+        findMany: asyncMock([]),
+        aggregate: asyncMock({ _max: { order: null } }),
+        create: asyncMock({
+          id: 'task-1',
+          employeeId: 'emp-1',
+          title: 'Custom task',
+          isRequired: true,
+          completed: false,
+          order: 0,
+        }),
+        update: asyncMock({
+          id: 'task-1',
+          employeeId: 'emp-1',
+          title: 'KRA PIN collected',
+          isRequired: true,
+          completed: true,
+        }),
+        count: asyncMock(0),
+        findFirst: asyncMock({
+          id: 'task-1',
+          employeeId: 'emp-1',
+          title: 'KRA PIN collected',
+        }),
+      },
     };
     prisma.$transaction = jest.fn((fn: any) => fn(prisma));
     tenantsService = { assertCompanyBelongsToTenant: asyncMock(company) };
@@ -151,6 +178,37 @@ describe('EmployeesService', () => {
         NotFoundException,
       );
       expect(prisma.employee.create).not.toHaveBeenCalled();
+    });
+
+    it('starts the employee in ONBOARDING status and seeds a default checklist', async () => {
+      await service.create('tenant-1', dto);
+
+      expect(prisma.employee.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'ONBOARDING' }),
+        }),
+      );
+      expect(prisma.onboardingTask.createMany).toHaveBeenCalledTimes(1);
+      const seeded = prisma.onboardingTask.createMany.mock.calls[0][0].data;
+      expect(seeded.every((t: any) => t.employeeId === 'emp-1')).toBe(true);
+      expect(seeded.map((t: any) => t.title)).toContain(
+        'KRA PIN collected',
+      );
+    });
+
+    it('seeds a Nigeria-specific checklist for an NG tenant', async () => {
+      prisma.tenant.findUniqueOrThrow.mockResolvedValueOnce({
+        countryCode: 'NG',
+      });
+
+      await service.create('tenant-1', dto);
+
+      const seeded = prisma.onboardingTask.createMany.mock.calls[0][0].data;
+      const titles = seeded.map((t: any) => t.title);
+      expect(titles).toContain(
+        'Tax Identification Number (TIN) collected',
+      );
+      expect(titles).not.toContain('KRA PIN collected');
     });
   });
 
@@ -327,6 +385,158 @@ describe('EmployeesService', () => {
       );
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('listOnboardingTasks', () => {
+    it('verifies tenant ownership then lists tasks ordered by `order`', async () => {
+      await service.listOnboardingTasks('tenant-1', 'emp-1');
+
+      expect(prisma.onboardingTask.findMany).toHaveBeenCalledWith({
+        where: { employeeId: 'emp-1' },
+        orderBy: { order: 'asc' },
+      });
+    });
+
+    it('throws NotFoundException for a cross-tenant employee', async () => {
+      prisma.employee.findUnique.mockResolvedValueOnce(null);
+
+      await expect(
+        service.listOnboardingTasks('tenant-1', 'missing-emp'),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('addOnboardingTask', () => {
+    it('appends after the current max order', async () => {
+      prisma.onboardingTask.aggregate.mockResolvedValueOnce({
+        _max: { order: 3 },
+      });
+
+      await service.addOnboardingTask('tenant-1', 'emp-1', {
+        title: 'Custom task',
+      });
+
+      expect(prisma.onboardingTask.create).toHaveBeenCalledWith({
+        data: {
+          employeeId: 'emp-1',
+          title: 'Custom task',
+          isRequired: true,
+          order: 4,
+        },
+      });
+    });
+
+    it('starts at order 0 when no tasks exist yet', async () => {
+      await service.addOnboardingTask('tenant-1', 'emp-1', {
+        title: 'Custom task',
+        isRequired: false,
+      });
+
+      expect(prisma.onboardingTask.create).toHaveBeenCalledWith({
+        data: {
+          employeeId: 'emp-1',
+          title: 'Custom task',
+          isRequired: false,
+          order: 0,
+        },
+      });
+    });
+  });
+
+  describe('updateOnboardingTask', () => {
+    it('marks a task completed and stamps completedAt', async () => {
+      await service.updateOnboardingTask('tenant-1', 'emp-1', 'task-1', {
+        completed: true,
+      });
+
+      const updateArgs = prisma.onboardingTask.update.mock.calls[0][0];
+      expect(updateArgs.where).toEqual({ id: 'task-1' });
+      expect(updateArgs.data.completed).toBe(true);
+      expect(updateArgs.data.completedAt).toBeInstanceOf(Date);
+    });
+
+    it('clears completedAt when marking a task incomplete again', async () => {
+      await service.updateOnboardingTask('tenant-1', 'emp-1', 'task-1', {
+        completed: false,
+      });
+
+      const updateArgs = prisma.onboardingTask.update.mock.calls[0][0];
+      expect(updateArgs.data).toEqual({
+        completed: false,
+        completedAt: null,
+      });
+    });
+
+    it('throws NotFoundException when the task does not belong to this employee', async () => {
+      prisma.onboardingTask.findFirst.mockResolvedValueOnce(null);
+
+      await expect(
+        service.updateOnboardingTask('tenant-1', 'emp-1', 'task-x', {
+          completed: true,
+        }),
+      ).rejects.toThrow(NotFoundException);
+      expect(prisma.onboardingTask.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('completeOnboarding', () => {
+    beforeEach(() => {
+      prisma.employee.findUnique.mockResolvedValue({
+        ...employee,
+        status: 'ONBOARDING',
+      });
+      prisma.employee.update.mockResolvedValue({
+        ...employee,
+        status: 'ACTIVE',
+      });
+    });
+
+    it('activates the employee when no required tasks remain', async () => {
+      prisma.onboardingTask.count.mockResolvedValueOnce(0);
+
+      const result = await service.completeOnboarding(
+        'tenant-1',
+        'actor-1',
+        'emp-1',
+      );
+
+      expect(prisma.onboardingTask.count).toHaveBeenCalledWith({
+        where: { employeeId: 'emp-1', isRequired: true, completed: false },
+      });
+      expect(prisma.employee.update).toHaveBeenCalledWith({
+        where: { id: 'emp-1' },
+        data: { status: 'ACTIVE' },
+      });
+      expect(result.status).toBe('ACTIVE');
+      expect(auditService.record).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'employee.onboarding.complete',
+          before: { status: 'ONBOARDING' },
+          after: { status: 'ACTIVE' },
+        }),
+      );
+    });
+
+    it('refuses when required tasks are still incomplete', async () => {
+      prisma.onboardingTask.count.mockResolvedValueOnce(2);
+
+      await expect(
+        service.completeOnboarding('tenant-1', 'actor-1', 'emp-1'),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.employee.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses when the employee is not currently in ONBOARDING status', async () => {
+      prisma.employee.findUnique.mockResolvedValueOnce({
+        ...employee,
+        status: 'ACTIVE',
+      });
+
+      await expect(
+        service.completeOnboarding('tenant-1', 'actor-1', 'emp-1'),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.onboardingTask.count).not.toHaveBeenCalled();
     });
   });
 });

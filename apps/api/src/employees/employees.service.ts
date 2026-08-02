@@ -9,6 +9,9 @@ import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { CreateSalaryStructureDto } from './dto/create-salary-structure.dto';
 import { TerminateEmployeeDto } from './dto/terminate-employee.dto';
+import { CreateOnboardingTaskDto } from './dto/create-onboarding-task.dto';
+import { UpdateOnboardingTaskDto } from './dto/update-onboarding-task.dto';
+import { getDefaultOnboardingTasks } from './onboarding-task-templates';
 
 @Injectable()
 export class EmployeesService {
@@ -34,33 +37,60 @@ export class EmployeesService {
     };
   }
 
+  /**
+   * New employees start in ONBOARDING rather than ACTIVE — excluded from
+   * payroll runs (PayrollService) and active-employee billing counts
+   * (BillingService) until their onboarding checklist is completed via
+   * completeOnboarding(). A default checklist (universal + country-specific
+   * statutory IDs) is seeded in the same transaction as the employee row.
+   */
   async create(tenantId: string, dto: CreateEmployeeDto) {
     await this.tenantsService.assertCompanyBelongsToTenant(
       dto.companyId,
       tenantId,
     );
-    const created = await this.prisma.employee.create({
-      data: {
-        companyId: dto.companyId,
-        employeeNumber: dto.employeeNumber,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        email: dto.email,
-        kraPin: this.encryptionService.encrypt(dto.kraPin),
-        nssfNumber: this.encryptionService.encrypt(dto.nssfNumber),
-        nhifNumber: this.encryptionService.encrypt(dto.nhifNumber),
-        taxIdNumber: this.encryptionService.encrypt(dto.taxIdNumber),
-        pensionNumber: this.encryptionService.encrypt(dto.pensionNumber),
-        jobRole: dto.jobRole,
-        employmentType: dto.employmentType,
-        currency: dto.currency ?? 'KES',
-        bankName: dto.bankName,
-        bankAccountNumber: this.encryptionService.encrypt(
-          dto.bankAccountNumber,
-        ),
-        bankCode: dto.bankCode,
-        bankBranchCode: dto.bankBranchCode,
-      },
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+      select: { countryCode: true },
+    });
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      const employee = await tx.employee.create({
+        data: {
+          companyId: dto.companyId,
+          employeeNumber: dto.employeeNumber,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          email: dto.email,
+          status: 'ONBOARDING',
+          kraPin: this.encryptionService.encrypt(dto.kraPin),
+          nssfNumber: this.encryptionService.encrypt(dto.nssfNumber),
+          nhifNumber: this.encryptionService.encrypt(dto.nhifNumber),
+          taxIdNumber: this.encryptionService.encrypt(dto.taxIdNumber),
+          pensionNumber: this.encryptionService.encrypt(dto.pensionNumber),
+          jobRole: dto.jobRole,
+          employmentType: dto.employmentType,
+          currency: dto.currency ?? 'KES',
+          bankName: dto.bankName,
+          bankAccountNumber: this.encryptionService.encrypt(
+            dto.bankAccountNumber,
+          ),
+          bankCode: dto.bankCode,
+          bankBranchCode: dto.bankBranchCode,
+        },
+      });
+
+      const tasks = getDefaultOnboardingTasks(tenant.countryCode);
+      await tx.onboardingTask.createMany({
+        data: tasks.map((task, index) => ({
+          employeeId: employee.id,
+          title: task.title,
+          isRequired: task.isRequired,
+          order: index,
+        })),
+      });
+
+      return employee;
     });
     return this.decryptEmployee(created);
   }
@@ -236,5 +266,100 @@ export class EmployeesService {
       },
       orderBy: { effectiveFrom: 'desc' },
     });
+  }
+
+  async listOnboardingTasks(tenantId: string, employeeId: string) {
+    await this.findOne(tenantId, employeeId);
+    return this.prisma.onboardingTask.findMany({
+      where: { employeeId },
+      orderBy: { order: 'asc' },
+    });
+  }
+
+  async addOnboardingTask(
+    tenantId: string,
+    employeeId: string,
+    dto: CreateOnboardingTaskDto,
+  ) {
+    await this.findOne(tenantId, employeeId);
+    const maxOrder = await this.prisma.onboardingTask.aggregate({
+      where: { employeeId },
+      _max: { order: true },
+    });
+    return this.prisma.onboardingTask.create({
+      data: {
+        employeeId,
+        title: dto.title,
+        isRequired: dto.isRequired ?? true,
+        order: (maxOrder._max.order ?? -1) + 1,
+      },
+    });
+  }
+
+  async updateOnboardingTask(
+    tenantId: string,
+    employeeId: string,
+    taskId: string,
+    dto: UpdateOnboardingTaskDto,
+  ) {
+    await this.findOne(tenantId, employeeId);
+    const task = await this.prisma.onboardingTask.findFirst({
+      where: { id: taskId, employeeId },
+    });
+    if (!task) {
+      throw new NotFoundException('Onboarding task not found');
+    }
+    return this.prisma.onboardingTask.update({
+      where: { id: taskId },
+      data: {
+        completed: dto.completed,
+        completedAt: dto.completed ? new Date() : null,
+      },
+    });
+  }
+
+  /**
+   * Transitions an employee from ONBOARDING to ACTIVE, making them eligible
+   * for payroll runs and active-employee billing counts. Refuses while any
+   * required onboarding task is still incomplete — optional tasks don't
+   * block this.
+   */
+  async completeOnboarding(
+    tenantId: string,
+    actorId: string,
+    employeeId: string,
+  ) {
+    const employee = await this.findOne(tenantId, employeeId);
+    if (employee.status !== 'ONBOARDING') {
+      throw new BadRequestException(
+        `Employee is not in ONBOARDING status (current status: ${employee.status})`,
+      );
+    }
+
+    const incompleteRequired = await this.prisma.onboardingTask.count({
+      where: { employeeId, isRequired: true, completed: false },
+    });
+    if (incompleteRequired > 0) {
+      throw new BadRequestException(
+        `${incompleteRequired} required onboarding task(s) are still incomplete`,
+      );
+    }
+
+    const updated = await this.prisma.employee.update({
+      where: { id: employeeId },
+      data: { status: 'ACTIVE' },
+    });
+
+    await this.auditService.record({
+      tenantId,
+      actorId,
+      action: 'employee.onboarding.complete',
+      entityType: 'Employee',
+      entityId: employeeId,
+      before: { status: 'ONBOARDING' } as Prisma.InputJsonValue,
+      after: { status: 'ACTIVE' } as Prisma.InputJsonValue,
+    });
+
+    return this.decryptEmployee(updated);
   }
 }

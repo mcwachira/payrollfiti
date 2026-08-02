@@ -111,4 +111,115 @@ describe('Employees (e2e)', () => {
       .set('Authorization', `Bearer ${tenantBAccessToken}`)
       .expect(404);
   });
+
+  describe('terminate', () => {
+    it('terminates an employee, closes their contract, and revokes their portal access', async () => {
+      const contract = await request(app.getHttpServer())
+        .post(`/employees/${tenantAEmployeeId}/contracts`)
+        .set('Authorization', `Bearer ${tenantAAccessToken}`)
+        .send({ type: 'PERMANENT', startDate: '2026-01-01' })
+        .expect(201);
+      expect(contract.body.endDate).toBeNull();
+
+      const res = await request(app.getHttpServer())
+        .post(`/employees/${tenantAEmployeeId}/terminate`)
+        .set('Authorization', `Bearer ${tenantAAccessToken}`)
+        .send({ terminationDate: '2026-07-15', reason: 'Resignation' })
+        .expect(201);
+
+      expect(res.body.status).toBe('TERMINATED');
+      expect(res.body.terminationReason).toBe('Resignation');
+
+      const fetched = await request(app.getHttpServer())
+        .get(`/employees/${tenantAEmployeeId}`)
+        .set('Authorization', `Bearer ${tenantAAccessToken}`)
+        .expect(200);
+      expect(fetched.body.status).toBe('TERMINATED');
+    });
+
+    it('rejects terminating the same employee twice', async () => {
+      await request(app.getHttpServer())
+        .post(`/employees/${tenantAEmployeeId}/terminate`)
+        .set('Authorization', `Bearer ${tenantAAccessToken}`)
+        .send({})
+        .expect(400);
+    });
+
+    it('returns 404 when a different tenant tries to terminate this employee', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/employees')
+        .set('Authorization', `Bearer ${tenantAAccessToken}`)
+        .send({
+          companyId: tenantACompanyId,
+          firstName: 'Other',
+          lastName: 'Employee',
+          email: `other.employee+${unique}@acme.co.ke`,
+        })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .post(`/employees/${res.body.id}/terminate`)
+        .set('Authorization', `Bearer ${tenantBAccessToken}`)
+        .send({})
+        .expect(404);
+    });
+  });
+
+  describe('onboarding', () => {
+    let onboardingEmployeeId: string;
+
+    it('creates a new employee in ONBOARDING status with a seeded checklist', async () => {
+      const res = await request(app.getHttpServer())
+        .post('/employees')
+        .set('Authorization', `Bearer ${tenantAAccessToken}`)
+        .send({
+          companyId: tenantACompanyId,
+          firstName: 'New',
+          lastName: 'Hire',
+          email: `new.hire+${unique}@acme.co.ke`,
+        })
+        .expect(201);
+      expect(res.body.status).toBe('ONBOARDING');
+      onboardingEmployeeId = res.body.id;
+
+      const tasks = await request(app.getHttpServer())
+        .get(`/employees/${onboardingEmployeeId}/onboarding-tasks`)
+        .set('Authorization', `Bearer ${tenantAAccessToken}`)
+        .expect(200);
+      expect(tasks.body.length).toBeGreaterThan(0);
+      expect(
+        tasks.body.some((t: any) => t.title === 'KRA PIN collected'),
+      ).toBe(true);
+    });
+
+    it('refuses to complete onboarding while required tasks are incomplete', async () => {
+      await request(app.getHttpServer())
+        .post(`/employees/${onboardingEmployeeId}/onboarding/complete`)
+        .set('Authorization', `Bearer ${tenantAAccessToken}`)
+        .expect(400);
+    });
+
+    it('activates the employee once all required tasks are completed', async () => {
+      const tasks = await request(app.getHttpServer())
+        .get(`/employees/${onboardingEmployeeId}/onboarding-tasks`)
+        .set('Authorization', `Bearer ${tenantAAccessToken}`)
+        .expect(200);
+
+      for (const task of tasks.body.filter((t: any) => t.isRequired)) {
+        await request(app.getHttpServer())
+          .patch(
+            `/employees/${onboardingEmployeeId}/onboarding-tasks/${task.id}`,
+          )
+          .set('Authorization', `Bearer ${tenantAAccessToken}`)
+          .send({ completed: true })
+          .expect(200);
+      }
+
+      const res = await request(app.getHttpServer())
+        .post(`/employees/${onboardingEmployeeId}/onboarding/complete`)
+        .set('Authorization', `Bearer ${tenantAAccessToken}`)
+        .expect(201);
+      expect(res.body.status).toBe('ACTIVE');
+    });
+  });
 });

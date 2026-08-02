@@ -72,6 +72,24 @@ describe('Payroll (e2e)', () => {
         effectiveFrom: '2026-01-01',
       })
       .expect(201);
+
+    // New employees start in ONBOARDING and are excluded from payroll runs
+    // until onboarding completes — clear every seeded checklist task first.
+    const tasks = await request(http)
+      .get(`/employees/${employee.body.id}/onboarding-tasks`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+    for (const task of tasks.body) {
+      await request(http)
+        .patch(`/employees/${employee.body.id}/onboarding-tasks/${task.id}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ completed: true })
+        .expect(200);
+    }
+    await request(http)
+      .post(`/employees/${employee.body.id}/onboarding/complete`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(201);
   });
 
   afterAll(async () => {
