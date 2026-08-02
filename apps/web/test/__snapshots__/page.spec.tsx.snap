@@ -19,7 +19,7 @@ exports[`Root page should match the snapshot 1`] = `
             href="/"
           >
             <svg
-              aria-label="Logo"
+              aria-label="PayrollFiti logo"
               class="h-8 w-8"
               fill="none"
               role="img"
@@ -29,63 +29,63 @@ exports[`Root page should match the snapshot 1`] = `
               <rect
                 fill="var(--primary)"
                 height="37"
-                rx="9"
-                stroke="var(--border)"
-                stroke-width="2.5"
+                rx="11"
                 width="37"
                 x="1.5"
                 y="1.5"
               />
               <rect
-                fill="white"
-                height="19"
-                rx="2"
-                stroke="var(--border)"
-                stroke-width="2"
-                width="14"
-                x="10.5"
-                y="8.5"
+                fill="#fafafa"
+                height="21"
+                rx="2.5"
+                width="16"
+                x="9.5"
+                y="7.5"
               />
               <line
-                stroke="var(--border)"
+                opacity="0.85"
+                stroke="var(--primary)"
                 stroke-linecap="round"
-                stroke-width="2"
-                x1="13.5"
-                x2="21.5"
-                y1="13.5"
-                y2="13.5"
+                stroke-width="2.2"
+                x1="13"
+                x2="22"
+                y1="13"
+                y2="13"
               />
               <line
-                stroke="var(--border)"
+                opacity="0.6"
+                stroke="var(--primary)"
                 stroke-linecap="round"
-                stroke-width="2"
-                x1="13.5"
-                x2="21.5"
+                stroke-width="2.2"
+                x1="13"
+                x2="22"
                 y1="17.5"
                 y2="17.5"
               />
               <line
-                stroke="var(--border)"
+                opacity="0.35"
+                stroke="var(--primary)"
                 stroke-linecap="round"
-                stroke-width="2"
-                x1="13.5"
-                x2="18"
-                y1="21.5"
-                y2="21.5"
+                stroke-width="2.2"
+                x1="13"
+                x2="18.5"
+                y1="22"
+                y2="22"
               />
               <circle
-                cx="27.5"
-                cy="26.5"
+                cx="28"
+                cy="27"
                 fill="#22c55e"
-                r="6.5"
-                stroke="var(--border)"
-                stroke-width="2"
+                r="7.5"
+                stroke="var(--primary)"
+                stroke-width="2.5"
               />
               <path
-                d="M24.8 26.5h5.4M27.5 23.8v5.4"
+                d="M24.8 27.1l2.1 2.1 4.3-4.4"
                 stroke="white"
                 stroke-linecap="round"
-                stroke-width="1.8"
+                stroke-linejoin="round"
+                stroke-width="2.1"
               />
             </svg>
             <span
@@ -111,7 +111,7 @@ exports[`Root page should match the snapshot 1`] = `
             </a>
             <a
               class="font-bold text-muted-foreground hover:text-foreground transition-colors"
-              href="#testimonials"
+              href="/reviews"
             >
               Reviews
             </a>
@@ -363,7 +363,7 @@ exports[`Root page should match the snapshot 1`] = `
                 class="relative w-full h-80 md:h-96 lg:h-[400px] rounded-lg overflow-hidden border-2 border-border"
               >
                 <img
-                  alt="Professional using PayFlow Africa platform"
+                  alt="Professional using PayrollFiti platform"
                   class="object-cover"
                   data-nimg="fill"
                   decoding="async"
@@ -738,7 +738,7 @@ exports[`Root page should match the snapshot 1`] = `
             <h2
               class="text-3xl md:text-4xl font-extrabold text-foreground mb-6"
             >
-              Why Choose PayFlow Africa?
+              Why Choose PayrollFiti?
             </h2>
             <p
               class="text-lg text-muted-foreground mb-8"
@@ -963,7 +963,7 @@ exports[`Root page should match the snapshot 1`] = `
               <div
                 class="text-3xl font-extrabold mb-2"
               >
-                5
+                3
               </div>
               <div
                 class="text-sm opacity-90"
@@ -1241,7 +1241,7 @@ exports[`Root page should match the snapshot 1`] = `
           <p
             class="text-lg text-muted-foreground max-w-2xl mx-auto"
           >
-            See how PayFlow Africa is helping businesses streamline their HR and payroll operations
+            See how PayrollFiti is helping businesses streamline their HR and payroll operations
           </p>
         </div>
         <div
@@ -1344,7 +1344,7 @@ exports[`Root page should match the snapshot 1`] = `
               class="text-muted-foreground mb-6 italic"
             >
               "
-              PayFlow Africa transformed our payroll process. What used to take us 3 days now takes 30 minutes. The compliance features give us peace of mind.
+              PayrollFiti transformed our payroll process. What used to take us 3 days now takes 30 minutes. The compliance features give us peace of mind.
               "
             </p>
             <div
@@ -1474,7 +1474,7 @@ exports[`Root page should match the snapshot 1`] = `
               class="text-muted-foreground mb-6 italic"
             >
               "
-              The statutory compliance features are incredible. We never worry about PAYE, NSSF, or NHIF calculations anymore. Everything is automated and accurate.
+              The statutory compliance features are incredible. We never worry about PAYE, NSSF, or SHIF calculations anymore. Everything is automated and accurate.
               "
             </p>
             <div
@@ -1604,7 +1604,7 @@ exports[`Root page should match the snapshot 1`] = `
               class="text-muted-foreground mb-6 italic"
             >
               "
-              As a growing business, PayFlow Africa scales with us. The employee self-service portal reduced HR queries by 70%. Highly recommended!
+              As a growing business, PayrollFiti scales with us. The employee self-service portal reduced HR queries by 70%. Highly recommended!
               "
             </p>
             <div
@@ -1637,6 +1637,37 @@ exports[`Root page should match the snapshot 1`] = `
               </div>
             </div>
           </div>
+        </div>
+        <div
+          class="text-center mt-10"
+        >
+          <a
+            class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-bold transition-all disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive brutal-press border-2 border-border bg-background shadow-brutal-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 has-[>svg]:px-3"
+            data-slot="button"
+            href="/reviews"
+          >
+            Read more reviews
+            <svg
+              aria-hidden="true"
+              class="lucide lucide-arrow-right h-4 w-4 ml-2"
+              fill="none"
+              height="24"
+              stroke="currentColor"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+              width="24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M5 12h14"
+              />
+              <path
+                d="m12 5 7 7-7 7"
+              />
+            </svg>
+          </a>
         </div>
       </div>
     </section>
@@ -1765,7 +1796,7 @@ exports[`Root page should match the snapshot 1`] = `
             <h3
               class="text-xl font-extrabold text-foreground mb-4"
             >
-              PayFlow Africa
+              PayrollFiti
             </h3>
             <p
               class="text-muted-foreground mb-4"
@@ -1851,7 +1882,7 @@ exports[`Root page should match the snapshot 1`] = `
                     y="4"
                   />
                 </svg>
-                hello@payflow-africa.com
+                hello@payrollfiti.com
               </div>
             </div>
           </div>
@@ -1966,7 +1997,7 @@ exports[`Root page should match the snapshot 1`] = `
             <p
               class="text-muted-foreground mb-4 text-sm"
             >
-              Get the latest news and updates from PayFlow Africa.
+              Get the latest news and updates from PayrollFiti.
             </p>
             <form
               class="flex gap-2 mb-4"
@@ -2054,7 +2085,7 @@ exports[`Root page should match the snapshot 1`] = `
           >
             © 
             2026
-             PayFlow Africa. All rights reserved.
+             PayrollFiti. All rights reserved.
           </div>
           <div
             class="flex space-x-4 text-sm text-muted-foreground"
