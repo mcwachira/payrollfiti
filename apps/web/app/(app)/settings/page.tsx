@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Role } from '@repo/api';
 import { RoleGuard } from '@/components/RoleGuard';
+import { SalaryComponentsSettings } from '@/components/settings/SalaryComponentsSettings';
 import { useBranding } from '@/contexts/BrandingContext';
 import { getBranding, updateBranding } from '@/lib/branding-api';
 import { getMyTenant, type Tenant } from '@/lib/tenants-api';
@@ -217,6 +218,8 @@ function SettingsPageContent() {
           </Button>
         </CardContent>
       </Card>
+
+      <SalaryComponentsSettings />
     </div>
   );
 }

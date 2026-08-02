@@ -29,6 +29,7 @@ import { calculatePayroll } from '@/lib/payroll-calculator-api';
 import { listPlans, subscribe, type Plan } from '@/lib/billing-api';
 import { getCountryName } from '@/lib/countries';
 import { ApiError } from '@/lib/api-client';
+import { SalaryComponentsSettings } from '@/components/settings/SalaryComponentsSettings';
 
 /**
  * Guided post-signup setup. Replaces the previous behavior of dropping a
@@ -43,6 +44,7 @@ import { ApiError } from '@/lib/api-client';
 const STEPS = [
   'Company',
   'Payroll Rules',
+  'Pay Components',
   'Add Employees',
   'Preview',
   'Plan',
@@ -149,7 +151,7 @@ export default function OnboardingPage() {
   const plansQuery = useQuery({
     queryKey: ['plans'],
     queryFn: listPlans,
-    enabled: step === 4,
+    enabled: step === 5,
   });
 
   const createCompanyMutation = useMutation({
@@ -334,7 +336,7 @@ export default function OnboardingPage() {
         deductions: results.reduce((sum, r) => sum + r.totalDeductions, 0),
       };
     },
-    enabled: step === 3 && !!tenant,
+    enabled: step === 4 && !!tenant,
   });
 
   const progressPct = ((step + 1) / STEPS.length) * 100;
@@ -424,7 +426,9 @@ export default function OnboardingPage() {
             <CardTitle>Your payroll rules</CardTitle>
             <CardDescription>
               Statutory deductions are applied automatically based on your
-              country — nothing to configure.
+              country and can&apos;t be changed — they&apos;re set by law, not
+              by you. The next step lets you add your own custom pay components
+              on top of these.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -451,6 +455,23 @@ export default function OnboardingPage() {
       )}
 
       {step === 2 && (
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-lg font-bold">Add your own pay components</h2>
+            <p className="text-sm text-muted-foreground">
+              Optional. Add allowances or deductions your business pays on top
+              of statutory ones — transport, housing, union dues, whatever
+              applies to you. You can also add these later from Settings.
+            </p>
+          </div>
+          <SalaryComponentsSettings />
+          <Button className="w-full" onClick={() => setStep(3)}>
+            Continue
+          </Button>
+        </div>
+      )}
+
+      {step === 3 && (
         <Card>
           <CardHeader>
             <CardTitle>Add your first employees</CardTitle>
@@ -561,7 +582,7 @@ export default function OnboardingPage() {
               </Button>
               <Button
                 className="flex-1"
-                onClick={() => setStep(3)}
+                onClick={() => setStep(4)}
                 disabled={savedEmployees.length === 0}
               >
                 Continue ({savedEmployees.length} saved)
@@ -571,7 +592,7 @@ export default function OnboardingPage() {
         </Card>
       )}
 
-      {step === 3 && (
+      {step === 4 && (
         <Card>
           <CardHeader>
             <CardTitle>Preview payroll</CardTitle>
@@ -606,14 +627,14 @@ export default function OnboardingPage() {
                 </div>
               </div>
             ) : null}
-            <Button className="w-full" onClick={() => setStep(4)}>
+            <Button className="w-full" onClick={() => setStep(5)}>
               Continue
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {step === 4 && (
+      {step === 5 && (
         <Card>
           <CardHeader>
             <CardTitle>Choose a plan</CardTitle>
