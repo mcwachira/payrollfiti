@@ -217,6 +217,19 @@ export class EmployeesService {
     if (employee.user) {
       throw new BadRequestException('This employee already has portal access');
     }
+    // User.email is unique system-wide, not per-tenant — one email can only
+    // ever be ONE login, whatever its role. Without this check, the invite
+    // still sends, and only fails confusingly (a raw 500) when the person
+    // actually tries to redeem it — by then it's too late to give them a
+    // clear next step.
+    const existingAccount = await this.prisma.user.findUnique({
+      where: { email: employee.email },
+    });
+    if (existingAccount) {
+      throw new BadRequestException(
+        `An account already exists for ${employee.email} — one email can only be linked to a single login. Use a different email for this employee, or update the existing account's role if this is the same person.`,
+      );
+    }
 
     const rawToken = randomBytes(32).toString('hex');
     const tokenHash = createHash('sha256').update(rawToken).digest('hex');

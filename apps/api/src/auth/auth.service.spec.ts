@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -41,6 +41,10 @@ describe('AuthService', () => {
       user: {
         findUnique: asyncMock(user),
         update: asyncMock({ ...user, refreshTokenHash: 'new-hash' }),
+      },
+      employeeInvite: {
+        findUnique: asyncMock(null),
+        delete: asyncMock(undefined),
       },
       $transaction: jest.fn(),
     };
@@ -175,6 +179,87 @@ describe('AuthService', () => {
       });
 
       await expect(service.login(dto)).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('acceptInvite', () => {
+    const dto = { token: 'raw-token-value', password: 'Password123!' };
+    const invite = {
+      id: 'invite-1',
+      employeeId: 'emp-1',
+      email: 'employee@acme.co.ke',
+      expiresAt: new Date(Date.now() + 60_000),
+      employee: { company: { tenantId: 'tenant-1' } },
+    };
+    const employeeUser = {
+      id: 'user-2',
+      tenantId: 'tenant-1',
+      email: invite.email,
+      role: Role.EMPLOYEE,
+      employeeId: 'emp-1',
+    };
+
+    it('creates the User, deletes the single-use invite, and logs the new employee in', async () => {
+      prisma.employeeInvite.findUnique.mockResolvedValueOnce(invite);
+      const txPrisma = {
+        user: { create: asyncMock(employeeUser) },
+        employeeInvite: { delete: asyncMock(undefined) },
+      };
+      prisma.$transaction.mockImplementation((cb: any) => cb(txPrisma));
+
+      const result = await service.acceptInvite(dto);
+
+      expect(txPrisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            tenantId: 'tenant-1',
+            email: invite.email,
+            role: Role.EMPLOYEE,
+            employeeId: 'emp-1',
+          }),
+        }),
+      );
+      expect(txPrisma.employeeInvite.delete).toHaveBeenCalledWith({
+        where: { id: invite.id },
+      });
+      expect(result.user.role).toBe(Role.EMPLOYEE);
+      expect(result.accessToken).toBe('signed-token');
+    });
+
+    it('rejects an unknown token without touching the database further', async () => {
+      prisma.employeeInvite.findUnique.mockResolvedValueOnce(null);
+
+      await expect(service.acceptInvite(dto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('rejects an expired invite', async () => {
+      prisma.employeeInvite.findUnique.mockResolvedValueOnce({
+        ...invite,
+        expiresAt: new Date(Date.now() - 60_000),
+      });
+
+      await expect(service.acceptInvite(dto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('translates a unique-constraint race on email into a clear ConflictException, e.g. the email got claimed by a signup between the invite being sent and redeemed', async () => {
+      prisma.employeeInvite.findUnique.mockResolvedValueOnce(invite);
+      const constraintError = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed on the fields: (`email`)',
+        { code: 'P2002', clientVersion: 'test' },
+      );
+      prisma.$transaction.mockImplementation(() =>
+        Promise.reject(constraintError),
+      );
+
+      await expect(service.acceptInvite(dto)).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 

@@ -51,7 +51,10 @@ describe('EmployeesService', () => {
       },
       tenant: { findUniqueOrThrow: asyncMock({ countryCode: 'KE' }) },
       contract: { updateMany: asyncMock({ count: 1 }) },
-      user: { updateMany: asyncMock({ count: 1 }) },
+      user: {
+        updateMany: asyncMock({ count: 1 }),
+        findUnique: asyncMock(null),
+      },
       salaryStructure: { findFirst: asyncMock(null) },
       onboardingTask: {
         createMany: asyncMock({ count: 7 }),
@@ -389,6 +392,24 @@ describe('EmployeesService', () => {
         ...employee,
         user: { id: 'user-1' },
       });
+
+      await expect(
+        service.invite('tenant-1', 'actor-1', 'emp-1'),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.employeeInvite.upsert).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it("rejects when a User already exists for the employee's email, even if it belongs to a different account (e.g. an admin who reused their own email)", async () => {
+      prisma.employee.findUnique.mockResolvedValueOnce({
+        ...employee,
+        user: null, // this Employee has no linked account...
+      });
+      prisma.user.findUnique.mockResolvedValueOnce({
+        id: 'other-user',
+        email: employee.email,
+        role: 'ADMIN',
+      }); // ...but the email is already claimed by an unrelated account
 
       await expect(
         service.invite('tenant-1', 'actor-1', 'emp-1'),

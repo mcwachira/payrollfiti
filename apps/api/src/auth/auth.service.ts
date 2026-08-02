@@ -7,7 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
-import { Role, User } from '@prisma/client';
+import { Prisma, Role, User } from '@prisma/client';
 import { getPricingForCountry } from '@repo/pricing';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
@@ -136,19 +136,36 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
-    const user = await this.prisma.$transaction(async (tx) => {
-      const created = await tx.user.create({
-        data: {
-          tenantId: invite.employee.company.tenantId,
-          email: invite.email,
-          passwordHash,
-          role: Role.EMPLOYEE,
-          employeeId: invite.employeeId,
-        },
+    let user: User;
+    try {
+      user = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.user.create({
+          data: {
+            tenantId: invite.employee.company.tenantId,
+            email: invite.email,
+            passwordHash,
+            role: Role.EMPLOYEE,
+            employeeId: invite.employeeId,
+          },
+        });
+        await tx.employeeInvite.delete({ where: { id: invite.id } });
+        return created;
       });
-      await tx.employeeInvite.delete({ where: { id: invite.id } });
-      return created;
-    });
+    } catch (error) {
+      // EmployeesService.invite() already checks this before an invite is
+      // even sent, but the email could still be claimed by a brand-new
+      // signup or another accepted invite in the window between then and
+      // now — surface that clearly instead of a raw constraint error.
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          `An account already exists for ${invite.email}. Sign in with that email instead, or ask whoever invited you to resend the invite with a different one.`,
+        );
+      }
+      throw error;
+    }
 
     const tokens = await this.issueTokens(user);
     return { user: this.toAuthenticatedUser(user), ...tokens };
