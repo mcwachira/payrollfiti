@@ -35,6 +35,7 @@ export interface PayrollRun {
   ruleVersion: string;
   status: 'DRAFT' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
   totals: PayrollRunTotals | null;
+  isOffCycle: boolean;
   createdAt: string;
 }
 

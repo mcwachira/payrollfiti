@@ -1,5 +1,7 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,7 +25,6 @@ import {
 } from '@/components/ui/table';
 import {
   Calculator,
-  Download,
   FileDown,
   Users,
   DollarSign,
@@ -33,9 +34,7 @@ import { toast } from 'sonner';
 import { listCompanies } from '@/lib/employees-api';
 import {
   listPayrollRuns,
-  getPayrollRun,
   runPayroll,
-  downloadPayslip,
   downloadBankExport,
   type PayrollRun,
 } from '@/lib/payroll-api';
@@ -68,8 +67,8 @@ function errorMessage(error: unknown, fallback: string) {
 }
 
 export default function PayrollPage() {
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
   const [showRunDialog, setShowRunDialog] = useState(false);
   const [form, setForm] = useState(currentMonthRange());
 
@@ -85,12 +84,6 @@ export default function PayrollPage() {
     enabled: !!company,
   });
 
-  const selectedRunQuery = useQuery({
-    queryKey: ['payrollRun', selectedRunId],
-    queryFn: () => getPayrollRun(selectedRunId!),
-    enabled: !!selectedRunId,
-  });
-
   const runPayrollMutation = useMutation({
     mutationFn: runPayroll,
     onSuccess: (run) => {
@@ -99,22 +92,12 @@ export default function PayrollPage() {
       });
       setShowRunDialog(false);
       queryClient.invalidateQueries({ queryKey: ['payrollRuns', company?.id] });
-      // The run-payroll response's entries don't include the nested employee
-      // record (only the GET detail endpoint does) — refetch for full detail.
-      setSelectedRunId(run.id);
+      router.push(`/payroll/${run.id}`);
     },
     onError: (err) => {
       toast.error(errorMessage(err, 'Failed to run payroll'));
     },
   });
-
-  const handleDownloadPayslip = async (entryId: string) => {
-    try {
-      await downloadPayslip(entryId);
-    } catch (err) {
-      toast.error(errorMessage(err, 'Failed to download payslip'));
-    }
-  };
 
   const handleDownloadBankExport = async (run: PayrollRun) => {
     try {
@@ -159,7 +142,6 @@ export default function PayrollPage() {
   }
 
   const runs = runsQuery.data ?? [];
-  const selectedRun = selectedRunQuery.data ?? null;
   const totalRuns = runs.length;
   const completedRuns = runs.filter((r) => r.status === 'COMPLETED');
   const lastNetPay = completedRuns[0]?.totals?.netPay ?? 0;
@@ -319,12 +301,8 @@ export default function PayrollPage() {
                         : '—'}
                     </TableCell>
                     <TableCell className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setSelectedRunId(run.id)}
-                      >
-                        View
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href={`/payroll/${run.id}`}>View</Link>
                       </Button>
                       <Button
                         size="sm"
@@ -342,68 +320,6 @@ export default function PayrollPage() {
           )}
         </CardContent>
       </Card>
-
-      {selectedRun && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Run Detail — {selectedRun.period}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead>Gross</TableHead>
-                  <TableHead>Tax</TableHead>
-                  <TableHead>Statutory</TableHead>
-                  <TableHead>Net Pay</TableHead>
-                  <TableHead>Payslip</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {selectedRun.entries.map((entry) => (
-                  <TableRow key={entry.id}>
-                    <TableCell>
-                      <div className="font-medium">
-                        {entry.employee.firstName} {entry.employee.lastName}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {entry.employee.employeeNumber ?? '—'}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {formatCurrency(entry.grossPay, entry.currency)}
-                    </TableCell>
-                    <TableCell className="text-red-600 dark:text-red-400">
-                      -{formatCurrency(entry.totalTax, entry.currency)}
-                    </TableCell>
-                    <TableCell className="text-red-600 dark:text-red-400">
-                      -
-                      {formatCurrency(
-                        entry.totalStatutoryDeductions,
-                        entry.currency,
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium text-green-700 dark:text-green-400">
-                      {formatCurrency(entry.netPay, entry.currency)}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDownloadPayslip(entry.id)}
-                        aria-label={`Download payslip for ${entry.employee.firstName} ${entry.employee.lastName}`}
-                      >
-                        <Download className="h-3 w-3" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
