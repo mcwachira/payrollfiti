@@ -4,6 +4,10 @@ export interface AppConfig {
   port: number;
   countryDefault: string;
   corsOrigin: string;
+  /** This API's own public origin — needed to build OAuth redirect_uri
+   *  values (accounting integrations) that external providers redirect
+   *  back to; corsOrigin is the frontend's origin, a different value. */
+  apiPublicUrl: string;
   throttle: {
     ttl: number;
     limit: number;
@@ -47,6 +51,24 @@ export interface AppConfig {
     privateKey?: string;
     subject: string;
   };
+  accounting: {
+    quickbooks: {
+      clientId?: string;
+      clientSecret?: string;
+      /** Selects between QuickBooks' separate sandbox and production API hosts. */
+      environment: 'sandbox' | 'production';
+    };
+    xero: {
+      clientId?: string;
+      clientSecret?: string;
+    };
+    zohoBooks: {
+      clientId?: string;
+      clientSecret?: string;
+      /** Zoho's accounts/API hosts are region-specific: com, eu, in, com.au, jp. */
+      region: string;
+    };
+  };
   sentryDsn?: string;
 }
 
@@ -56,6 +78,7 @@ export default (): AppConfig => ({
   port: parseInt(process.env.PORT ?? '3000', 10),
   countryDefault: process.env.COUNTRY_DEFAULT ?? 'KE',
   corsOrigin: process.env.CORS_ORIGIN ?? 'http://localhost:3001',
+  apiPublicUrl: process.env.API_PUBLIC_URL ?? 'http://localhost:3000',
   throttle: {
     ttl: parseInt(process.env.THROTTLE_TTL ?? '60000', 10),
     limit: parseInt(process.env.THROTTLE_LIMIT ?? '100', 10),
@@ -98,6 +121,25 @@ export default (): AppConfig => ({
     publicKey: process.env.VAPID_PUBLIC_KEY,
     privateKey: process.env.VAPID_PRIVATE_KEY,
     subject: process.env.VAPID_SUBJECT ?? 'mailto:support@payrollfiti.com',
+  },
+  accounting: {
+    quickbooks: {
+      clientId: process.env.QUICKBOOKS_CLIENT_ID,
+      clientSecret: process.env.QUICKBOOKS_CLIENT_SECRET,
+      environment:
+        process.env.QUICKBOOKS_ENVIRONMENT === 'production'
+          ? 'production'
+          : 'sandbox',
+    },
+    xero: {
+      clientId: process.env.XERO_CLIENT_ID,
+      clientSecret: process.env.XERO_CLIENT_SECRET,
+    },
+    zohoBooks: {
+      clientId: process.env.ZOHO_BOOKS_CLIENT_ID,
+      clientSecret: process.env.ZOHO_BOOKS_CLIENT_SECRET,
+      region: process.env.ZOHO_BOOKS_REGION ?? 'com',
+    },
   },
   sentryDsn: process.env.SENTRY_DSN,
 });

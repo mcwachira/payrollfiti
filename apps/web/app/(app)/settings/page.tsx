@@ -1,5 +1,6 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { toast } from 'sonner';
 import { Role } from '@repo/api';
 import { RoleGuard } from '@/components/RoleGuard';
 import { SalaryComponentsSettings } from '@/components/settings/SalaryComponentsSettings';
+import { AccountingIntegrationsSettings } from '@/components/settings/AccountingIntegrationsSettings';
 import { useBranding } from '@/contexts/BrandingContext';
 import { getBranding, updateBranding } from '@/lib/branding-api';
 import { getMyTenant, type Tenant } from '@/lib/tenants-api';
@@ -17,6 +19,7 @@ import { FormSkeleton } from '@/components/ui/loading-skeleton';
 
 function SettingsPageContent() {
   const { refreshBranding } = useBranding();
+  const searchParams = useSearchParams();
   const [appName, setAppName] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [primaryColor, setPrimaryColor] = useState('#111827');
@@ -25,6 +28,23 @@ function SettingsPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Landed here from the accounting OAuth callback redirect (see
+  // AccountingIntegrationsController.callback) — surface the outcome once,
+  // then drop the query params so a refresh doesn't re-show the toast.
+  useEffect(() => {
+    const accounting = searchParams.get('accounting');
+    const provider = searchParams.get('provider');
+    if (!accounting) return;
+    if (accounting === 'connected') {
+      toast.success(`Connected to ${provider ?? 'your accounting system'}`);
+    } else if (accounting === 'error') {
+      toast.error('Could not complete the connection', {
+        description: 'The authorization link may have expired — try again.',
+      });
+    }
+    window.history.replaceState(null, '', '/settings');
+  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -220,6 +240,8 @@ function SettingsPageContent() {
       </Card>
 
       <SalaryComponentsSettings />
+
+      <AccountingIntegrationsSettings />
     </div>
   );
 }
@@ -227,7 +249,9 @@ function SettingsPageContent() {
 export default function SettingsPage() {
   return (
     <RoleGuard allow={[Role.ADMIN]}>
-      <SettingsPageContent />
+      <Suspense>
+        <SettingsPageContent />
+      </Suspense>
     </RoleGuard>
   );
 }

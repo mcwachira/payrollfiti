@@ -50,6 +50,12 @@ enum PaymentProviderType {
   MPESA
 }
 
+enum AccountingProviderType {
+  QUICKBOOKS
+  XERO
+  ZOHO_BOOKS
+}
+
 enum SalaryComponentType {
   EARNING
   DEDUCTION
@@ -88,9 +94,9 @@ enum LoanRepaymentStatus {
 // Tenants are the top-level SaaS customer boundary; every row that matters
 // for isolation carries a tenantId so a Prisma middleware can scope queries.
 model Tenant {
-  id                String             @id @default(uuid())
-  name              String
-  countryCode       String
+  id                    String                 @id @default(uuid())
+  name                  String
+  countryCode           String
   // Scope: single-currency-per-tenant. This (and every other `currency`
   // field below — Company, Employee, SalaryStructure, PayrollRun,
   // PayrollEntry, Invoice, Loan, ...) is a display/accounting label, not a
@@ -106,24 +112,25 @@ model Tenant {
   // (e.g. a few USD-paid expats inside a KES tenant) is needed later, that
   // is a deliberate scope expansion requiring real conversion — not
   // something to grow into by accident.
-  defaultCurrency   String             @default("KES")
-  settings          Json?
-  branding          BrandingConfig?
-  companies         Company[]
-  users             User[]
-  subscription      Subscription?
-  invoices          Invoice[]
-  usageRecords      UsageRecord[]
-  auditLogs         AuditLog[]
-  notifications     Notification[]
-  pushSubscriptions PushSubscription[]
-  apiKeys           ApiKey[]
-  webhookEndpoints  WebhookEndpoint[]
-  salaryComponents  SalaryComponent[]
-  leaveTypes        LeaveType[]
-  loans             Loan[]
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  defaultCurrency       String                 @default("KES")
+  settings              Json?
+  branding              BrandingConfig?
+  companies             Company[]
+  users                 User[]
+  subscription          Subscription?
+  invoices              Invoice[]
+  usageRecords          UsageRecord[]
+  auditLogs             AuditLog[]
+  notifications         Notification[]
+  pushSubscriptions     PushSubscription[]
+  apiKeys               ApiKey[]
+  webhookEndpoints      WebhookEndpoint[]
+  salaryComponents      SalaryComponent[]
+  leaveTypes            LeaveType[]
+  loans                 Loan[]
+  accountingIntegration AccountingIntegration?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 }
 
 // Per-tenant white-label override; falls back to the APP_NAME env var when absent.
@@ -651,6 +658,30 @@ model PushSubscription {
 
   @@index([userId])
   @@index([tenantId])
+}
+
+// One active accounting connection per tenant (a second "Connect" simply
+// overwrites the row — see AccountingIntegrationsService.upsert). Token
+// fields are encrypted at rest via EncryptionService, same treatment as the
+// PII fields on Employee (KRA PIN, bank account numbers) — never store an
+// OAuth access/refresh token in plaintext. externalId is the
+// provider-specific company/org identifier every API call needs alongside
+// the token: QuickBooks calls it realmId, Xero calls it tenantId (a
+// different concept from this schema's own Tenant), Zoho Books calls it
+// organization_id — normalized to one field name here since exactly one
+// provider is ever connected per row.
+model AccountingIntegration {
+  id                    String                 @id @default(uuid())
+  tenantId              String                 @unique
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  provider              AccountingProviderType
+  externalId            String
+  accessTokenEncrypted  String
+  refreshTokenEncrypted String
+  expiresAt             DateTime
+  connectedById         String?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
 }
 
 // Machine credential for the read-only public-api. hashedKey is a one-way

@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'crypto';
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -28,6 +29,10 @@ import { PayslipEmailService } from '../notifications/payslip-email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { LoansService, DueLoanRepayment } from '../loans/loans.service';
+import {
+  ACCOUNTING_PROVIDER,
+  AccountingProvider,
+} from '../accounting/accounting-provider.interface';
 import { RulesCacheService } from './rules-cache.service';
 import { RunPayrollDto } from './dto/run-payroll.dto';
 import { RunOffCyclePayrollDto } from './dto/run-off-cycle-payroll.dto';
@@ -94,6 +99,8 @@ export class PayrollService {
     private readonly notificationsService: NotificationsService,
     private readonly webhooksService: WebhooksService,
     private readonly loansService: LoansService,
+    @Inject(ACCOUNTING_PROVIDER)
+    private readonly accountingProvider: AccountingProvider,
   ) {}
 
   async runPayroll(tenantId: string, actorId: string, dto: RunPayrollDto) {
@@ -244,14 +251,13 @@ export class PayrollService {
     // run rather than silently excluding the mismatched employee, since a
     // wrong currency on a salary structure is a data error that needs
     // fixing, not routine payroll behavior.
-    const currencyErrors = computations
-      .flatMap(({ employee, result }) =>
-        result.validation
-          .filter(
-            (issue) => issue.severity === 'error' && issue.field === 'currency',
-          )
-          .map((issue) => ({ employee, issue })),
-      );
+    const currencyErrors = computations.flatMap(({ employee, result }) =>
+      result.validation
+        .filter(
+          (issue) => issue.severity === 'error' && issue.field === 'currency',
+        )
+        .map((issue) => ({ employee, issue })),
+    );
     if (currencyErrors.length > 0) {
       const details = currencyErrors
         .map(
@@ -386,6 +392,20 @@ export class PayrollService {
     void this.webhooksService
       .dispatch(tenantId, 'payroll.run.completed', {
         runId: run.id,
+        companyId: run.companyId,
+        period: run.period,
+        totals: run.totals,
+      })
+      .catch(() => {});
+
+    // Best-effort accounting sync for a run that has already been
+    // committed — resolves to a clear "not connected" result rather than
+    // throwing when the tenant hasn't connected QuickBooks/Xero/Zoho
+    // Books, so this is always safe to call unconditionally.
+    void this.accountingProvider
+      .syncPayrollExpense({
+        id: run.id,
+        tenantId,
         companyId: run.companyId,
         period: run.period,
         totals: run.totals,

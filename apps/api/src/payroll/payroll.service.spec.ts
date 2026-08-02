@@ -14,6 +14,7 @@ import { PayslipEmailService } from '../notifications/payslip-email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { LoansService } from '../loans/loans.service';
+import { ACCOUNTING_PROVIDER } from '../accounting/accounting-provider.interface';
 
 // jest.fn() with no type args resolves to Mock<UnknownFunction>, whose return
 // type is `unknown` rather than `Promise<unknown>` — that makes the conditional
@@ -62,6 +63,7 @@ describe('PayrollService', () => {
   let webhooksService: any;
   let loansService: any;
   let employeesService: any;
+  let accountingProvider: any;
 
   beforeEach(async () => {
     prisma = {
@@ -96,6 +98,10 @@ describe('PayrollService', () => {
     employeesService = {
       getActiveSalaryStructure: asyncMock(salaryStructure),
     };
+    accountingProvider = {
+      syncInvoice: asyncMock({ success: true }),
+      syncPayrollExpense: asyncMock({ success: true }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -122,6 +128,7 @@ describe('PayrollService', () => {
         { provide: NotificationsService, useValue: notificationsService },
         { provide: WebhooksService, useValue: webhooksService },
         { provide: LoansService, useValue: loansService },
+        { provide: ACCOUNTING_PROVIDER, useValue: accountingProvider },
       ],
     }).compile();
 
@@ -179,11 +186,19 @@ describe('PayrollService', () => {
         metadata: expect.objectContaining({ runId: 'run-1' }),
       }),
     );
+    expect(accountingProvider.syncPayrollExpense).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'run-1', tenantId: 'tenant-1' }),
+    );
   });
 
   it('processes multiple employees concurrently, preserving order and skipping employees with no salary structure', async () => {
     const employee2 = { ...employee, id: 'emp-2', firstName: 'John' };
-    const employee3 = { ...employee, id: 'emp-3', firstName: 'No', lastName: 'Structure' };
+    const employee3 = {
+      ...employee,
+      id: 'emp-3',
+      firstName: 'No',
+      lastName: 'Structure',
+    };
     prisma.employee.findMany.mockResolvedValueOnce([
       employee,
       employee2,
@@ -235,9 +250,9 @@ describe('PayrollService', () => {
       currency: 'USD',
     });
 
-    await expect(
-      service.runPayroll('tenant-1', 'user-1', dto),
-    ).rejects.toThrow(BadRequestException);
+    await expect(service.runPayroll('tenant-1', 'user-1', dto)).rejects.toThrow(
+      BadRequestException,
+    );
     expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
@@ -339,6 +354,7 @@ describe('PayrollService', () => {
         { provide: NotificationsService, useValue: notificationsService },
         { provide: WebhooksService, useValue: webhooksService },
         { provide: LoansService, useValue: loansService },
+        { provide: ACCOUNTING_PROVIDER, useValue: accountingProvider },
       ],
     }).compile();
     const serviceWithoutSalary = module.get(PayrollService);

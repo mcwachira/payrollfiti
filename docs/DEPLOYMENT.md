@@ -38,6 +38,7 @@ Derived directly from [`.env.example`](../.env.example) at the repo root.
 | `REDIS_URL` | config | — | Optional. Omit to run with caching disabled — see "Scaling notes" below. |
 | `PORT` | config | `3000` | Port the API listens on. |
 | `CORS_ORIGIN` | config | `http://localhost:3001` | Must match the deployed web app's origin. |
+| `API_PUBLIC_URL` | config | `http://localhost:3000` | This API's own public origin — used to build the OAuth `redirect_uri` for accounting integrations (QuickBooks/Xero/Zoho Books below). Different from `CORS_ORIGIN`, which is the frontend's origin. |
 | `JWT_ACCESS_SECRET` | secret | — | Signs short-lived access tokens. Rotate carefully (see below). |
 | `JWT_ACCESS_EXPIRES_IN` | config | `15m` | Access token lifetime. |
 | `JWT_REFRESH_SECRET` | secret | — | Signs longer-lived refresh tokens. |
@@ -45,14 +46,18 @@ Derived directly from [`.env.example`](../.env.example) at the repo root.
 | `PAYSLIP_STORAGE_DIR` | config | `./storage/payslips` | Filesystem path where generated payslip PDFs are written. On a scaled-out deployment this must be a shared/mounted volume (or swapped for object storage), not local disk per instance. |
 | `THROTTLE_TTL` | config | `60000` | Rate-limit window, in ms. |
 | `THROTTLE_LIMIT` | config | `100` | Max requests per window, per client. |
-| `STRIPE_SECRET_KEY` | secret | — | Required only if the tenant's billing provider is Stripe. |
-| `STRIPE_WEBHOOK_SECRET` | secret | — | Required only if Stripe webhooks are wired up. |
+| `PAYSTACK_SECRET_KEY` | secret | — | Required only if the tenant's billing provider is Paystack. |
 | `MPESA_CONSUMER_KEY` | secret | — | Required only if M-Pesa billing is enabled. |
 | `MPESA_CONSUMER_SECRET` | secret | — | Required only if M-Pesa billing is enabled. |
 | `MPESA_SHORTCODE` | config | — | M-Pesa paybill/till shortcode. |
 | `MPESA_PASSKEY` | secret | — | M-Pesa Daraja passkey. |
 | `MPESA_ENV` | config | `sandbox` | `sandbox` or `production`. |
 | `MPESA_CALLBACK_URL` | config | — | Public URL M-Pesa calls back to. |
+| `QUICKBOOKS_CLIENT_ID` / `QUICKBOOKS_CLIENT_SECRET` | secret | — | Required only if QuickBooks accounting sync is enabled. Register an OAuth2 app with Intuit; set its redirect URI to `{API_PUBLIC_URL}/accounting/integrations/callback/QUICKBOOKS`. |
+| `QUICKBOOKS_ENVIRONMENT` | config | `sandbox` | `sandbox` or `production` — selects the QuickBooks API host. |
+| `XERO_CLIENT_ID` / `XERO_CLIENT_SECRET` | secret | — | Required only if Xero accounting sync is enabled. Redirect URI: `{API_PUBLIC_URL}/accounting/integrations/callback/XERO`. |
+| `ZOHO_BOOKS_CLIENT_ID` / `ZOHO_BOOKS_CLIENT_SECRET` | secret | — | Required only if Zoho Books accounting sync is enabled. Redirect URI: `{API_PUBLIC_URL}/accounting/integrations/callback/ZOHO_BOOKS`. |
+| `ZOHO_BOOKS_REGION` | config | `com` | Zoho's accounts/API hosts are region-specific: `com`, `eu`, `in`, `com.au`, `jp`. |
 | `NEXT_PUBLIC_API_URL` | config | `http://localhost:3000` | Baked into the `apps/web` build; the browser's API base URL. |
 | `NEXT_PUBLIC_APP_NAME` | config | `PayrollFiti` | Baked into the `apps/web` build. |
 
