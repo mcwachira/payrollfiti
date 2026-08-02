@@ -27,6 +27,8 @@ import {
   downloadEmp201Csv,
   downloadIrp5,
 } from '@/lib/compliance-reports-api';
+import { Role } from '@repo/api';
+import { RoleRedirectGuard } from '@/components/RoleRedirectGuard';
 import { ApiError } from '@/lib/api-client';
 import { PageSkeleton } from '@/components/ui/loading-skeleton';
 
@@ -39,7 +41,7 @@ function errorMessage(error: unknown, fallback: string) {
   return error instanceof ApiError ? error.message : fallback;
 }
 
-export default function CompliancePage() {
+function CompliancePage() {
   const [period, setPeriod] = useState(currentPeriod());
   const [employeeId, setEmployeeId] = useState<string>('');
   const [taxYear, setTaxYear] = useState(String(new Date().getFullYear()));
@@ -411,5 +413,13 @@ export default function CompliancePage() {
         </Card>
       )}
     </div>
+  );
+}
+
+export default function CompliancePageGuarded() {
+  return (
+    <RoleRedirectGuard allow={[Role.ADMIN, Role.HR]}>
+      <CompliancePage />
+    </RoleRedirectGuard>
   );
 }

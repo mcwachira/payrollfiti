@@ -34,6 +34,7 @@ import { listPayrollRuns, getPayrollRun } from '@/lib/payroll-api';
 import { listInvoices, getSubscription } from '@/lib/billing-api';
 import { listNotifications } from '@/lib/notifications-api';
 import { useAuth } from '@/contexts/AuthContext';
+import { RoleRedirectGuard } from '@/components/RoleRedirectGuard';
 import { ApiError } from '@/lib/api-client';
 import { getPayrollStatusColor } from '@/lib/status-styles';
 import { PageSkeleton } from '@/components/ui/loading-skeleton';
@@ -395,4 +396,10 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default function DashboardPage() {
+  return (
+    <RoleRedirectGuard allow={[Role.ADMIN, Role.HR]}>
+      <Dashboard />
+    </RoleRedirectGuard>
+  );
+}

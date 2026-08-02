@@ -38,6 +38,8 @@ import {
   downloadBankExport,
   type PayrollRun,
 } from '@/lib/payroll-api';
+import { Role } from '@repo/api';
+import { RoleRedirectGuard } from '@/components/RoleRedirectGuard';
 import { ApiError } from '@/lib/api-client';
 import { getPayrollStatusColor } from '@/lib/status-styles';
 import { PageSkeleton } from '@/components/ui/loading-skeleton';
@@ -66,7 +68,7 @@ function errorMessage(error: unknown, fallback: string) {
   return error instanceof ApiError ? error.message : fallback;
 }
 
-export default function PayrollPage() {
+function PayrollPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [showRunDialog, setShowRunDialog] = useState(false);
@@ -321,5 +323,13 @@ export default function PayrollPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function PayrollPageGuarded() {
+  return (
+    <RoleRedirectGuard allow={[Role.ADMIN, Role.HR]}>
+      <PayrollPage />
+    </RoleRedirectGuard>
   );
 }

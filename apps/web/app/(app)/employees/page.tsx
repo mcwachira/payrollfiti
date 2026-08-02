@@ -7,6 +7,8 @@ import {
   listEmployees,
   toEmployeeListItem,
 } from '@/lib/employees-api';
+import { Role } from '@repo/api';
+import { RoleRedirectGuard } from '@/components/RoleRedirectGuard';
 import { ApiError } from '@/lib/api-client';
 import { PageSkeleton } from '@/components/ui/loading-skeleton';
 
@@ -78,4 +80,10 @@ const EmployeesPage = () => {
   );
 };
 
-export default EmployeesPage;
+export default function EmployeesPageGuarded() {
+  return (
+    <RoleRedirectGuard allow={[Role.ADMIN, Role.HR]}>
+      <EmployeesPage />
+    </RoleRedirectGuard>
+  );
+}

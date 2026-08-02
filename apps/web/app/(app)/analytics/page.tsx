@@ -1,4 +1,6 @@
 import PayrollAnalytics from '@/components/analytics/PayrollAnalytics';
+import { Role } from '@repo/api';
+import { RoleRedirectGuard } from '@/components/RoleRedirectGuard';
 
 const Analytics = () => {
   return (
@@ -14,4 +16,10 @@ const Analytics = () => {
   );
 };
 
-export default Analytics;
+export default function AnalyticsPageGuarded() {
+  return (
+    <RoleRedirectGuard allow={[Role.ADMIN, Role.HR]}>
+      <Analytics />
+    </RoleRedirectGuard>
+  );
+}

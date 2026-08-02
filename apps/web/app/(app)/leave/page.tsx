@@ -18,6 +18,8 @@ import {
   decideLeaveRequest,
   type LeaveRequest,
 } from '@/lib/leave-api';
+import { Role } from '@repo/api';
+import { RoleRedirectGuard } from '@/components/RoleRedirectGuard';
 import { ApiError } from '@/lib/api-client';
 import { PageSkeleton } from '@/components/ui/loading-skeleton';
 
@@ -100,7 +102,7 @@ function LeaveRequestRow({
   );
 }
 
-export default function LeaveManagementPage() {
+function LeaveManagementPage() {
   const queryClient = useQueryClient();
   const [decidingId, setDecidingId] = useState<string | null>(null);
 
@@ -223,5 +225,13 @@ export default function LeaveManagementPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function LeaveManagementPageGuarded() {
+  return (
+    <RoleRedirectGuard allow={[Role.ADMIN, Role.HR]}>
+      <LeaveManagementPage />
+    </RoleRedirectGuard>
   );
 }

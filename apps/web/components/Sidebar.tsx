@@ -28,20 +28,55 @@ import {
   Wallet,
 } from 'lucide-react';
 
+// `roles` mirrors each page's own server-side @Roles() gate — every entry
+// without one is either genuinely open to everyone (Employee Portal) or was
+// an oversight before this list was audited. An EMPLOYEE calling any of the
+// underlying list endpoints for Employees/Payroll/Analytics/Compliance/Leave
+// Management gets a 403 today, so showing the link at all was misleading.
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Employees', href: '/employees', icon: Users },
-  { name: 'Payroll', href: '/payroll', icon: Calculator },
-  { name: 'Leave Management', href: '/leave', icon: Calendar },
+  {
+    name: 'Dashboard',
+    href: '/dashboard',
+    icon: LayoutDashboard,
+    roles: [Role.ADMIN, Role.HR],
+  },
+  {
+    name: 'Employees',
+    href: '/employees',
+    icon: Users,
+    roles: [Role.ADMIN, Role.HR],
+  },
+  {
+    name: 'Payroll',
+    href: '/payroll',
+    icon: Calculator,
+    roles: [Role.ADMIN, Role.HR],
+  },
+  {
+    name: 'Leave Management',
+    href: '/leave',
+    icon: Calendar,
+    roles: [Role.ADMIN, Role.HR],
+  },
   {
     name: 'Loans & Advances',
     href: '/loans',
     icon: Wallet,
     roles: [Role.ADMIN, Role.HR],
   },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  {
+    name: 'Analytics',
+    href: '/analytics',
+    icon: BarChart3,
+    roles: [Role.ADMIN, Role.HR],
+  },
   { name: 'Employee Portal', href: '/employee-portal', icon: UserCircle },
-  { name: 'Compliance', href: '/compliance', icon: FileCheck },
+  {
+    name: 'Compliance',
+    href: '/compliance',
+    icon: FileCheck,
+    roles: [Role.ADMIN, Role.HR],
+  },
   // Billing and Settings are ADMIN-only server- and UI-gated; hide the
   // links themselves too so non-admins don't see a permission-denied page.
   { name: 'Billing', href: '/billing', icon: CreditCard, roles: [Role.ADMIN] },
