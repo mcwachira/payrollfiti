@@ -18,7 +18,7 @@ export default function TermsPage() {
                 1. Acceptance of Terms
               </h2>
               <p>
-                By creating an account or using PayFlow Africa, you agree to be
+                By creating an account or using PayrollFiti, you agree to be
                 bound by these Terms of Service and our Privacy Policy. If you
                 are using the platform on behalf of an organization, you
                 represent that you have authority to bind that organization to
@@ -30,7 +30,7 @@ export default function TermsPage() {
                 2. The Service
               </h2>
               <p>
-                PayFlow Africa provides payroll processing, statutory compliance
+                PayrollFiti provides payroll processing, statutory compliance
                 calculations, employee record management, and related HR tools.
                 Statutory calculations reflect current published rules at the
                 time of processing; you remain responsible for verifying and
@@ -77,8 +77,8 @@ export default function TermsPage() {
               </h2>
               <p>
                 The service is provided "as is." To the maximum extent permitted
-                by law, PayFlow Africa is not liable for indirect, incidental,
-                or consequential damages arising from use of the platform,
+                by law, PayrollFiti is not liable for indirect, incidental, or
+                consequential damages arising from use of the platform,
                 including errors in third-party statutory filing systems outside
                 our control.
               </p>
@@ -98,8 +98,8 @@ export default function TermsPage() {
                 8. Contact
               </h2>
               <p>
-                Questions about these terms can be sent to
-                hello@payflow-africa.com or via our{' '}
+                Questions about these terms can be sent to hello@payrollfiti.com
+                or via our{' '}
                 <a href="/contact" className="text-primary underline">
                   contact page
                 </a>

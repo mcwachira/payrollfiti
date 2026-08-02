@@ -122,7 +122,7 @@ export default function ContactPage() {
               </div>
               <div className="flex items-start gap-3">
                 <Mail className="h-5 w-5 text-primary shrink-0" />
-                <span>hello@payflow-africa.com</span>
+                <span>hello@payrollfiti.com</span>
               </div>
             </CardContent>
           </Card>

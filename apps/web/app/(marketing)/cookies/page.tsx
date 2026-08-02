@@ -18,8 +18,8 @@ export default function CookiePolicyPage() {
                 What Cookies We Use
               </h2>
               <p>
-                PayFlow Africa uses a small number of cookies and browser
-                storage mechanisms needed to operate the platform:
+                PayrollFiti uses a small number of cookies and browser storage
+                mechanisms needed to operate the platform:
               </p>
               <ul className="list-disc pl-5 mt-2 space-y-1">
                 <li>
@@ -65,8 +65,8 @@ export default function CookiePolicyPage() {
                 Contact
               </h2>
               <p>
-                Questions about this policy can be sent to
-                hello@payflow-africa.com or via our{' '}
+                Questions about this policy can be sent to hello@payrollfiti.com
+                or via our{' '}
                 <a href="/contact" className="text-primary underline">
                   contact page
                 </a>

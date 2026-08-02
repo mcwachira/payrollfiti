@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import Link from 'next/link';
 
 const LANGUAGES = ['English', 'Kiswahili', 'Français'];
-const COUNTRIES = ['Kenya', 'Uganda', 'Nigeria', 'South Africa'];
+const COUNTRIES = ['Kenya', 'Nigeria', 'South Africa'];
 
 const Footer = () => {
   const [email, setEmail] = useState('');
@@ -41,7 +41,7 @@ const Footer = () => {
           {/* Company Info */}
           <div>
             <h3 className="text-xl font-extrabold text-foreground mb-4">
-              PayFlow Africa
+              PayrollFiti
             </h3>
             <p className="text-muted-foreground mb-4">
               Empowering African businesses with modern payroll and HR
@@ -59,7 +59,7 @@ const Footer = () => {
               </div>
               <div className="flex items-center">
                 <Mail className="h-4 w-4 mr-2" />
-                hello@payflow-africa.com
+                hello@payrollfiti.com
               </div>
             </div>
           </div>
@@ -164,7 +164,7 @@ const Footer = () => {
               Stay Updated
             </h4>
             <p className="text-muted-foreground mb-4 text-sm">
-              Get the latest news and updates from PayFlow Africa.
+              Get the latest news and updates from PayrollFiti.
             </p>
 
             <form onSubmit={handleSubscribe} className="flex gap-2 mb-4">
@@ -231,7 +231,7 @@ const Footer = () => {
         {/* Bottom Section */}
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="text-sm text-muted-foreground mb-4 md:mb-0">
-            © {new Date().getFullYear()} PayFlow Africa. All rights reserved.
+            © {new Date().getFullYear()} PayrollFiti. All rights reserved.
           </div>
 
           <div className="flex space-x-4 text-sm text-muted-foreground">

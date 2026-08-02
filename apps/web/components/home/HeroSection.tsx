@@ -63,7 +63,7 @@ const HeroSection = () => {
               <div className="relative w-full h-80 md:h-96 lg:h-[400px] rounded-lg overflow-hidden border-2 border-border">
                 <Image
                   src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=600&h=400&fit=crop"
-                  alt="Professional using PayFlow Africa platform"
+                  alt="Professional using PayrollFiti platform"
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, 600px"

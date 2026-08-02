@@ -11,9 +11,10 @@ import { LifeBuoy } from 'lucide-react';
 
 const faqs = [
   {
-    question: 'How does PayFlow Africa calculate PAYE, NSSF, and NHIF?',
+    question:
+      'How does PayrollFiti calculate statutory deductions in Kenya, Nigeria, and South Africa?',
     answer:
-      "We apply the current KRA-published PAYE bands and personal relief, NSSF Tier I/II contribution rules, and NHIF salary bands automatically on every payroll run, so you don't have to track rate changes manually.",
+      "We apply each country's current statutory rules automatically on every payroll run — PAYE bands, personal relief, NSSF, and SHIF for Kenya; PAYE, Pension, and NHF for Nigeria; PAYE, UIF, and SDL for South Africa — so you don't have to track rate changes manually.",
   },
   {
     question: 'Can I run payroll for the same period twice?',

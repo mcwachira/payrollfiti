@@ -28,14 +28,14 @@ const benefits = [
   },
 ];
 
-const WhyPayFlow = () => {
+const WhyPayrollFiti = () => {
   return (
     <section className="py-20 bg-muted/30">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           <div>
             <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-6">
-              Why Choose PayFlow Africa?
+              Why Choose PayrollFiti?
             </h2>
 
             <p className="text-lg text-muted-foreground mb-8">
@@ -80,7 +80,7 @@ const WhyPayFlow = () => {
             </Card>
 
             <Card className="p-6 text-center bg-purple-600 text-white">
-              <div className="text-3xl font-extrabold mb-2">5</div>
+              <div className="text-3xl font-extrabold mb-2">3</div>
               <div className="text-sm opacity-90">Countries Supported</div>
             </Card>
           </div>
@@ -90,4 +90,4 @@ const WhyPayFlow = () => {
   );
 };
 
-export default WhyPayFlow;
+export default WhyPayrollFiti;

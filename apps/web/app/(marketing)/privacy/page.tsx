@@ -18,7 +18,7 @@ export default function PrivacyPage() {
                 1. Information We Collect
               </h2>
               <p>
-                To provide payroll and HR services, PayFlow Africa processes
+                To provide payroll and HR services, PayrollFiti processes
                 information you and your organization provide, including
                 employee names, contact details, statutory identifiers (KRA PIN,
                 NSSF and NHIF numbers), bank details, and compensation data. We
@@ -66,8 +66,8 @@ export default function PrivacyPage() {
               <p>
                 You may request access to, correction of, or deletion of
                 personal data we hold about you, subject to our legal obligation
-                to retain payroll records. Contact us at
-                hello@payflow-africa.com to make a request.
+                to retain payroll records. Contact us at hello@payrollfiti.com
+                to make a request.
               </p>
             </section>
             <section>
@@ -75,8 +75,8 @@ export default function PrivacyPage() {
                 6. Contact
               </h2>
               <p>
-                Questions about this policy can be sent to
-                hello@payflow-africa.com or via our{' '}
+                Questions about this policy can be sent to hello@payrollfiti.com
+                or via our{' '}
                 <a href="/contact" className="text-primary underline">
                   contact page
                 </a>

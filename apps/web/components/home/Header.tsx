@@ -49,7 +49,7 @@ function Header() {
               Pricing
             </Link>
             <Link
-              href="#testimonials"
+              href="/reviews"
               className="font-bold text-muted-foreground hover:text-foreground transition-colors"
             >
               Reviews

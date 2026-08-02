@@ -2,7 +2,7 @@ import ComplianceSection from '@/components/home/ComplianceSection';
 import FeaturesOverview from '@/components/home/FeaturesOverview';
 import Header from '@/components/home/Header';
 import HeroSection from '@/components/home/HeroSection';
-import WhyPayFlow from '@/components/home/WhyPayFlow';
+import WhyPayrollFiti from '@/components/home/WhyPayrollFiti';
 import TestimonialsSection from '@/components/home/TestimonialsSection';
 import CTABanner from '@/components/home/CTABanner';
 import Footer from '@/components/home/Footer';
@@ -14,7 +14,7 @@ const Home = () => {
       <HeroSection />
 
       <FeaturesOverview />
-      <WhyPayFlow />
+      <WhyPayrollFiti />
       <ComplianceSection />
       <TestimonialsSection />
       <CTABanner />

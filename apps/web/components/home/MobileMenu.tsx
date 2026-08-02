@@ -22,7 +22,7 @@ export function MobileMenu({ onNavigate }: { onNavigate?: () => void }) {
           Pricing
         </Link>
         <Link
-          href="#testimonials"
+          href="/reviews"
           onClick={onNavigate}
           className="py-2 font-bold hover:text-primary transition-colors"
         >
