@@ -191,63 +191,26 @@ export default function PayrollRunDetailPage({
               No entries in this run.
             </p>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <SortableTableHead
-                    active={sortKey === 'name'}
-                    direction={direction}
-                    onClick={() => toggle('name')}
-                  >
-                    Employee
-                  </SortableTableHead>
-                  <SortableTableHead
-                    active={sortKey === 'gross'}
-                    direction={direction}
-                    onClick={() => toggle('gross')}
-                  >
-                    Gross
-                  </SortableTableHead>
-                  <TableHead>Tax</TableHead>
-                  <TableHead>Statutory</TableHead>
-                  <SortableTableHead
-                    active={sortKey === 'net'}
-                    direction={direction}
-                    onClick={() => toggle('net')}
-                  >
-                    Net Pay
-                  </SortableTableHead>
-                  <TableHead>Payslip</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Below sm (640px), a 6-column table has no room to breathe —
+                  a horizontal scroll hides columns off-screen with no visual
+                  hint they exist. A stacked card per employee reads better
+                  on a phone than a table that requires side-scrolling. */}
+              <div className="sm:hidden space-y-3">
                 {sortedEntries.map((entry) => (
-                  <TableRow key={entry.id}>
-                    <TableCell>
-                      <div className="font-medium">
-                        {entry.employee.firstName} {entry.employee.lastName}
+                  <div
+                    key={entry.id}
+                    className="rounded-lg border-2 border-border p-4 space-y-2"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-medium">
+                          {entry.employee.firstName} {entry.employee.lastName}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {entry.employee.employeeNumber ?? '—'}
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {entry.employee.employeeNumber ?? '—'}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {formatCurrency(entry.grossPay, entry.currency)}
-                    </TableCell>
-                    <TableCell className="text-red-600 dark:text-red-400">
-                      -{formatCurrency(entry.totalTax, entry.currency)}
-                    </TableCell>
-                    <TableCell className="text-red-600 dark:text-red-400">
-                      -
-                      {formatCurrency(
-                        entry.totalStatutoryDeductions,
-                        entry.currency,
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium text-green-700 dark:text-green-400">
-                      {formatCurrency(entry.netPay, entry.currency)}
-                    </TableCell>
-                    <TableCell>
                       <Button
                         size="sm"
                         variant="outline"
@@ -256,11 +219,106 @@ export default function PayrollRunDetailPage({
                       >
                         <Download className="h-3 w-3" />
                       </Button>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm pt-1 border-t border-border">
+                      <span className="text-muted-foreground">Gross</span>
+                      <span className="text-right">
+                        {formatCurrency(entry.grossPay, entry.currency)}
+                      </span>
+                      <span className="text-muted-foreground">Tax</span>
+                      <span className="text-right text-red-600 dark:text-red-400">
+                        -{formatCurrency(entry.totalTax, entry.currency)}
+                      </span>
+                      <span className="text-muted-foreground">Statutory</span>
+                      <span className="text-right text-red-600 dark:text-red-400">
+                        -
+                        {formatCurrency(
+                          entry.totalStatutoryDeductions,
+                          entry.currency,
+                        )}
+                      </span>
+                      <span className="font-medium">Net Pay</span>
+                      <span className="text-right font-medium text-green-700 dark:text-green-400">
+                        {formatCurrency(entry.netPay, entry.currency)}
+                      </span>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              <div className="hidden sm:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <SortableTableHead
+                        active={sortKey === 'name'}
+                        direction={direction}
+                        onClick={() => toggle('name')}
+                      >
+                        Employee
+                      </SortableTableHead>
+                      <SortableTableHead
+                        active={sortKey === 'gross'}
+                        direction={direction}
+                        onClick={() => toggle('gross')}
+                      >
+                        Gross
+                      </SortableTableHead>
+                      <TableHead>Tax</TableHead>
+                      <TableHead>Statutory</TableHead>
+                      <SortableTableHead
+                        active={sortKey === 'net'}
+                        direction={direction}
+                        onClick={() => toggle('net')}
+                      >
+                        Net Pay
+                      </SortableTableHead>
+                      <TableHead>Payslip</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedEntries.map((entry) => (
+                      <TableRow key={entry.id}>
+                        <TableCell>
+                          <div className="font-medium">
+                            {entry.employee.firstName} {entry.employee.lastName}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {entry.employee.employeeNumber ?? '—'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {formatCurrency(entry.grossPay, entry.currency)}
+                        </TableCell>
+                        <TableCell className="text-red-600 dark:text-red-400">
+                          -{formatCurrency(entry.totalTax, entry.currency)}
+                        </TableCell>
+                        <TableCell className="text-red-600 dark:text-red-400">
+                          -
+                          {formatCurrency(
+                            entry.totalStatutoryDeductions,
+                            entry.currency,
+                          )}
+                        </TableCell>
+                        <TableCell className="font-medium text-green-700 dark:text-green-400">
+                          {formatCurrency(entry.netPay, entry.currency)}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDownloadPayslip(entry.id)}
+                            aria-label={`Download payslip for ${entry.employee.firstName} ${entry.employee.lastName}`}
+                          >
+                            <Download className="h-3 w-3" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
