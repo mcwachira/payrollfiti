@@ -8,10 +8,15 @@ import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RequirePermission } from '../common/permissions/require-permission.decorator';
 import { Permission } from '../common/permissions/permission.enum';
+import { AllowWithoutSubscription } from '../common/decorators/allow-without-subscription.decorator';
 
+// A tenant whose trial has expired or subscription has lapsed must still be
+// able to view invoices and pay to reactivate — this whole controller is
+// exempt from SubscriptionGuard, not just the read endpoints.
 @Controller('billing')
 @Roles(Role.ADMIN)
 @RequirePermission(Permission.BILLING_MANAGE)
+@AllowWithoutSubscription()
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 

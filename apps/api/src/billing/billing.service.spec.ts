@@ -380,8 +380,8 @@ describe('BillingService', () => {
       );
 
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
-      const txCallOrder = prisma.paymentTransaction.update.mock
-        .invocationCallOrder[0];
+      const txCallOrder =
+        prisma.paymentTransaction.update.mock.invocationCallOrder[0];
       const invoiceCallOrder =
         prisma.invoice.update.mock.invocationCallOrder[0];
       const transactionCallOrder =

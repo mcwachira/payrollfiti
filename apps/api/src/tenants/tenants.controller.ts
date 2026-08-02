@@ -6,8 +6,14 @@ import { CurrentTenant } from '../common/decorators/current-tenant.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RequirePermission } from '../common/permissions/require-permission.decorator';
 import { Permission } from '../common/permissions/permission.enum';
+import { AllowWithoutSubscription } from '../common/decorators/allow-without-subscription.decorator';
 
+// Seeing/creating a Company is a prerequisite to having anything to bill in
+// the first place (the onboarding wizard runs before a plan is chosen) —
+// exempt from SubscriptionGuard so a lapsed tenant isn't locked out of the
+// one screen that lets them see their own workspace exists.
 @Controller('tenants')
+@AllowWithoutSubscription()
 export class TenantsController {
   constructor(private readonly tenantsService: TenantsService) {}
 

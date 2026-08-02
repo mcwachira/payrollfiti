@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
@@ -25,9 +26,12 @@ import {
 
 const INVOICE_DUE_DAYS = 14;
 const DEFAULT_PLAN_COUNTRY = 'KE';
+const TRIAL_DAYS = 14;
 
 @Injectable()
 export class BillingService {
+  private readonly logger = new Logger(BillingService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly paystackProvider: PaystackProvider,
@@ -36,6 +40,62 @@ export class BillingService {
     @Inject(ACCOUNTING_PROVIDER)
     private readonly accountingProvider: AccountingProvider,
   ) {}
+
+  /**
+   * Called once, right after a tenant signs up (AuthService.signup) — gives
+   * every new tenant a real TRIALING subscription with an expiry, rather
+   * than no Subscription row at all until they explicitly pick a plan
+   * (which previously meant "no subscription" and "actively subscribed"
+   * were indistinguishable from a paywall's point of view). Best-effort and
+   * non-throwing: a missing/misconfigured plan catalog for a country must
+   * never block account creation itself.
+   */
+  async startTrial(tenantId: string): Promise<void> {
+    try {
+      const tenant = await this.prisma.tenant.findUniqueOrThrow({
+        where: { id: tenantId },
+      });
+      const plan =
+        (await this.prisma.plan.findFirst({
+          where: { isActive: true, countryCode: tenant.countryCode },
+          orderBy: { pricePerEmployee: 'asc' },
+        })) ??
+        (await this.prisma.plan.findFirst({
+          where: { isActive: true, countryCode: DEFAULT_PLAN_COUNTRY },
+          orderBy: { pricePerEmployee: 'asc' },
+        }));
+      if (!plan) {
+        this.logger.warn(
+          `No active plan found for tenant ${tenantId} (country ${tenant.countryCode}) — skipping trial creation`,
+        );
+        return;
+      }
+
+      const now = new Date();
+      const trialEnd = new Date(
+        now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000,
+      );
+      await this.prisma.subscription.upsert({
+        where: { tenantId },
+        create: {
+          tenantId,
+          planId: plan.id,
+          status: SubscriptionStatus.TRIALING,
+          provider: PaymentProviderType.PAYSTACK,
+          currentPeriodStart: now,
+          currentPeriodEnd: trialEnd,
+        },
+        // A tenant that already has a subscription (re-signup edge case,
+        // or a re-run of this best-effort call) is left untouched.
+        update: {},
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to start trial for tenant ${tenantId}`,
+        error as Error,
+      );
+    }
+  }
 
   private getProvider(type: PaymentProviderType): PaymentProvider {
     return type === PaymentProviderType.MPESA
@@ -217,8 +277,7 @@ export class BillingService {
           amount: invoice.amount,
           currency: invoice.currency,
           status: result.status,
-          rawResponse: (result.raw ??
-            Prisma.JsonNull) as Prisma.InputJsonValue,
+          rawResponse: (result.raw ?? Prisma.JsonNull) as Prisma.InputJsonValue,
         },
       });
 

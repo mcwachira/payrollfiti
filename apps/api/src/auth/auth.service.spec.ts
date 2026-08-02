@@ -7,6 +7,7 @@ import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { BillingService } from '../billing/billing.service';
 
 jest.mock('bcrypt');
 const bcryptMock = bcrypt as jest.Mocked<typeof bcrypt>;
@@ -22,6 +23,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let prisma: any;
   let jwtService: any;
+  let billingService: any;
 
   const user = {
     id: 'user-1',
@@ -43,6 +45,7 @@ describe('AuthService', () => {
       $transaction: jest.fn(),
     };
     jwtService = { signAsync: asyncMock('signed-token') };
+    billingService = { startTrial: asyncMock(undefined) };
 
     (bcryptMock.hash as jest.Mock).mockResolvedValue(
       'hashed-password' as never,
@@ -54,6 +57,7 @@ describe('AuthService', () => {
         AuthService,
         { provide: PrismaService, useValue: prisma },
         { provide: JwtService, useValue: jwtService },
+        { provide: BillingService, useValue: billingService },
         {
           provide: ConfigService,
           useValue: {
@@ -112,6 +116,7 @@ describe('AuthService', () => {
           }),
         }),
       );
+      expect(billingService.startTrial).toHaveBeenCalledWith(tenant.id);
     });
 
     it('derives defaultCurrency from the signup country rather than hardcoding KES', async () => {

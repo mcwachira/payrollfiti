@@ -9,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { Role, User } from '@prisma/client';
 import { getPricingForCountry } from '@repo/pricing';
 import { PrismaService } from '../prisma/prisma.service';
+import { BillingService } from '../billing/billing.service';
 import { AppConfig } from '../config/configuration';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
@@ -26,6 +27,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService<AppConfig, true>,
+    private readonly billingService: BillingService,
   ) {}
 
   async signup(dto: SignupDto) {
@@ -60,6 +62,10 @@ export class AuthService {
       });
       return { tenant, user };
     });
+
+    // Best-effort, outside the signup transaction — a plan-catalog issue
+    // must never roll back account creation (see BillingService.startTrial).
+    await this.billingService.startTrial(tenant.id);
 
     const tokens = await this.issueTokens(user);
     return { tenant, user: this.toAuthenticatedUser(user), ...tokens };
