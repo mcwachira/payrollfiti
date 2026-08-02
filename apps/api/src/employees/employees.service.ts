@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Employee, Prisma } from '@prisma/client';
 import { getPricingForCountry } from '@repo/pricing';
 import { PrismaService } from '../prisma/prisma.service';
@@ -96,6 +100,69 @@ export class EmployeesService {
       return employee;
     });
     return this.decryptEmployee(created);
+  }
+
+  /**
+   * One row per call to `create()` — deliberately, not a single bulk
+   * INSERT — so every row gets exactly the same PII encryption and
+   * onboarding-checklist seeding as a normal single-employee create,
+   * through the exact same tenant-scoped code path (see the audit note on
+   * this: a bulk endpoint that shortcuts that is the easiest way to
+   * reintroduce a cross-tenant or plaintext-PII bug). Each row's `create()`
+   * call has its own transaction, so one bad row fails independently
+   * without rolling back the rows before it. Sequential rather than
+   * concurrent: this runs rarely (once during onboarding, or an occasional
+   * headcount import), so simplicity and independent per-row error
+   * reporting matter more here than throughput.
+   */
+  async createBulk(
+    tenantId: string,
+    rows: CreateEmployeeDto[],
+  ): Promise<
+    Array<
+      | { index: number; success: true; employee: Employee }
+      | { index: number; success: false; error: string }
+    >
+  > {
+    const results: Array<
+      | { index: number; success: true; employee: Employee }
+      | { index: number; success: false; error: string }
+    > = [];
+    for (const [index, dto] of rows.entries()) {
+      try {
+        const employee = await this.create(tenantId, dto);
+        results.push({ index, success: true, employee });
+      } catch (error) {
+        results.push({
+          index,
+          success: false,
+          error: this.describeBulkRowError(error),
+        });
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Prisma's own error message for a constraint violation includes an
+   * internal file path and line number (e.g. "Invalid `tx.employee.create()`
+   * invocation in .../employees.service.ts:63:42") — fine in a server log,
+   * not something to hand back verbatim in an API response. Duplicate email
+   * (P2002 on the unique `email` column) is by far the most common real
+   * failure in a bulk import, so it gets a clean message; anything else
+   * falls back to the exception's own message, which for the
+   * NestJS/class-validator errors this method actually expects to see
+   * (NotFoundException from assertCompanyBelongsToTenant, etc.) is already
+   * client-appropriate.
+   */
+  private describeBulkRowError(error: unknown): string {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      return 'An employee with this email already exists';
+    }
+    return error instanceof Error ? error.message : 'Failed to create employee';
   }
 
   async findAll(tenantId: string, companyId: string) {

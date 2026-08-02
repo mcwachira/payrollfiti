@@ -20,9 +20,10 @@ import { Badge } from '@/components/ui/badge';
 import { formatPrice } from '@repo/pricing';
 import { getMyTenant, createCompany, type Tenant } from '@/lib/tenants-api';
 import {
-  createEmployee,
+  bulkCreateEmployees,
   addSalaryStructure,
   type Company,
+  type BulkCreateEmployeeResult,
 } from '@/lib/employees-api';
 import { calculatePayroll } from '@/lib/payroll-calculator-api';
 import { listPlans, subscribe, type Plan } from '@/lib/billing-api';
@@ -194,50 +195,76 @@ export default function OnboardingPage() {
     setDrafts((rows) => rows.filter((r) => r.key !== key));
   }
 
-  async function saveDraft(row: DraftEmployee) {
-    if (
-      !company ||
-      !row.firstName.trim() ||
-      !row.lastName.trim() ||
-      !row.email.trim()
-    )
-      return;
-    updateDraft(row.key, { status: 'saving', error: undefined });
-    try {
-      const employee = await createEmployee({
-        companyId: company.id,
-        firstName: row.firstName.trim(),
-        lastName: row.lastName.trim(),
-        email: row.email.trim(),
-      });
-      const basicSalary = Number(row.basicSalary) || 0;
-      if (basicSalary > 0) {
-        await addSalaryStructure(employee.id, {
-          basicSalary,
-          currency,
-          effectiveFrom: new Date().toISOString().slice(0, 10),
-        });
-      }
-      updateDraft(row.key, { status: 'saved', employeeId: employee.id });
-    } catch (error) {
-      updateDraft(row.key, {
-        status: 'error',
-        error: error instanceof ApiError ? error.message : 'Failed to save',
-      });
-    }
-  }
-
+  /**
+   * One request for every pending row via POST /employees/bulk — each row
+   * is reported success/failure independently server-side, so a bad email
+   * on row 4 doesn't stop rows 1-3 (or 5+) from landing. Salary structures
+   * still go through individual addSalaryStructure calls afterward, since
+   * bulk-create only covers the Employee row itself.
+   */
   async function saveAllDrafts() {
+    if (!company) return;
     const pending = drafts.filter(
-      (r) => r.status === 'pending' || r.status === 'error',
+      (r) =>
+        (r.status === 'pending' || r.status === 'error') &&
+        r.firstName.trim() &&
+        r.lastName.trim() &&
+        r.email.trim(),
     );
-    for (const row of pending) {
-      // Sequential on purpose — this is a handful of rows typed or pasted
-      // during setup, not a bulk import; no bulk-create endpoint exists on
-      // the backend yet (see the audit report), so each row is its own
-      // request either way.
-      await saveDraft(row);
+    if (pending.length === 0) return;
+
+    pending.forEach((row) =>
+      updateDraft(row.key, { status: 'saving', error: undefined }),
+    );
+
+    let results: BulkCreateEmployeeResult[];
+    try {
+      results = await bulkCreateEmployees(
+        pending.map((row) => ({
+          companyId: company.id,
+          firstName: row.firstName.trim(),
+          lastName: row.lastName.trim(),
+          email: row.email.trim(),
+        })),
+      );
+    } catch (error) {
+      pending.forEach((row) =>
+        updateDraft(row.key, {
+          status: 'error',
+          error: error instanceof ApiError ? error.message : 'Failed to save',
+        }),
+      );
+      return;
     }
+
+    await Promise.all(
+      results.map(async (result, i) => {
+        const row = pending[i]!;
+        if (!result.success) {
+          updateDraft(row.key, { status: 'error', error: result.error });
+          return;
+        }
+        const basicSalary = Number(row.basicSalary) || 0;
+        if (basicSalary > 0) {
+          try {
+            await addSalaryStructure(result.employee.id, {
+              basicSalary,
+              currency,
+              effectiveFrom: new Date().toISOString().slice(0, 10),
+            });
+          } catch {
+            // Employee itself was created successfully; a salary-structure
+            // failure shouldn't undo that — it can be added later from the
+            // Employees page. Still mark saved since the row's primary
+            // purpose (adding the employee) succeeded.
+          }
+        }
+        updateDraft(row.key, {
+          status: 'saved',
+          employeeId: result.employee.id,
+        });
+      }),
+    );
   }
 
   async function handleCsvUpload(file: File) {

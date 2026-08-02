@@ -11,6 +11,7 @@ import {
 import { Role } from '@prisma/client';
 import { EmployeesService } from './employees.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
+import { BulkCreateEmployeesDto } from './dto/bulk-create-employees.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
 import { CreateSalaryStructureDto } from './dto/create-salary-structure.dto';
@@ -33,6 +34,21 @@ export class EmployeesController {
   @Post()
   create(@CurrentTenant() tenantId: string, @Body() dto: CreateEmployeeDto) {
     return this.employeesService.create(tenantId, dto);
+  }
+
+  /**
+   * Bulk create (CSV import) — one entry per row in the same order as the
+   * request, each independently success/failure so a partial import is
+   * fully diagnosable rather than an all-or-nothing 400.
+   */
+  @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.EMPLOYEE_WRITE)
+  @Post('bulk')
+  createBulk(
+    @CurrentTenant() tenantId: string,
+    @Body() dto: BulkCreateEmployeesDto,
+  ) {
+    return this.employeesService.createBulk(tenantId, dto.employees);
   }
 
   @Roles(Role.ADMIN, Role.HR)

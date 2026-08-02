@@ -70,6 +70,20 @@ export function createEmployee(input: CreateEmployeeInput): Promise<Employee> {
   });
 }
 
+export type BulkCreateEmployeeResult =
+  | { index: number; success: true; employee: Employee }
+  | { index: number; success: false; error: string };
+
+/** Each row is independently reported as success/failure — a malformed row doesn't sink the whole batch. */
+export function bulkCreateEmployees(
+  employees: CreateEmployeeInput[],
+): Promise<BulkCreateEmployeeResult[]> {
+  return apiFetch<BulkCreateEmployeeResult[]>('/employees/bulk', {
+    method: 'POST',
+    body: JSON.stringify({ employees }),
+  });
+}
+
 export function removeEmployee(id: string): Promise<Employee> {
   return apiFetch<Employee>(`/employees/${id}`, { method: 'DELETE' });
 }

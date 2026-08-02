@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { EmployeesService } from './employees.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantsService } from '../tenants/tenants.service';
@@ -191,9 +192,7 @@ describe('EmployeesService', () => {
       expect(prisma.onboardingTask.createMany).toHaveBeenCalledTimes(1);
       const seeded = prisma.onboardingTask.createMany.mock.calls[0][0].data;
       expect(seeded.every((t: any) => t.employeeId === 'emp-1')).toBe(true);
-      expect(seeded.map((t: any) => t.title)).toContain(
-        'KRA PIN collected',
-      );
+      expect(seeded.map((t: any) => t.title)).toContain('KRA PIN collected');
     });
 
     it('seeds a Nigeria-specific checklist for an NG tenant', async () => {
@@ -205,9 +204,7 @@ describe('EmployeesService', () => {
 
       const seeded = prisma.onboardingTask.createMany.mock.calls[0][0].data;
       const titles = seeded.map((t: any) => t.title);
-      expect(titles).toContain(
-        'Tax Identification Number (TIN) collected',
-      );
+      expect(titles).toContain('Tax Identification Number (TIN) collected');
       expect(titles).not.toContain('KRA PIN collected');
     });
 
@@ -233,6 +230,67 @@ describe('EmployeesService', () => {
           data: expect.objectContaining({ currency: 'USD' }),
         }),
       );
+    });
+  });
+
+  describe('createBulk', () => {
+    const dto = {
+      companyId: 'company-1',
+      firstName: 'Jane',
+      lastName: 'Doe',
+      email: 'jane@acme.co.ke',
+    };
+
+    it('creates every row and reports success with the resulting employee, in request order', async () => {
+      const results = await service.createBulk('tenant-1', [
+        dto,
+        { ...dto, firstName: 'John', email: 'john@acme.co.ke' },
+      ]);
+
+      expect(results).toHaveLength(2);
+      expect(results[0]).toMatchObject({ index: 0, success: true });
+      expect(results[1]).toMatchObject({ index: 1, success: true });
+      expect(prisma.employee.create).toHaveBeenCalledTimes(2);
+    });
+
+    it("fails a row independently without affecting the rows before or after it — one row's failure never rolls back another", async () => {
+      tenantsService.assertCompanyBelongsToTenant
+        .mockResolvedValueOnce(company) // row 0 succeeds
+        .mockRejectedValueOnce(new NotFoundException('Company not found')) // row 1 fails
+        .mockResolvedValueOnce(company); // row 2 succeeds
+
+      const results = await service.createBulk('tenant-1', [
+        dto,
+        { ...dto, companyId: 'not-my-company' },
+        { ...dto, firstName: 'Zed', email: 'zed@acme.co.ke' },
+      ]);
+
+      expect(results).toEqual([
+        { index: 0, success: true, employee: expect.anything() },
+        { index: 1, success: false, error: 'Company not found' },
+        { index: 2, success: true, employee: expect.anything() },
+      ]);
+      // Rows 0 and 2 actually persisted — a failure in the middle didn't
+      // short-circuit the loop or roll back the successful rows around it.
+      expect(prisma.employee.create).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports a duplicate email as a clean message, not the raw Prisma constraint error', async () => {
+      const duplicateError = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed on the fields: (`email`)',
+        { code: 'P2002', clientVersion: 'test' },
+      );
+      prisma.$transaction = jest.fn(() => Promise.reject(duplicateError));
+
+      const results = await service.createBulk('tenant-1', [dto]);
+
+      expect(results).toEqual([
+        {
+          index: 0,
+          success: false,
+          error: 'An employee with this email already exists',
+        },
+      ]);
     });
   });
 
