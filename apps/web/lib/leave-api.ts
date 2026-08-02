@@ -35,8 +35,8 @@ export interface LeaveBalance {
   id: string;
   leaveTypeId: string;
   year: number;
-  accrued: number;
-  used: number;
+  accruedDays: number;
+  usedDays: number;
 }
 
 export function listLeaveTypes(): Promise<LeaveType[]> {

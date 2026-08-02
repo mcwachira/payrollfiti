@@ -1,5 +1,6 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,111 +15,80 @@ import {
 } from '@/components/ui/select';
 import { Calendar, Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { listLeaveTypes, createLeaveRequest } from '@/lib/leave-api';
+import { ApiError } from '@/lib/api-client';
 
 interface LeaveApplicationProps {
   employeeId: string;
 }
 
-interface LeaveType {
-  id: string;
-  name: string;
-  type: string;
-}
-
-const mockLeaveTypes: LeaveType[] = [
-  {
-    id: 'lt-1',
-    name: 'Annual Leave',
-    type: 'Paid',
-  },
-  {
-    id: 'lt-2',
-    name: 'Sick Leave',
-    type: 'Paid',
-  },
-  {
-    id: 'lt-3',
-    name: 'Maternity Leave',
-    type: 'Paid',
-  },
-  {
-    id: 'lt-4',
-    name: 'Unpaid Leave',
-    type: 'Unpaid',
-  },
-];
-
 export default function LeaveApplication({
   employeeId,
 }: LeaveApplicationProps) {
-  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
+  const queryClient = useQueryClient();
+  const typesQuery = useQuery({
+    queryKey: ['leave-types'],
+    queryFn: listLeaveTypes,
+  });
+
   const [formData, setFormData] = useState({
     leave_type_id: '',
     start_date: '',
     end_date: '',
     reason: '',
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    fetchLeaveTypes();
-  }, []);
-
-  const fetchLeaveTypes = async () => {
-    try {
-      // Simulate network delay
-      await new Promise((res) => setTimeout(res, 500));
-      setLeaveTypes(mockLeaveTypes);
-    } catch (error: any) {
-      console.error('Error fetching leave types:', error);
-      toast.error('Failed to load leave types');
-    }
-  };
 
   const calculateDays = (startDate: string, endDate: string): number => {
     if (!startDate || !endDate) return 0;
     const start = new Date(startDate);
     const end = new Date(endDate);
     const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-    return diffDays;
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      const daysRequested = calculateDays(
-        formData.start_date,
-        formData.end_date,
-      );
-
-      // Simulate submission delay
-      await new Promise((res) => setTimeout(res, 1000));
-
-      console.log('Mock Submission:', {
-        employee_id: employeeId,
-        ...formData,
-        days_requested: daysRequested,
-        status: 'pending',
-      });
-
-      toast('Leave application submitted successfully');
-
+  const submitMutation = useMutation({
+    mutationFn: () =>
+      createLeaveRequest({
+        leaveTypeId: formData.leave_type_id,
+        startDate: formData.start_date,
+        endDate: formData.end_date,
+        reason: formData.reason || undefined,
+        // employeeId is deliberately omitted — the backend infers "your own"
+        // from the JWT for an EMPLOYEE caller and rejects any mismatched id
+        // passed here, so there's nothing this form needs to supply.
+      }),
+    onSuccess: () => {
+      toast.success('Leave application submitted — pending approval');
       setFormData({
         leave_type_id: '',
         start_date: '',
         end_date: '',
         reason: '',
       });
-    } catch (error: any) {
-      console.error('Error submitting leave application:', error);
-      toast('Failed to submit leave application');
-    } finally {
-      setIsSubmitting(false);
-    }
+      // Refreshes both the balance card (used days can change once approved,
+      // but the request itself should show up immediately) and the My
+      // Applications tab, which read the same underlying data.
+      queryClient.invalidateQueries({
+        queryKey: ['leave-balances', employeeId],
+      });
+      queryClient.invalidateQueries({ queryKey: ['leave-requests', 'mine'] });
+    },
+    onError: (error) => {
+      toast.error('Could not submit your leave application', {
+        description:
+          error instanceof ApiError
+            ? error.message
+            : 'Please check the details and try again',
+      });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitMutation.mutate();
   };
+
+  const days = calculateDays(formData.start_date, formData.end_date);
 
   return (
     <Card>
@@ -138,13 +108,17 @@ export default function LeaveApplication({
                 setFormData({ ...formData, leave_type_id: value })
               }
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select leave type" />
+              <SelectTrigger id="leave_type">
+                <SelectValue
+                  placeholder={
+                    typesQuery.isPending ? 'Loading…' : 'Select leave type'
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                {leaveTypes.map((type) => (
+                {(typesQuery.data ?? []).map((type) => (
                   <SelectItem key={type.id} value={type.id}>
-                    {type.name}
+                    {type.name} {type.isPaid ? '' : '(unpaid)'}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -170,6 +144,7 @@ export default function LeaveApplication({
                 type="date"
                 id="end_date"
                 value={formData.end_date}
+                min={formData.start_date || undefined}
                 onChange={(e) =>
                   setFormData({ ...formData, end_date: e.target.value })
                 }
@@ -178,10 +153,11 @@ export default function LeaveApplication({
             </div>
           </div>
 
-          {formData.start_date && formData.end_date && (
-            <div className="text-sm text-muted-foreground">
-              Total days:{' '}
-              {calculateDays(formData.start_date, formData.end_date)}
+          {days > 0 && (
+            <div className="text-sm text-muted-foreground flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5" />
+              {days} calendar day{days === 1 ? '' : 's'} requested — public
+              holidays are excluded automatically when this is submitted.
             </div>
           )}
 
@@ -198,8 +174,16 @@ export default function LeaveApplication({
             />
           </div>
 
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Submitting...' : 'Submit Application'}
+          <Button
+            type="submit"
+            disabled={
+              submitMutation.isPending ||
+              !formData.leave_type_id ||
+              !formData.start_date ||
+              !formData.end_date
+            }
+          >
+            {submitMutation.isPending ? 'Submitting...' : 'Submit Application'}
           </Button>
         </form>
       </CardContent>

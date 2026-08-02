@@ -1,97 +1,52 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock } from 'lucide-react';
-import { toast } from 'sonner';
+import { Calendar } from 'lucide-react';
+import { listLeaveTypes, listLeaveBalances } from '@/lib/leave-api';
+import { ApiError } from '@/lib/api-client';
 
 interface LeaveBalanceProps {
   employeeId: string;
 }
 
-interface LeaveBalance {
-  id: string;
-  leave_type_id: string;
-  year: number;
-  opening_balance: number;
-  earned_balance: number;
-  used_balance: number;
-  closing_balance: number;
-  leave_types: {
-    name: string;
-    type: string;
-  };
-}
-const mockLeaveBalances: LeaveBalance[] = [
-  {
-    id: '1',
-    leave_type_id: 'annual',
-    year: 2025,
-    opening_balance: 21,
-    earned_balance: 7,
-    used_balance: 5,
-    closing_balance: 23,
-    leave_types: {
-      name: 'Annual Leave',
-      type: 'Paid',
-    },
-  },
-  {
-    id: '2',
-    leave_type_id: 'sick',
-    year: 2025,
-    opening_balance: 10,
-    earned_balance: 5,
-    used_balance: 3,
-    closing_balance: 12,
-    leave_types: {
-      name: 'Sick Leave',
-      type: 'Paid',
-    },
-  },
-  {
-    id: '3',
-    leave_type_id: 'unpaid',
-    year: 2025,
-    opening_balance: 0,
-    earned_balance: 0,
-    used_balance: 2,
-    closing_balance: -2,
-    leave_types: {
-      name: 'Unpaid Leave',
-      type: 'Unpaid',
-    },
-  },
-];
-
 export default function LeaveBalance({ employeeId }: LeaveBalanceProps) {
-  const [balances, setBalances] = useState<LeaveBalance[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const typesQuery = useQuery({
+    queryKey: ['leave-types'],
+    queryFn: listLeaveTypes,
+  });
+  const balancesQuery = useQuery({
+    queryKey: ['leave-balances', employeeId],
+    queryFn: () => listLeaveBalances(employeeId),
+  });
 
-  useEffect(() => {
-    fetchLeaveBalances();
-  }, [employeeId]);
-
-  const fetchLeaveBalances = async () => {
-    try {
-      setIsLoading(true);
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      const filtered = mockLeaveBalances.filter(
-        (b) => b.year === new Date().getFullYear(),
-      );
-
-      setBalances(filtered);
-    } catch (error: any) {
-      console.error('Error fetching leave balances:', error);
-      toast.error('Failed to load leave balances');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const isLoading = typesQuery.isPending || balancesQuery.isPending;
+  const error = typesQuery.error ?? balancesQuery.error;
 
   if (isLoading) return <div>Loading leave balances...</div>;
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Leave Balances
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-red-600 dark:text-red-400">
+            {error instanceof ApiError
+              ? error.message
+              : 'Failed to load leave balances'}
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const typeNames = new Map((typesQuery.data ?? []).map((t) => [t.id, t.name]));
+  const balances = balancesQuery.data ?? [];
 
   return (
     <Card>
@@ -106,24 +61,32 @@ export default function LeaveBalance({ employeeId }: LeaveBalanceProps) {
           {balances.length === 0 ? (
             <p className="text-muted-foreground">No leave balances found</p>
           ) : (
-            balances.map((balance) => (
-              <div
-                key={balance.id}
-                className="flex justify-between items-center p-3 border rounded-lg"
-              >
-                <div>
-                  <h4 className="font-medium">{balance.leave_types?.name}</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Used: {balance.used_balance} days
-                  </p>
+            balances.map((balance) => {
+              const remaining = balance.accruedDays - balance.usedDays;
+              return (
+                <div
+                  key={balance.id}
+                  className="flex justify-between items-center p-3 border rounded-lg"
+                >
+                  <div>
+                    <h4 className="font-medium">
+                      {typeNames.get(balance.leaveTypeId) ?? 'Leave'}
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Used: {balance.usedDays} of {balance.accruedDays} accrued
+                      days
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <Badge
+                      variant={remaining > 0 ? 'secondary' : 'destructive'}
+                    >
+                      {remaining} days remaining
+                    </Badge>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <Badge variant="secondary">
-                    {balance.closing_balance} days remaining
-                  </Badge>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </CardContent>
