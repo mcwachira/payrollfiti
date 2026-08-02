@@ -1,5 +1,6 @@
 import { randomBytes, createHash } from 'crypto';
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   UnauthorizedException,
@@ -7,17 +8,23 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import * as otplib from 'otplib';
+import QRCode from 'qrcode';
 import { Prisma, Role, User } from '@prisma/client';
 import { getPricingForCountry } from '@repo/pricing';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
 import { MailService } from '../notifications/mail.service';
+import { EncryptionService } from '../common/crypto/encryption.service';
 import { AppConfig } from '../config/configuration';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { AcceptInviteDto } from './dto/accept-invite.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { TwoFactorEnableDto } from './dto/two-factor-enable.dto';
+import { TwoFactorDisableDto } from './dto/two-factor-disable.dto';
+import { TwoFactorVerifyDto } from './dto/two-factor-verify.dto';
 import {
   AuthenticatedRequestUser,
   JwtAccessPayload,
@@ -25,6 +32,46 @@ import {
 } from './types';
 
 const SALT_ROUNDS = 12;
+const TWO_FACTOR_CHALLENGE_PURPOSE = '2fa-challenge';
+const TWO_FACTOR_CHALLENGE_EXPIRES_IN = '5m';
+const BACKUP_CODE_COUNT = 10;
+// Excludes 0/O/1/I — ambiguous when handwritten/misread from a printed sheet.
+const BACKUP_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function generateBackupCode(): string {
+  const chars = Array.from(
+    randomBytes(8),
+    (byte) => BACKUP_CODE_ALPHABET[byte % BACKUP_CODE_ALPHABET.length],
+  );
+  return `${chars.slice(0, 4).join('')}-${chars.slice(4).join('')}`;
+}
+
+function normalizeBackupCode(code: string): string {
+  return code.toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function hashBackupCode(code: string): string {
+  return createHash('sha256').update(normalizeBackupCode(code)).digest('hex');
+}
+
+/**
+ * otplib.verify() throws rather than returning { valid: false } for a
+ * malformed token — a backup code like "WDPA-WR2C" being tried here (see
+ * verifyTwoFactorCode below) is neither 6 digits nor otherwise well-formed,
+ * so unlike a plain "wrong code" this is an expected, routine input this
+ * function must not let escape as an unhandled 500.
+ */
+async function verifyTotpSafely(
+  secret: string,
+  token: string,
+): Promise<boolean> {
+  try {
+    const result = await otplib.verify({ secret, token });
+    return result.valid;
+  } catch {
+    return false;
+  }
+}
 
 @Injectable()
 export class AuthService {
@@ -36,6 +83,7 @@ export class AuthService {
     private readonly configService: ConfigService<AppConfig, true>,
     private readonly billingService: BillingService,
     private readonly mailService: MailService,
+    private readonly encryptionService: EncryptionService,
   ) {}
 
   async signup(dto: SignupDto) {
@@ -93,6 +141,19 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.validateUser(dto.email, dto.password);
+    if (user.twoFactorEnabled) {
+      // Password alone doesn't issue tokens — the caller gets a short-lived
+      // challenge instead, redeemed via verifyTwoFactor() once they prove
+      // they also hold the authenticator/a backup code.
+      const challengeToken = await this.jwtService.signAsync(
+        { purpose: TWO_FACTOR_CHALLENGE_PURPOSE, sub: user.id },
+        {
+          secret: this.configService.get('jwt', { infer: true }).accessSecret,
+          expiresIn: TWO_FACTOR_CHALLENGE_EXPIRES_IN,
+        },
+      );
+      return { twoFactorRequired: true as const, challengeToken };
+    }
     const tokens = await this.issueTokens(user);
     return { user: this.toAuthenticatedUser(user), ...tokens };
   }
@@ -242,6 +303,173 @@ export class AuthService {
 
     const tokens = await this.issueTokens(user);
     return { user: this.toAuthenticatedUser(user), ...tokens };
+  }
+
+  async getTwoFactorStatus(userId: string): Promise<{ enabled: boolean }> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { twoFactorEnabled: true },
+    });
+    return { enabled: user.twoFactorEnabled };
+  }
+
+  /**
+   * Generates and stores a new TOTP secret, but leaves twoFactorEnabled
+   * false — enableTwoFactor() below is what flips it, only once the user
+   * has proven their authenticator app actually produces matching codes.
+   * Calling this again before enabling overwrites the previous secret,
+   * which is fine: nothing depended on the old one yet.
+   */
+  async setupTwoFactor(userId: string) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    const secret = await otplib.generateSecret();
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorSecretEncrypted: this.encryptionService.encrypt(secret)!,
+      },
+    });
+
+    const appName = this.configService.get('appName', { infer: true });
+    const otpauthUrl = otplib.generateURI({
+      strategy: 'totp',
+      issuer: appName,
+      label: user.email,
+      secret,
+    });
+    const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl);
+    return { secret, otpauthUrl, qrCodeDataUrl };
+  }
+
+  /**
+   * Confirms setupTwoFactor()'s secret with a real code, flips
+   * twoFactorEnabled, and issues one-time-viewable backup codes. Only their
+   * hashes are persisted (see hashBackupCode) — same "shown once" treatment
+   * as an ApiKey's raw value.
+   */
+  async enableTwoFactor(userId: string, dto: TwoFactorEnableDto) {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    if (!user.twoFactorSecretEncrypted) {
+      throw new BadRequestException('Call /auth/2fa/setup first');
+    }
+
+    const secret = this.encryptionService.decrypt(
+      user.twoFactorSecretEncrypted,
+    )!;
+    const isValid = await verifyTotpSafely(secret, dto.code);
+    if (!isValid) {
+      throw new UnauthorizedException('Invalid code');
+    }
+
+    const backupCodes = Array.from(
+      { length: BACKUP_CODE_COUNT },
+      generateBackupCode,
+    );
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorEnabled: true,
+        twoFactorBackupCodes: backupCodes.map(hashBackupCode),
+      },
+    });
+    return { backupCodes };
+  }
+
+  /** Requires the current password AND a valid code — either is compromisable alone; both together is the same bar as changing a password normally would need. */
+  async disableTwoFactor(
+    userId: string,
+    dto: TwoFactorDisableDto,
+  ): Promise<void> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+    });
+    const passwordMatches = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
+    if (!passwordMatches) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const codeValid = await this.verifyTwoFactorCode(user, dto.code);
+    if (!codeValid) {
+      throw new UnauthorizedException('Invalid code');
+    }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorEnabled: false,
+        twoFactorSecretEncrypted: null,
+        twoFactorBackupCodes: [],
+      },
+    });
+  }
+
+  /** Redeems the challenge from login() into real tokens — same response shape as login/acceptInvite. */
+  async verifyTwoFactor(dto: TwoFactorVerifyDto) {
+    let payload: { purpose: string; sub: string };
+    try {
+      payload = await this.jwtService.verifyAsync(dto.challengeToken, {
+        secret: this.configService.get('jwt', { infer: true }).accessSecret,
+      });
+    } catch {
+      throw new UnauthorizedException(
+        'This login attempt has expired — please sign in again',
+      );
+    }
+    if (payload.purpose !== TWO_FACTOR_CHALLENGE_PURPOSE) {
+      throw new UnauthorizedException(
+        'This login attempt has expired — please sign in again',
+      );
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+    });
+    if (!user) {
+      throw new UnauthorizedException(
+        'This login attempt has expired — please sign in again',
+      );
+    }
+
+    const codeValid = await this.verifyTwoFactorCode(user, dto.code);
+    if (!codeValid) {
+      throw new UnauthorizedException('Invalid code');
+    }
+
+    const tokens = await this.issueTokens(user);
+    return { user: this.toAuthenticatedUser(user), ...tokens };
+  }
+
+  /** Tries a live TOTP code first, then falls back to a single-use backup code (consuming it on match). */
+  private async verifyTwoFactorCode(
+    user: User,
+    code: string,
+  ): Promise<boolean> {
+    if (user.twoFactorSecretEncrypted) {
+      const secret = this.encryptionService.decrypt(
+        user.twoFactorSecretEncrypted,
+      )!;
+      if (await verifyTotpSafely(secret, code)) return true;
+    }
+
+    const codeHash = hashBackupCode(code);
+    if (user.twoFactorBackupCodes.includes(codeHash)) {
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          twoFactorBackupCodes: user.twoFactorBackupCodes.filter(
+            (hash) => hash !== codeHash,
+          ),
+        },
+      });
+      return true;
+    }
+
+    return false;
   }
 
   private async issueTokens(user: User) {

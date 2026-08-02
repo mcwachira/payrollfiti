@@ -13,6 +13,9 @@ import { LoginDto } from './dto/login.dto';
 import { AcceptInviteDto } from './dto/accept-invite.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { TwoFactorEnableDto } from './dto/two-factor-enable.dto';
+import { TwoFactorDisableDto } from './dto/two-factor-disable.dto';
+import { TwoFactorVerifyDto } from './dto/two-factor-verify.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtRefreshGuard } from '../common/guards/jwt-refresh.guard';
@@ -54,6 +57,43 @@ export class AuthController {
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  @Get('2fa/status')
+  twoFactorStatus(@CurrentUser() user: AuthenticatedRequestUser) {
+    return this.authService.getTwoFactorStatus(user.id);
+  }
+
+  @Post('2fa/setup')
+  setupTwoFactor(@CurrentUser() user: AuthenticatedRequestUser) {
+    return this.authService.setupTwoFactor(user.id);
+  }
+
+  @Post('2fa/enable')
+  enableTwoFactor(
+    @CurrentUser() user: AuthenticatedRequestUser,
+    @Body() dto: TwoFactorEnableDto,
+  ) {
+    return this.authService.enableTwoFactor(user.id, dto);
+  }
+
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post('2fa/disable')
+  disableTwoFactor(
+    @CurrentUser() user: AuthenticatedRequestUser,
+    @Body() dto: TwoFactorDisableDto,
+  ) {
+    return this.authService.disableTwoFactor(user.id, dto);
+  }
+
+  // Public — the user isn't authenticated yet at this point in the login
+  // flow; the short-lived challengeToken from login() is what's verified
+  // instead (see AuthService.verifyTwoFactor).
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('2fa/verify')
+  verifyTwoFactor(@Body() dto: TwoFactorVerifyDto) {
+    return this.authService.verifyTwoFactor(dto);
   }
 
   @Public()

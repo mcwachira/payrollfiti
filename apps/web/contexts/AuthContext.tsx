@@ -21,15 +21,26 @@ interface SignupInput {
   adminPassword: string;
 }
 
+/** login() returns this instead of the user when the account has 2FA
+ *  enabled — no tokens are issued yet, see verifyTwoFactor(). */
+export interface TwoFactorChallenge {
+  twoFactorRequired: true;
+  challengeToken: string;
+}
+
 interface AuthContextValue {
   user: AuthenticatedUserDto | null;
   isLoading: boolean;
-  // login() returns the authenticated user (not void) specifically so the
-  // caller can redirect by role right away — reading `user` from this hook
+  // Returns the authenticated user (not void) specifically so the caller
+  // can redirect by role right away — reading `user` from this hook
   // immediately after awaiting login() would still see the PREVIOUS render's
   // value, since the setUser() call here doesn't re-render the caller's
-  // closure synchronously.
-  login: (email: string, password: string) => Promise<AuthenticatedUserDto>;
+  // closure synchronously. Returns a TwoFactorChallenge instead when the
+  // account has 2FA enabled — see verifyTwoFactor().
+  login: (
+    email: string,
+    password: string,
+  ) => Promise<AuthenticatedUserDto | TwoFactorChallenge>;
   signup: (input: SignupInput) => Promise<void>;
   acceptInvite: (token: string, password: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
@@ -38,6 +49,11 @@ interface AuthContextValue {
   resetPassword: (
     token: string,
     password: string,
+  ) => Promise<AuthenticatedUserDto>;
+  /** Completes the login flow login() started when it returned a TwoFactorChallenge. */
+  verifyTwoFactor: (
+    challengeToken: string,
+    code: string,
   ) => Promise<AuthenticatedUserDto>;
   logout: () => Promise<void>;
 }
@@ -61,25 +77,47 @@ export function AuthProvider({ children }: PropsWithChildren) {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const login = useCallback(
-    async (email: string, password: string) => {
-      const data = await apiFetch<
-        { user: AuthenticatedUserDto } & AuthTokensDto
-      >('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password }),
-        skipAuth: true,
-      } as RequestInit & { skipAuth: boolean });
-      // Query keys like ['tenant', 'me'] or ['companies'] aren't scoped by
-      // tenant/user id — without clearing here, switching accounts in the
-      // same tab could keep showing the PREVIOUS session's cached tenant,
-      // company, and employee data until each query happened to refetch.
+  // Query keys like ['tenant', 'me'] or ['companies'] aren't scoped by
+  // tenant/user id — without clearing here, switching accounts in the same
+  // tab could keep showing the PREVIOUS session's cached tenant, company,
+  // and employee data until each query happened to refetch.
+  const applySession = useCallback(
+    (data: { user: AuthenticatedUserDto } & AuthTokensDto) => {
       queryClient.clear();
       tokenStorage.setTokens(data.accessToken, data.refreshToken);
       setUser(data.user);
       return data.user;
     },
     [queryClient],
+  );
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const data = await apiFetch<
+        ({ user: AuthenticatedUserDto } & AuthTokensDto) | TwoFactorChallenge
+      >('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+        skipAuth: true,
+      } as RequestInit & { skipAuth: boolean });
+      if ('twoFactorRequired' in data) return data;
+      return applySession(data);
+    },
+    [applySession],
+  );
+
+  const verifyTwoFactor = useCallback(
+    async (challengeToken: string, code: string) => {
+      const data = await apiFetch<
+        { user: AuthenticatedUserDto } & AuthTokensDto
+      >('/auth/2fa/verify', {
+        method: 'POST',
+        body: JSON.stringify({ challengeToken, code }),
+        skipAuth: true,
+      } as RequestInit & { skipAuth: boolean });
+      return applySession(data);
+    },
+    [applySession],
   );
 
   const signup = useCallback(
@@ -91,11 +129,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
         body: JSON.stringify(input),
         skipAuth: true,
       } as RequestInit & { skipAuth: boolean });
-      queryClient.clear();
-      tokenStorage.setTokens(data.accessToken, data.refreshToken);
-      setUser(data.user);
+      applySession(data);
     },
-    [queryClient],
+    [applySession],
   );
 
   const acceptInvite = useCallback(
@@ -107,11 +143,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
         body: JSON.stringify({ token, password }),
         skipAuth: true,
       } as RequestInit & { skipAuth: boolean });
-      queryClient.clear();
-      tokenStorage.setTokens(data.accessToken, data.refreshToken);
-      setUser(data.user);
+      applySession(data);
     },
-    [queryClient],
+    [applySession],
   );
 
   const forgotPassword = useCallback(async (email: string) => {
@@ -131,12 +165,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
         body: JSON.stringify({ token, password }),
         skipAuth: true,
       } as RequestInit & { skipAuth: boolean });
-      queryClient.clear();
-      tokenStorage.setTokens(data.accessToken, data.refreshToken);
-      setUser(data.user);
-      return data.user;
+      return applySession(data);
     },
-    [queryClient],
+    [applySession],
   );
 
   const logout = useCallback(async () => {
@@ -162,6 +193,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         acceptInvite,
         forgotPassword,
         resetPassword,
+        verifyTwoFactor,
         logout,
       }}
     >

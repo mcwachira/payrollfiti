@@ -19,33 +19,110 @@ import { useBranding } from '@/contexts/BrandingContext';
 import { ApiError } from '@/lib/api-client';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, verifyTwoFactor } = useAuth();
   const branding = useBranding();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [challengeToken, setChallengeToken] = useState<string | null>(null);
+  const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const redirectByRole = (role: Role) => {
+    // /dashboard calls GET /employees and GET /payroll-runs, both
+    // ADMIN/HR-only server-side — an EMPLOYEE landing there gets two 403s
+    // instead of their portal.
+    router.push(role === Role.EMPLOYEE ? '/employee-portal' : '/dashboard');
+  };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
     try {
-      const user = await login(email, password);
-      // /dashboard calls GET /employees and GET /payroll-runs, both
-      // ADMIN/HR-only server-side — an EMPLOYEE landing there gets two 403s
-      // instead of their portal.
-      router.push(
-        user.role === Role.EMPLOYEE ? '/employee-portal' : '/dashboard',
-      );
+      const result = await login(email, password);
+      if ('twoFactorRequired' in result) {
+        setChallengeToken(result.challengeToken);
+      } else {
+        redirectByRole(result.role);
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Unable to log in');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const handleVerifyCode = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!challengeToken) return;
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const user = await verifyTwoFactor(challengeToken, code);
+      redirectByRole(user.role);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Invalid code');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (challengeToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">{branding.appName}</CardTitle>
+            <CardDescription>
+              Enter the 6-digit code from your authenticator app, or one of your
+              backup codes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleVerifyCode} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="code">Code</Label>
+                <Input
+                  id="code"
+                  autoComplete="one-time-code"
+                  autoFocus
+                  required
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                />
+              </div>
+              {error ? (
+                <p
+                  role="alert"
+                  className="text-sm text-red-600 dark:text-red-400"
+                >
+                  {error}
+                </p>
+              ) : null}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? 'Verifying…' : 'Verify'}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setChallengeToken(null);
+                  setCode('');
+                  setError(null);
+                }}
+              >
+                Back to sign in
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">

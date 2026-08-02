@@ -1,13 +1,14 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMobileSidebar } from '@/contexts/MobileSidebarContext';
 import { ModeToggle } from '@/components/mode-toggle';
 import { PushNotificationToggle } from '@/components/pwa/PushNotificationToggle';
 import { NotificationBell } from '@/components/NotificationBell';
-import { LogOut, Menu, User } from 'lucide-react';
+import { LogOut, Menu, ShieldCheck, User } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +51,12 @@ const AppHeader = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href="/account">
+                    <ShieldCheck className="mr-2 h-4 w-4" />
+                    Account security
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => logout()}>
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out

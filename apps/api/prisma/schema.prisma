@@ -172,6 +172,18 @@ model User {
   isActive                  Boolean             @default(true)
   refreshTokenHash          String?
   phone                     String? // E.164 format; used only as an SMS delivery target (see SmsProvider)
+  // TOTP secret, encrypted at rest via EncryptionService — same treatment as
+  // accounting OAuth tokens. Set as soon as setup() runs but twoFactorEnabled
+  // stays false until the user proves they can generate a real code
+  // (enable()), so a setup a user never finishes doesn't lock anything.
+  twoFactorSecretEncrypted  String?
+  twoFactorEnabled          Boolean             @default(false)
+  // One-way SHA-256 hashes of single-use recovery codes, same pattern as
+  // every other token in this schema — the raw codes are shown to the user
+  // exactly once, at enable() time, and never stored. A used code is
+  // removed from this array rather than flagged, since there's no other
+  // reason to keep it around.
+  twoFactorBackupCodes      String[]            @default([])
   employeeId                String?             @unique
   employee                  Employee?           @relation(fields: [employeeId], references: [id])
   auditLogs                 AuditLog[]
