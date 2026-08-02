@@ -13,70 +13,68 @@ export function Logo({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       role="img"
-      aria-label="Logo"
+      aria-label="PayrollFiti logo"
     >
+      {/* badge */}
       <rect
         x="1.5"
         y="1.5"
         width="37"
         height="37"
-        rx="9"
+        rx="11"
         fill={color ?? 'var(--primary)'}
-        stroke="var(--border)"
+      />
+      {/* payslip — fixed near-white so it stays legible against the colored
+          badge in both light and dark mode (unlike var(--background), which
+          is dark in dark mode and would nearly disappear here) */}
+      <rect x="9.5" y="7.5" width="16" height="21" rx="2.5" fill="#fafafa" />
+      <line
+        x1="13"
+        y1="13"
+        x2="22"
+        y2="13"
+        stroke={color ?? 'var(--primary)'}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        opacity="0.85"
+      />
+      <line
+        x1="13"
+        y1="17.5"
+        x2="22"
+        y2="17.5"
+        stroke={color ?? 'var(--primary)'}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        opacity="0.6"
+      />
+      <line
+        x1="13"
+        y1="22"
+        x2="18.5"
+        y2="22"
+        stroke={color ?? 'var(--primary)'}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        opacity="0.35"
+      />
+      {/* compliance checkmark badge — its ring matches the outer badge fill
+          (not the page background) so the notch reads correctly regardless
+          of light/dark mode or a tenant's custom brand color */}
+      <circle
+        cx="28"
+        cy="27"
+        r="7.5"
+        fill="#22c55e"
+        stroke={color ?? 'var(--primary)'}
         strokeWidth="2.5"
       />
-      {/* payslip */}
-      <rect
-        x="10.5"
-        y="8.5"
-        width="14"
-        height="19"
-        rx="2"
-        fill="white"
-        stroke="var(--border)"
-        strokeWidth="2"
-      />
-      <line
-        x1="13.5"
-        y1="13.5"
-        x2="21.5"
-        y2="13.5"
-        stroke="var(--border)"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <line
-        x1="13.5"
-        y1="17.5"
-        x2="21.5"
-        y2="17.5"
-        stroke="var(--border)"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <line
-        x1="13.5"
-        y1="21.5"
-        x2="18"
-        y2="21.5"
-        stroke="var(--border)"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      {/* coin accent */}
-      <circle
-        cx="27.5"
-        cy="26.5"
-        r="6.5"
-        fill="#22c55e"
-        stroke="var(--border)"
-        strokeWidth="2"
-      />
       <path
-        d="M24.8 26.5h5.4M27.5 23.8v5.4"
+        d="M24.8 27.1l2.1 2.1 4.3-4.4"
         stroke="white"
-        strokeWidth="1.8"
+        strokeWidth="2.1"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
