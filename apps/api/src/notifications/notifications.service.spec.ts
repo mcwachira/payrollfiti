@@ -38,6 +38,10 @@ describe('NotificationsService', () => {
         updateMany: asyncMock({ count: 1 }),
       },
       user: { findMany: asyncMock([{ id: 'user-1' }, { id: 'user-2' }]) },
+      pushSubscription: {
+        upsert: asyncMock(undefined),
+        deleteMany: asyncMock({ count: 1 }),
+      },
     };
     queue = { add: asyncMock(undefined) };
 
@@ -197,6 +201,49 @@ describe('NotificationsService', () => {
 
       expect(prisma.notification.create).toHaveBeenCalledTimes(2);
       expect(queue.add).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('subscribeToPush', () => {
+    it('upserts by endpoint so re-subscribing the same device updates rather than duplicates', async () => {
+      await service.subscribeToPush(
+        'tenant-1',
+        'user-1',
+        'https://push.example.com/abc',
+        { p256dh: 'p256dh-key', auth: 'auth-secret' },
+        'Mozilla/5.0',
+      );
+
+      expect(prisma.pushSubscription.upsert).toHaveBeenCalledWith({
+        where: { endpoint: 'https://push.example.com/abc' },
+        create: {
+          tenantId: 'tenant-1',
+          userId: 'user-1',
+          endpoint: 'https://push.example.com/abc',
+          p256dh: 'p256dh-key',
+          auth: 'auth-secret',
+          userAgent: 'Mozilla/5.0',
+        },
+        update: {
+          userId: 'user-1',
+          p256dh: 'p256dh-key',
+          auth: 'auth-secret',
+          userAgent: 'Mozilla/5.0',
+        },
+      });
+    });
+  });
+
+  describe('unsubscribeFromPush', () => {
+    it('deletes only the subscription matching both the endpoint and the requesting user', async () => {
+      await service.unsubscribeFromPush(
+        'user-1',
+        'https://push.example.com/abc',
+      );
+
+      expect(prisma.pushSubscription.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'user-1', endpoint: 'https://push.example.com/abc' },
+      });
     });
   });
 });

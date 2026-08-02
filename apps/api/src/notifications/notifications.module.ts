@@ -4,6 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { BullModule } from '@nestjs/bullmq';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
+import { PushSubscriptionsController } from './push-subscriptions.controller';
 import { NotificationsProcessor } from './notifications.processor';
 import { MailService } from './mail.service';
 import { PayslipEmailService } from './payslip-email.service';
@@ -15,8 +16,9 @@ import { PAYSLIP_EMAILS_QUEUE } from './payslip-emails.queue';
 import { SMS_PROVIDER, SmsProvider } from './sms-provider.interface';
 import { NoopSmsProvider } from './providers/noop-sms.provider';
 import { AfricasTalkingSmsProvider } from './providers/africas-talking-sms.provider';
-import { PUSH_PROVIDER } from './push-provider.interface';
+import { PUSH_PROVIDER, PushProvider } from './push-provider.interface';
 import { NoopPushProvider } from './providers/noop-push.provider';
+import { WebPushProvider } from './providers/web-push.provider';
 import { AppConfig } from '../config/configuration';
 
 @Module({
@@ -28,7 +30,7 @@ import { AppConfig } from '../config/configuration';
       { name: PAYSLIP_EMAILS_QUEUE },
     ),
   ],
-  controllers: [NotificationsController],
+  controllers: [NotificationsController, PushSubscriptionsController],
   providers: [
     NotificationsService,
     MailService,
@@ -38,6 +40,8 @@ import { AppConfig } from '../config/configuration';
     PayslipEmailsProcessor,
     NoopSmsProvider,
     AfricasTalkingSmsProvider,
+    NoopPushProvider,
+    WebPushProvider,
     {
       provide: SMS_PROVIDER,
       useFactory: (
@@ -50,7 +54,18 @@ import { AppConfig } from '../config/configuration';
       },
       inject: [ConfigService, AfricasTalkingSmsProvider, NoopSmsProvider],
     },
-    { provide: PUSH_PROVIDER, useClass: NoopPushProvider },
+    {
+      provide: PUSH_PROVIDER,
+      useFactory: (
+        configService: ConfigService<AppConfig, true>,
+        webPush: WebPushProvider,
+        noop: NoopPushProvider,
+      ): PushProvider => {
+        const config = configService.get('vapid', { infer: true });
+        return config.publicKey && config.privateKey ? webPush : noop;
+      },
+      inject: [ConfigService, WebPushProvider, NoopPushProvider],
+    },
   ],
   exports: [NotificationsService, MailService, PayslipEmailService],
 })

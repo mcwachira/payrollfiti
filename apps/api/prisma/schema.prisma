@@ -88,9 +88,9 @@ enum LoanRepaymentStatus {
 // Tenants are the top-level SaaS customer boundary; every row that matters
 // for isolation carries a tenantId so a Prisma middleware can scope queries.
 model Tenant {
-  id              String         @id @default(uuid())
-  name            String
-  countryCode     String
+  id                String             @id @default(uuid())
+  name              String
+  countryCode       String
   // Scope: single-currency-per-tenant. This (and every other `currency`
   // field below — Company, Employee, SalaryStructure, PayrollRun,
   // PayrollEntry, Invoice, Loan, ...) is a display/accounting label, not a
@@ -106,23 +106,24 @@ model Tenant {
   // (e.g. a few USD-paid expats inside a KES tenant) is needed later, that
   // is a deliberate scope expansion requiring real conversion — not
   // something to grow into by accident.
-  defaultCurrency String         @default("KES")
-  settings        Json?
-  branding        BrandingConfig?
-  companies       Company[]
-  users           User[]
-  subscription    Subscription?
-  invoices        Invoice[]
-  usageRecords    UsageRecord[]
-  auditLogs       AuditLog[]
-  notifications   Notification[]
-  apiKeys         ApiKey[]
-  webhookEndpoints WebhookEndpoint[]
-  salaryComponents SalaryComponent[]
-  leaveTypes      LeaveType[]
-  loans           Loan[]
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  defaultCurrency   String             @default("KES")
+  settings          Json?
+  branding          BrandingConfig?
+  companies         Company[]
+  users             User[]
+  subscription      Subscription?
+  invoices          Invoice[]
+  usageRecords      UsageRecord[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  pushSubscriptions PushSubscription[]
+  apiKeys           ApiKey[]
+  webhookEndpoints  WebhookEndpoint[]
+  salaryComponents  SalaryComponent[]
+  leaveTypes        LeaveType[]
+  loans             Loan[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 }
 
 // Per-tenant white-label override; falls back to the APP_NAME env var when absent.
@@ -139,15 +140,15 @@ model BrandingConfig {
 }
 
 model Company {
-  id        String        @id @default(uuid())
-  tenantId  String
-  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name      String
-  currency  String        @default("KES")
-  employees Employee[]
+  id          String       @id @default(uuid())
+  tenantId    String
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  currency    String       @default("KES")
+  employees   Employee[]
   payrollRuns PayrollRun[]
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   @@index([tenantId])
 }
@@ -155,72 +156,73 @@ model Company {
 // Login identity + RBAC role. Optionally linked 1:1 to an Employee when the
 // role is EMPLOYEE, so self-service endpoints can resolve "my" records.
 model User {
-  id               String    @id @default(uuid())
-  tenantId         String
-  tenant           Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  email            String    @unique
-  passwordHash     String
-  role             Role      @default(EMPLOYEE)
-  isActive         Boolean   @default(true)
-  refreshTokenHash String?
-  phone            String?   // E.164 format; used only as an SMS delivery target (see SmsProvider)
-  employeeId       String?   @unique
-  employee         Employee? @relation(fields: [employeeId], references: [id])
-  auditLogs        AuditLog[]
-  notifications    Notification[]
-  apiKeysCreated   ApiKey[]
+  id                        String             @id @default(uuid())
+  tenantId                  String
+  tenant                    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email                     String             @unique
+  passwordHash              String
+  role                      Role               @default(EMPLOYEE)
+  isActive                  Boolean            @default(true)
+  refreshTokenHash          String?
+  phone                     String? // E.164 format; used only as an SMS delivery target (see SmsProvider)
+  employeeId                String?            @unique
+  employee                  Employee?          @relation(fields: [employeeId], references: [id])
+  auditLogs                 AuditLog[]
+  notifications             Notification[]
+  pushSubscriptions         PushSubscription[]
+  apiKeysCreated            ApiKey[]
   approvedLeaveRequests     LeaveRequest[]
   recordedAttendanceRecords AttendanceRecord[]
   uploadedDocuments         Document[]
   loansRequested            Loan[]             @relation("LoanRequestedBy")
   loansApproved             Loan[]             @relation("LoanApprovedBy")
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
 
   @@index([tenantId])
 }
 
 model Employee {
-  id             String           @id @default(uuid())
-  companyId      String
-  company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  employeeNumber String?
-  firstName      String
-  lastName       String
-  email          String           @unique
-  kraPin         String?
-  nssfNumber     String?
-  nhifNumber     String?
+  id                String             @id @default(uuid())
+  companyId         String
+  company           Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  employeeNumber    String?
+  firstName         String
+  lastName          String
+  email             String             @unique
+  kraPin            String?
+  nssfNumber        String?
+  nhifNumber        String?
   // Generic government tax ID for non-Kenya countries: Nigeria TIN, South
   // Africa SARS Income Tax reference number. Kenya uses kraPin instead.
-  taxIdNumber    String?
+  taxIdNumber       String?
   // Generic retirement-scheme member ID for non-Kenya countries: Nigeria
   // RSA PIN (pension). Kenya uses nssfNumber instead.
-  pensionNumber  String?
-  jobRole        String?
-  department     String?
-  employmentType EmploymentType   @default(PERMANENT)
-  currency       String           @default("KES")
-  status         String           @default("ACTIVE")
+  pensionNumber     String?
+  jobRole           String?
+  department        String?
+  employmentType    EmploymentType     @default(PERMANENT)
+  currency          String             @default("KES")
+  status            String             @default("ACTIVE")
   terminatedAt      DateTime?
   terminationReason String?
   bankName          String?
   bankAccountNumber String?
   bankCode          String?
   bankBranchCode    String?
-  user           User?
-  invite         EmployeeInvite?
-  contracts      Contract[]
-  salaryStructures SalaryStructure[]
-  documents      Document[]
-  payrollEntries PayrollEntry[]
+  user              User?
+  invite            EmployeeInvite?
+  contracts         Contract[]
+  salaryStructures  SalaryStructure[]
+  documents         Document[]
+  payrollEntries    PayrollEntry[]
   leaveBalances     LeaveBalance[]
   leaveRequests     LeaveRequest[]
   attendanceRecords AttendanceRecord[]
   loans             Loan[]
   onboardingTasks   OnboardingTask[]
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
   @@index([companyId])
 }
@@ -279,17 +281,17 @@ model Contract {
 // Versioned so a payslip generated last month still reflects the salary
 // structure that was effective then, even after a raise.
 model SalaryStructure {
-  id            String    @id @default(uuid())
+  id            String                     @id @default(uuid())
   employeeId    String
-  employee      Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee      Employee                   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   basicSalary   Float
-  allowances    Json?                       // LEGACY — kept for backward compat, see SalaryComponentsService fallback rule
+  allowances    Json? // LEGACY — kept for backward compat, see SalaryComponentsService fallback rule
   currency      String
   effectiveFrom DateTime
   effectiveTo   DateTime?
   components    SalaryStructureComponent[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
 
   @@index([employeeId, effectiveFrom])
 }
@@ -299,13 +301,13 @@ model SalaryComponent {
   tenantId       String
   tenant         Tenant                     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   name           String
-  code           String                     // stable key used in earnings/deductions maps, e.g. "TRANSPORT"
+  code           String // stable key used in earnings/deductions maps, e.g. "TRANSPORT"
   type           SalaryComponentType
   calcType       SalaryComponentCalcType    @default(FIXED)
   isTaxable      Boolean                    @default(true)
   isActive       Boolean                    @default(true)
-  defaultAmount  Float?                     // used when calcType = FIXED and no per-structure override
-  defaultRate    Float?                     // percentage points, used when calcType = PERCENTAGE_OF_BASIC
+  defaultAmount  Float? // used when calcType = FIXED and no per-structure override
+  defaultRate    Float? // percentage points, used when calcType = PERCENTAGE_OF_BASIC
   structureLines SalaryStructureComponent[]
   createdAt      DateTime                   @default(now())
   updatedAt      DateTime                   @updatedAt
@@ -320,8 +322,8 @@ model SalaryStructureComponent {
   salaryStructure   SalaryStructure @relation(fields: [salaryStructureId], references: [id], onDelete: Cascade)
   salaryComponentId String
   salaryComponent   SalaryComponent @relation(fields: [salaryComponentId], references: [id])
-  amount            Float?          // overrides SalaryComponent.defaultAmount when calcType = FIXED
-  rate              Float?          // overrides SalaryComponent.defaultRate when calcType = PERCENTAGE_OF_BASIC
+  amount            Float? // overrides SalaryComponent.defaultAmount when calcType = FIXED
+  rate              Float? // overrides SalaryComponent.defaultRate when calcType = PERCENTAGE_OF_BASIC
   createdAt         DateTime        @default(now())
 
   @@unique([salaryStructureId, salaryComponentId])
@@ -336,7 +338,7 @@ model Document {
   fileName     String
   mimeType     String
   sizeBytes    Int
-  url          String   // relative path under DOCUMENT_STORAGE_DIR, e.g. "<employeeId>/<uuid>-<fileName>"
+  url          String // relative path under DOCUMENT_STORAGE_DIR, e.g. "<employeeId>/<uuid>-<fileName>"
   uploadedById String?
   uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
   uploadedAt   DateTime @default(now())
@@ -363,53 +365,53 @@ model LeaveType {
 }
 
 model LeaveBalance {
-  id            String    @id @default(uuid())
-  employeeId    String
-  employee      Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  leaveTypeId   String
-  leaveType     LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
-  year          Int
-  accruedDays   Float     @default(0)
-  usedDays      Float     @default(0)
-  updatedAt     DateTime  @updatedAt
-  createdAt     DateTime  @default(now())
+  id          String    @id @default(uuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId String
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Cascade)
+  year        Int
+  accruedDays Float     @default(0)
+  usedDays    Float     @default(0)
+  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime  @default(now())
 
   @@unique([employeeId, leaveTypeId, year])
   @@index([employeeId])
 }
 
 model LeaveRequest {
-  id            String              @id @default(uuid())
+  id            String             @id @default(uuid())
   employeeId    String
-  employee      Employee            @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee      Employee           @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   leaveTypeId   String
-  leaveType     LeaveType           @relation(fields: [leaveTypeId], references: [id])
+  leaveType     LeaveType          @relation(fields: [leaveTypeId], references: [id])
   startDate     DateTime
   endDate       DateTime
   daysRequested Float
   reason        String?
-  status        LeaveRequestStatus  @default(PENDING)
+  status        LeaveRequestStatus @default(PENDING)
   approverId    String?
-  approver      User?               @relation(fields: [approverId], references: [id])
+  approver      User?              @relation(fields: [approverId], references: [id])
   decidedAt     DateTime?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
   @@index([employeeId])
   @@index([employeeId, status])
 }
 
 model AttendanceRecord {
-  id           String            @id @default(uuid())
+  id           String           @id @default(uuid())
   employeeId   String
-  employee     Employee          @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee     Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   date         DateTime
   status       AttendanceStatus
   notes        String?
   recordedById String?
-  recordedBy   User?             @relation(fields: [recordedById], references: [id])
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  recordedBy   User?            @relation(fields: [recordedById], references: [id])
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   @@unique([employeeId, date])
   @@index([employeeId])
@@ -418,24 +420,24 @@ model AttendanceRecord {
 // One run per company per period. idempotencyKey lets re-submitting the
 // same run request return the existing run instead of double-processing.
 model PayrollRun {
-  id              String           @id @default(uuid())
-  companyId       String
-  company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  period          String
-  periodStart     DateTime
-  periodEnd       DateTime
-  countryCode     String
-  currency        String
-  ruleVersion     String
-  status          PayrollRunStatus @default(DRAFT)
-  idempotencyKey  String           @unique
-  totals          Json?
-  initiatedById   String?
-  isOffCycle      Boolean          @default(false)
-  reason          String?
-  entries         PayrollEntry[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id             String           @id @default(uuid())
+  companyId      String
+  company        Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  period         String
+  periodStart    DateTime
+  periodEnd      DateTime
+  countryCode    String
+  currency       String
+  ruleVersion    String
+  status         PayrollRunStatus @default(DRAFT)
+  idempotencyKey String           @unique
+  totals         Json?
+  initiatedById  String?
+  isOffCycle     Boolean          @default(false)
+  reason         String?
+  entries        PayrollEntry[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   @@index([companyId, period])
 }
@@ -444,28 +446,28 @@ model PayrollRun {
 // (which statutory deductions applied, tax breakdown, etc.) lives in the
 // JSON columns so no country's rule names leak into the schema itself.
 model PayrollEntry {
-  id                   String     @id @default(uuid())
-  payrollRunId         String
-  payrollRun           PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
-  employeeId           String
-  employee             Employee   @relation(fields: [employeeId], references: [id])
-  currency             String
-  prorationFactor      Float      @default(1)
-  grossPay             Float
-  totalTax             Float
+  id                       String              @id @default(uuid())
+  payrollRunId             String
+  payrollRun               PayrollRun          @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employeeId               String
+  employee                 Employee            @relation(fields: [employeeId], references: [id])
+  currency                 String
+  prorationFactor          Float               @default(1)
+  grossPay                 Float
+  totalTax                 Float
   totalStatutoryDeductions Float
   totalVoluntaryDeductions Float
-  totalDeductions      Float
-  netPay               Float
-  earningsBreakdown    Json
-  statutoryDeductions  Json
-  taxBreakdown         Json
-  inputHash            String
-  payslip              Payslip?
-  correctionsAsOriginal PayrollCorrection[] @relation("OriginalEntry")
-  correctionAsCorrected PayrollCorrection?  @relation("CorrectedEntry")
-  loanRepayments        LoanRepayment[]
-  createdAt            DateTime   @default(now())
+  totalDeductions          Float
+  netPay                   Float
+  earningsBreakdown        Json
+  statutoryDeductions      Json
+  taxBreakdown             Json
+  inputHash                String
+  payslip                  Payslip?
+  correctionsAsOriginal    PayrollCorrection[] @relation("OriginalEntry")
+  correctionAsCorrected    PayrollCorrection?  @relation("CorrectedEntry")
+  loanRepayments           LoanRepayment[]
+  createdAt                DateTime            @default(now())
 
   @@index([payrollRunId])
   @@index([employeeId])
@@ -516,19 +518,19 @@ model AuditLog {
 }
 
 model Plan {
-  id              String         @id @default(uuid())
-  code            String         @unique
-  name            String
+  id               String         @id @default(uuid())
+  code             String         @unique
+  name             String
   pricePerEmployee Float
-  currency        String         @default("USD")
-  tier            String?
+  currency         String         @default("USD")
+  tier             String?
   // ISO-3166 alpha-2 country this plan is priced for (e.g. "KE"). Null means
   // a legacy/global plan not tied to a specific country's pricing catalog.
-  countryCode     String?
-  isActive        Boolean        @default(true)
-  subscriptions   Subscription[]
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  countryCode      String?
+  isActive         Boolean        @default(true)
+  subscriptions    Subscription[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
 
   @@index([countryCode])
 }
@@ -551,21 +553,21 @@ model Subscription {
 }
 
 model Invoice {
-  id               String        @id @default(uuid())
-  tenantId         String
-  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  subscriptionId   String
-  subscription     Subscription  @relation(fields: [subscriptionId], references: [id])
-  amount           Float
-  currency         String
-  status           InvoiceStatus @default(DRAFT)
-  dueDate          DateTime
-  paidAt           DateTime?
-  provider         PaymentProviderType @default(PAYSTACK)
+  id                String               @id @default(uuid())
+  tenantId          String
+  tenant            Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subscriptionId    String
+  subscription      Subscription         @relation(fields: [subscriptionId], references: [id])
+  amount            Float
+  currency          String
+  status            InvoiceStatus        @default(DRAFT)
+  dueDate           DateTime
+  paidAt            DateTime?
+  provider          PaymentProviderType  @default(PAYSTACK)
   providerInvoiceId String?
-  transactions     PaymentTransaction[]
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  transactions      PaymentTransaction[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
 
   @@index([tenantId, status])
 }
@@ -614,6 +616,27 @@ model Notification {
   @@index([tenantId])
 }
 
+// One row per subscribed browser/device (a user with two tabs open on two
+// phones has two rows). `endpoint` is the push service's per-subscription
+// URL and is unique by construction; p256dh/auth are the subscription's
+// public key and auth secret, both required to encrypt a push message per
+// the Web Push protocol (RFC 8291).
+model PushSubscription {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([tenantId])
+}
+
 // Machine credential for the read-only public-api. hashedKey is a one-way
 // SHA-256 digest of a server-generated high-entropy token — never store the
 // raw key (see ApiKeysService for the hashing rationale).
@@ -638,16 +661,16 @@ model ApiKey {
 // server to SIGN outgoing deliveries, not presented back to the server for
 // verification — see WebhooksService for the full rationale.
 model WebhookEndpoint {
-  id          String              @id @default(uuid())
-  tenantId    String
-  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  url         String
-  secret      String
-  events      String[]
-  isActive    Boolean             @default(true)
-  deliveries  WebhookDeliveryLog[]
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  id         String               @id @default(uuid())
+  tenantId   String
+  tenant     Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  url        String
+  secret     String
+  events     String[]
+  isActive   Boolean              @default(true)
+  deliveries WebhookDeliveryLog[]
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
 
   @@index([tenantId])
 }
@@ -682,7 +705,7 @@ model Loan {
   currency          String
   installments      Int
   installmentAmount Float?
-  startPeriod       String          // "YYYY-MM" — first payroll period the deduction applies from, once approved
+  startPeriod       String // "YYYY-MM" — first payroll period the deduction applies from, once approved
   reason            String?
   status            LoanStatus      @default(PENDING)
   requestedById     String?

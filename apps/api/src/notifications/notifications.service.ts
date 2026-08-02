@@ -194,4 +194,31 @@ export class NotificationsService {
       data: { read: true },
     });
   }
+
+  /**
+   * Idempotent by `endpoint` — a browser calling PushManager.subscribe()
+   * again for a subscription it already holds (e.g. after a token refresh
+   * cycle the Push service initiates) re-sends the same endpoint, which
+   * should update rather than duplicate the row.
+   */
+  async subscribeToPush(
+    tenantId: string,
+    userId: string,
+    endpoint: string,
+    keys: { p256dh: string; auth: string },
+    userAgent?: string,
+  ): Promise<void> {
+    await this.prisma.pushSubscription.upsert({
+      where: { endpoint },
+      create: { tenantId, userId, endpoint, ...keys, userAgent },
+      update: { userId, ...keys, userAgent },
+    });
+  }
+
+  /** Scoped to the caller's own userId so one user can't unsubscribe another's device. */
+  async unsubscribeFromPush(userId: string, endpoint: string): Promise<void> {
+    await this.prisma.pushSubscription.deleteMany({
+      where: { userId, endpoint },
+    });
+  }
 }

@@ -42,6 +42,11 @@ export interface AppConfig {
     username?: string;
     senderId?: string;
   };
+  vapid: {
+    publicKey?: string;
+    privateKey?: string;
+    subject: string;
+  };
   sentryDsn?: string;
 }
 
@@ -88,6 +93,11 @@ export default (): AppConfig => ({
     apiKey: process.env.AFRICAS_TALKING_API_KEY,
     username: process.env.AFRICAS_TALKING_USERNAME,
     senderId: process.env.AFRICAS_TALKING_SENDER_ID,
+  },
+  vapid: {
+    publicKey: process.env.VAPID_PUBLIC_KEY,
+    privateKey: process.env.VAPID_PRIVATE_KEY,
+    subject: process.env.VAPID_SUBJECT ?? 'mailto:support@payrollfiti.com',
   },
   sentryDsn: process.env.SENTRY_DSN,
 });

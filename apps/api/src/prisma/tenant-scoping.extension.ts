@@ -20,6 +20,7 @@ export const TENANT_SCOPED_MODELS = new Set<Prisma.ModelName>([
   'Invoice',
   'UsageRecord',
   'Notification',
+  'PushSubscription',
   'ApiKey',
   'WebhookEndpoint',
   'Loan',
@@ -134,7 +135,11 @@ export const tenantScopingExtension = Prisma.defineExtension({
           return query(args);
         }
         return query(
-          scopeQueryArgs(operation, args as Record<string, unknown>, tenantId) as typeof args,
+          scopeQueryArgs(
+            operation,
+            args as Record<string, unknown>,
+            tenantId,
+          ) as typeof args,
         );
       },
     },
