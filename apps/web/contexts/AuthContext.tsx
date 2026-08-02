@@ -26,6 +26,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (input: SignupInput) => Promise<void>;
+  acceptInvite: (token: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -84,6 +85,22 @@ export function AuthProvider({ children }: PropsWithChildren) {
     [queryClient],
   );
 
+  const acceptInvite = useCallback(
+    async (token: string, password: string) => {
+      const data = await apiFetch<
+        { user: AuthenticatedUserDto } & AuthTokensDto
+      >('/auth/accept-invite', {
+        method: 'POST',
+        body: JSON.stringify({ token, password }),
+        skipAuth: true,
+      } as RequestInit & { skipAuth: boolean });
+      queryClient.clear();
+      tokenStorage.setTokens(data.accessToken, data.refreshToken);
+      setUser(data.user);
+    },
+    [queryClient],
+  );
+
   const logout = useCallback(async () => {
     try {
       await apiFetch('/auth/logout', { method: 'POST' });
@@ -98,7 +115,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [router, queryClient]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, signup, logout }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, login, signup, acceptInvite, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );

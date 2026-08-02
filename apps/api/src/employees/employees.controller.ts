@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -64,6 +66,19 @@ export class EmployeesController {
   @Get(':id')
   findOne(@CurrentTenant() tenantId: string, @Param('id') id: string) {
     return this.employeesService.findOne(tenantId, id);
+  }
+
+  /** Sends a portal-access invite email — the only path that ever creates a login for this employee. */
+  @Roles(Role.ADMIN, Role.HR)
+  @RequirePermission(Permission.EMPLOYEE_WRITE)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Post(':id/invite')
+  invite(
+    @CurrentTenant() tenantId: string,
+    @CurrentUser() user: AuthenticatedRequestUser,
+    @Param('id') id: string,
+  ) {
+    return this.employeesService.invite(tenantId, user.id, id);
   }
 
   @Roles(Role.ADMIN, Role.HR)

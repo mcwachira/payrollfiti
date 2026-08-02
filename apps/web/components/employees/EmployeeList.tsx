@@ -47,6 +47,7 @@ import {
   Calendar,
   Building,
   ClipboardCheck,
+  Mail,
 } from 'lucide-react';
 
 import { toast } from 'sonner';
@@ -54,7 +55,7 @@ import { EmployeeForm } from './EmployeeForm';
 import { EmployeeDetails } from './EmployeeDetails';
 import EmployeeDocuments from './EmployeeDocuments';
 import { EmployeeOnboardingDialog } from './EmployeeOnboardingDialog';
-import { removeEmployee } from '@/lib/employees-api';
+import { removeEmployee, inviteEmployee } from '@/lib/employees-api';
 import { ApiError } from '@/lib/api-client';
 import { getEmployeeStatusColor } from '@/lib/status-styles';
 import type { Employee } from '@/types/types';
@@ -88,6 +89,19 @@ export const EmployeeList = ({
     } catch (error) {
       toast.error(
         error instanceof ApiError ? error.message : 'Failed to remove employee',
+      );
+    }
+  };
+
+  const handleInvite = async (employee: Employee) => {
+    try {
+      await inviteEmployee(employee.id);
+      toast.success(`Invite sent to ${employee.email}`);
+    } catch (error) {
+      toast.error(
+        error instanceof ApiError
+          ? error.message
+          : 'Failed to send the portal invite',
       );
     }
   };
@@ -396,6 +410,12 @@ export const EmployeeList = ({
                           >
                             <ClipboardCheck className="h-4 w-4 mr-2" />
                             Onboarding Checklist
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleInvite(employee)}
+                          >
+                            <Mail className="h-4 w-4 mr-2" />
+                            Invite to Portal
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDelete(employee.id)}

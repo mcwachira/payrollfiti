@@ -88,6 +88,11 @@ export function removeEmployee(id: string): Promise<Employee> {
   return apiFetch<Employee>(`/employees/${id}`, { method: 'DELETE' });
 }
 
+/** Sends (or re-sends) a portal-access invite email — the only way an employee ever gets a login. */
+export function inviteEmployee(id: string): Promise<void> {
+  return apiFetch<void>(`/employees/${id}/invite`, { method: 'POST' });
+}
+
 export interface AddSalaryStructureInput {
   basicSalary: number;
   allowances?: Record<string, number>;

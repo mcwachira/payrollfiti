@@ -209,6 +209,7 @@ model Employee {
   bankCode          String?
   bankBranchCode    String?
   user           User?
+  invite         EmployeeInvite?
   contracts      Contract[]
   salaryStructures SalaryStructure[]
   documents      Document[]
@@ -222,6 +223,22 @@ model Employee {
   updatedAt      DateTime         @updatedAt
 
   @@index([companyId])
+}
+
+// A pending employee-portal signup. Deleted the moment it's redeemed (see
+// AuthService.acceptInvite) — there is deliberately no "used" flag to check,
+// since a redeemed invite has nothing left to represent once the real User
+// row exists. tokenHash mirrors ApiKey's pattern: a one-way SHA-256 digest
+// of a server-generated high-entropy token, never the raw token itself.
+model EmployeeInvite {
+  id          String   @id @default(uuid())
+  employeeId  String   @unique
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  email       String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  createdById String?
+  createdAt   DateTime @default(now())
 }
 
 // Onboarding checklist item for a newly-created employee. A default set is

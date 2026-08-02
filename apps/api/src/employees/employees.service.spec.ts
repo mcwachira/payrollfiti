@@ -2,11 +2,13 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { ConfigService } from '@nestjs/config';
 import { EmployeesService } from './employees.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { EncryptionService } from '../common/crypto/encryption.service';
 import { AuditService } from '../audit/audit.service';
+import { MailService } from '../notifications/mail.service';
 
 // jest.fn() with no type args resolves to Mock<UnknownFunction>, whose return
 // type is `unknown` rather than `Promise<unknown>` — that makes the conditional
@@ -21,6 +23,8 @@ describe('EmployeesService', () => {
   let tenantsService: any;
   let encryptionService: any;
   let auditService: any;
+  let mailService: any;
+  let configService: any;
 
   const company = { id: 'company-1', tenantId: 'tenant-1', name: 'Acme' };
   const employee = {
@@ -28,6 +32,7 @@ describe('EmployeesService', () => {
     companyId: 'company-1',
     firstName: 'Jane',
     lastName: 'Doe',
+    email: 'jane@acme.co.ke',
     status: 'ACTIVE',
     kraPin: 'enc:A123456789Z',
     nssfNumber: 'enc:NSSF-1',
@@ -74,10 +79,18 @@ describe('EmployeesService', () => {
           title: 'KRA PIN collected',
         }),
       },
+      employeeInvite: {
+        upsert: asyncMock({ id: 'invite-1', employeeId: 'emp-1' }),
+      },
     };
     prisma.$transaction = jest.fn((fn: any) => fn(prisma));
     tenantsService = { assertCompanyBelongsToTenant: asyncMock(company) };
     auditService = { record: asyncMock(undefined) };
+    mailService = { sendMail: asyncMock(undefined) };
+    configService = {
+      get: (key: string) =>
+        key === 'corsOrigin' ? 'http://localhost:4200' : undefined,
+    };
     // Identity-ish mocks: prefix on encrypt, strip prefix on decrypt — lets
     // tests assert the encrypt/decrypt calls actually happened without
     // duplicating round-trip correctness, which encryption.service.spec.ts
@@ -98,6 +111,8 @@ describe('EmployeesService', () => {
         { provide: TenantsService, useValue: tenantsService },
         { provide: EncryptionService, useValue: encryptionService },
         { provide: AuditService, useValue: auditService },
+        { provide: MailService, useValue: mailService },
+        { provide: ConfigService, useValue: configService },
       ],
     }).compile();
 
@@ -335,6 +350,63 @@ describe('EmployeesService', () => {
       await expect(service.findOne('tenant-1', 'emp-1')).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('invite', () => {
+    it('creates an EmployeeInvite and emails the employee, without ever exposing the raw token to the caller', async () => {
+      prisma.employee.findUnique.mockResolvedValueOnce({
+        ...employee,
+        user: null,
+      });
+
+      await service.invite('tenant-1', 'actor-1', 'emp-1');
+
+      expect(prisma.employeeInvite.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { employeeId: 'emp-1' },
+          create: expect.objectContaining({
+            employeeId: 'emp-1',
+            email: employee.email,
+          }),
+        }),
+      );
+      expect(mailService.sendMail).toHaveBeenCalledWith(
+        employee.email,
+        expect.any(String),
+        expect.stringContaining('http://localhost:4200/accept-invite?token='),
+      );
+      // The mail body must never leak the raw token as anything other than
+      // an opaque URL query value — asserting the DB write receives only a
+      // hash (a different string entirely) guards against ever storing or
+      // logging the plaintext token.
+      const upsertArgs = prisma.employeeInvite.upsert.mock.calls[0][0];
+      expect(upsertArgs.create.tokenHash).toHaveLength(64); // sha256 hex digest
+    });
+
+    it('rejects when the employee already has portal access', async () => {
+      prisma.employee.findUnique.mockResolvedValueOnce({
+        ...employee,
+        user: { id: 'user-1' },
+      });
+
+      await expect(
+        service.invite('tenant-1', 'actor-1', 'emp-1'),
+      ).rejects.toThrow(BadRequestException);
+      expect(prisma.employeeInvite.upsert).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException for a cross-tenant employee', async () => {
+      prisma.employee.findUnique.mockResolvedValueOnce({
+        ...employee,
+        user: null,
+        company: { ...company, tenantId: 'other-tenant' },
+      });
+
+      await expect(
+        service.invite('tenant-1', 'actor-1', 'emp-1'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

@@ -10,6 +10,7 @@ import {
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { AcceptInviteDto } from './dto/accept-invite.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtRefreshGuard } from '../common/guards/jwt-refresh.guard';
@@ -30,6 +31,13 @@ export class AuthController {
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  @Post('accept-invite')
+  acceptInvite(@Body() dto: AcceptInviteDto) {
+    return this.authService.acceptInvite(dto);
   }
 
   @Public()

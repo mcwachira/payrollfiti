@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import {
   ConflictException,
   Injectable,
@@ -13,6 +14,7 @@ import { BillingService } from '../billing/billing.service';
 import { AppConfig } from '../config/configuration';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { AcceptInviteDto } from './dto/accept-invite.dto';
 import {
   AuthenticatedRequestUser,
   JwtAccessPayload,
@@ -112,6 +114,44 @@ export class AuthService {
       where: { id: userId },
       data: { refreshTokenHash: null },
     });
+  }
+
+  /**
+   * Redeems an EmployeeInvite (see EmployeesService.invite) into a real
+   * login: creates the User row linked to the Employee, deletes the
+   * single-use invite, and logs the new user in immediately — same shape
+   * of response as signup/login, so the frontend can treat it identically.
+   * Public — the token itself, not a session, is what's being verified.
+   */
+  async acceptInvite(dto: AcceptInviteDto) {
+    const tokenHash = createHash('sha256').update(dto.token).digest('hex');
+    const invite = await this.prisma.employeeInvite.findUnique({
+      where: { tokenHash },
+      include: { employee: { include: { company: true } } },
+    });
+    if (!invite || invite.expiresAt.getTime() < Date.now()) {
+      throw new UnauthorizedException(
+        'This invite link is invalid or has expired',
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, SALT_ROUNDS);
+    const user = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          tenantId: invite.employee.company.tenantId,
+          email: invite.email,
+          passwordHash,
+          role: Role.EMPLOYEE,
+          employeeId: invite.employeeId,
+        },
+      });
+      await tx.employeeInvite.delete({ where: { id: invite.id } });
+      return created;
+    });
+
+    const tokens = await this.issueTokens(user);
+    return { user: this.toAuthenticatedUser(user), ...tokens };
   }
 
   private async issueTokens(user: User) {

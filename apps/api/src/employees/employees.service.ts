@@ -1,14 +1,18 @@
+import { randomBytes, createHash } from 'crypto';
 import {
   BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Employee, Prisma } from '@prisma/client';
 import { getPricingForCountry } from '@repo/pricing';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantsService } from '../tenants/tenants.service';
 import { EncryptionService } from '../common/crypto/encryption.service';
 import { AuditService } from '../audit/audit.service';
+import { MailService } from '../notifications/mail.service';
+import { AppConfig } from '../config/configuration';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { CreateContractDto } from './dto/create-contract.dto';
@@ -20,11 +24,15 @@ import { getDefaultOnboardingTasks } from './onboarding-task-templates';
 
 @Injectable()
 export class EmployeesService {
+  private static readonly INVITE_EXPIRY_DAYS = 7;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly tenantsService: TenantsService,
     private readonly encryptionService: EncryptionService,
     private readonly auditService: AuditService,
+    private readonly mailService: MailService,
+    private readonly configService: ConfigService<AppConfig, true>,
   ) {}
 
   /** Decrypts the PII fields on a fetched Employee row before returning it to a caller. */
@@ -183,6 +191,74 @@ export class EmployeesService {
       throw new NotFoundException('Employee not found');
     }
     return this.decryptEmployee(employee);
+  }
+
+  /**
+   * Sends (or re-sends) a portal-access invite to an employee. This is the
+   * only path that ever creates a User with role EMPLOYEE — nothing else
+   * in the system does, so before this existed there was literally no way
+   * for an employee to log in at all, even though the entire self-service
+   * portal and "own records only" RBAC around it were already built.
+   *
+   * The raw token is emailed and never stored — only its SHA-256 hash is
+   * (mirrors ApiKey's hashedKey pattern). Re-inviting an employee who
+   * already has a pending invite just replaces it (upsert), which
+   * invalidates the previous email's link; re-inviting one who already has
+   * portal access is rejected outright rather than silently doing nothing.
+   */
+  async invite(tenantId: string, actorId: string, employeeId: string) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: employeeId },
+      include: { company: true, user: true },
+    });
+    if (!employee || employee.company.tenantId !== tenantId) {
+      throw new NotFoundException('Employee not found');
+    }
+    if (employee.user) {
+      throw new BadRequestException('This employee already has portal access');
+    }
+
+    const rawToken = randomBytes(32).toString('hex');
+    const tokenHash = createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(
+      Date.now() + EmployeesService.INVITE_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
+    );
+
+    await this.prisma.employeeInvite.upsert({
+      where: { employeeId },
+      create: {
+        employeeId,
+        email: employee.email,
+        tokenHash,
+        expiresAt,
+        createdById: actorId,
+      },
+      update: {
+        email: employee.email,
+        tokenHash,
+        expiresAt,
+        createdById: actorId,
+      },
+    });
+
+    const corsOrigin = this.configService.get('corsOrigin', { infer: true });
+    const inviteUrl = `${corsOrigin}/accept-invite?token=${rawToken}`;
+    await this.mailService.sendMail(
+      employee.email,
+      "You're invited to the employee portal",
+      `<p>Hi ${employee.firstName},</p>` +
+        `<p>You've been invited to view your payslips and request leave or loans online.</p>` +
+        `<p><a href="${inviteUrl}">Set up your account</a></p>` +
+        `<p>This link expires in ${EmployeesService.INVITE_EXPIRY_DAYS} days.</p>`,
+    );
+
+    await this.auditService.record({
+      tenantId,
+      actorId,
+      action: 'employee.invite',
+      entityType: 'Employee',
+      entityId: employeeId,
+    });
   }
 
   async update(tenantId: string, employeeId: string, dto: UpdateEmployeeDto) {
