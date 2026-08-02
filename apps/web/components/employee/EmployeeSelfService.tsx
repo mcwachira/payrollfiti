@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Employee } from '@/types/types';
 import { EmployeeProfile } from '../employees/EmployeeProfile';
+import EmployeeDocuments from '../employees/EmployeeDocuments';
 import LeaveBalance from './LeaveBalance';
 import LeaveApplication from './LeaveApplication';
 import { useAuth } from '@/contexts/AuthContext';
@@ -254,7 +255,7 @@ export default function EmployeeSelfService() {
         </TabsContent>
 
         <TabsContent value="documents" className="space-y-4">
-          {/*<EmployeeDocuments employeeId={employee.id} />*/}
+          <EmployeeDocuments employeeId={employee.id} />
         </TabsContent>
 
         <TabsContent value="payslips" className="space-y-4">
