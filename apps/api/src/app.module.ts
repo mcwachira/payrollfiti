@@ -10,6 +10,7 @@ import { redisStore } from 'cache-manager-redis-yet';
 import Redis from 'ioredis';
 
 import configuration, { AppConfig } from './config/configuration';
+import { validateEnv } from './config/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuditModule } from './audit/audit.module';
 import { AuditInterceptor } from './audit/audit.interceptor';
@@ -45,7 +46,11 @@ import { AppController } from './app.controller';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      load: [configuration],
+      validate: validateEnv,
+    }),
     LoggerModule.forRootAsync({
       useFactory: (configService: ConfigService<AppConfig, true>) => {
         const isProduction =
