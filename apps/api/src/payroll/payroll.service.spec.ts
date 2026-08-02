@@ -181,6 +181,54 @@ describe('PayrollService', () => {
     );
   });
 
+  it('processes multiple employees concurrently, preserving order and skipping employees with no salary structure', async () => {
+    const employee2 = { ...employee, id: 'emp-2', firstName: 'John' };
+    const employee3 = { ...employee, id: 'emp-3', firstName: 'No', lastName: 'Structure' };
+    prisma.employee.findMany.mockResolvedValueOnce([
+      employee,
+      employee2,
+      employee3,
+    ]);
+
+    // Resolve out of order (emp-2 fastest, emp-1 slowest) to prove the
+    // concurrent mapper still preserves the original employees[] order in
+    // its output rather than completion order.
+    employeesService.getActiveSalaryStructure.mockImplementation(
+      (employeeId: string) => {
+        if (employeeId === 'emp-3') return Promise.resolve(null);
+        const delay = employeeId === 'emp-1' ? 15 : 0;
+        return new Promise((resolve) =>
+          setTimeout(() => resolve({ ...salaryStructure, employeeId }), delay),
+        );
+      },
+    );
+
+    const createdRun = {
+      id: 'run-2',
+      status: PayrollRunStatus.COMPLETED,
+      entries: [],
+    };
+    const txPrisma = {
+      payrollRun: {
+        create: asyncMock({ id: 'run-2' }),
+        findUniqueOrThrow: asyncMock(createdRun),
+      },
+      payrollEntry: { create: asyncMock({}) },
+    };
+    prisma.$transaction.mockImplementation((cb: any) => cb(txPrisma));
+
+    await service.runPayroll('tenant-1', 'user-1', dto);
+
+    // emp-3 (no salary structure) is skipped; emp-1 and emp-2 both create
+    // an entry, in employees[] order despite emp-2 resolving first.
+    expect(txPrisma.payrollEntry.create).toHaveBeenCalledTimes(2);
+    expect(
+      txPrisma.payrollEntry.create.mock.calls.map(
+        (call: any) => call[0].data.employeeId,
+      ),
+    ).toEqual(['emp-1', 'emp-2']);
+  });
+
   it('rejects the run when an employee salary structure currency does not match the country currency', async () => {
     employeesService.getActiveSalaryStructure.mockResolvedValueOnce({
       ...salaryStructure,

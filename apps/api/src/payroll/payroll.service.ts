@@ -52,6 +52,35 @@ interface ExecuteRunParams {
   force?: boolean;
 }
 
+// Bounded above a plain Promise.all so a large payroll run (hundreds/
+// thousands of employees) doesn't fire that many concurrent DB queries at
+// once and exhaust the connection pool. Each employee's per-run data
+// gathering (salary structure, salary components, loan deductions) is
+// independent of every other employee's, and both downstream consumers of
+// the resulting array — computeRunIdempotencyKey (sorts entry hashes
+// before hashing) and aggregateTotals (a commutative sum) — are already
+// order-independent, so parallelizing this is safe.
+const RUN_COMPUTATION_CONCURRENCY = 10;
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+  async function worker() {
+    while (nextIndex < items.length) {
+      const current = nextIndex++;
+      results[current] = await fn(items[current]!);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, worker),
+  );
+  return results;
+}
+
 @Injectable()
 export class PayrollService {
   constructor(
@@ -141,57 +170,66 @@ export class PayrollService {
       },
     });
 
-    const computations: Computation[] = [];
-    for (const employee of employees) {
-      const salaryStructure =
-        await this.employeesService.getActiveSalaryStructure(
+    const perEmployeeResults = await mapWithConcurrency(
+      employees,
+      RUN_COMPUTATION_CONCURRENCY,
+      async (employee): Promise<Computation | null> => {
+        const salaryStructure =
+          await this.employeesService.getActiveSalaryStructure(
+            employee.id,
+            periodStart,
+          );
+        if (!salaryStructure) return null;
+
+        const { allowances, voluntaryDeductions: componentDeductions } =
+          await this.salaryComponentsService.resolveStructureEarnings(
+            salaryStructure.id,
+            salaryStructure.basicSalary,
+            salaryStructure.allowances as Record<string, number> | null,
+          );
+        const {
+          voluntaryDeductions: loanDeductions,
+          repayments: loanRepayments,
+        } = await this.loansService.resolvePayrollDeductions(
+          tenantId,
           employee.id,
-          periodStart,
+          period,
         );
-      if (!salaryStructure) continue;
+        const voluntaryDeductions = {
+          ...componentDeductions,
+          ...loanDeductions,
+        };
 
-      const { allowances, voluntaryDeductions: componentDeductions } =
-        await this.salaryComponentsService.resolveStructureEarnings(
-          salaryStructure.id,
-          salaryStructure.basicSalary,
-          salaryStructure.allowances as Record<string, number> | null,
-        );
-      const {
-        voluntaryDeductions: loanDeductions,
-        repayments: loanRepayments,
-      } = await this.loansService.resolvePayrollDeductions(
-        tenantId,
-        employee.id,
-        period,
-      );
-      const voluntaryDeductions = { ...componentDeductions, ...loanDeductions };
+        // Only set `deductions` when there's something in it — omitting the
+        // key entirely (rather than setting it to `{ voluntary: {} }`) keeps
+        // the stableStringify shape of the input, and therefore its
+        // inputHash/idempotencyKey, byte-identical to before this field
+        // existed for every structure with no voluntary deduction lines,
+        // which today is all of them.
+        const input: PayrollCalculationInput = {
+          employeeId: employee.id,
+          countryCode: ruleSet.countryCode,
+          currency: salaryStructure.currency,
+          earnings: {
+            basicSalary: salaryStructure.basicSalary,
+            allowances,
+          },
+          ...(Object.keys(voluntaryDeductions).length > 0
+            ? { deductions: { voluntary: voluntaryDeductions } }
+            : {}),
+          period: { periodStart: periodStartInput, periodEnd: periodEndInput },
+        };
 
-      // Only set `deductions` when there's something in it — omitting the
-      // key entirely (rather than setting it to `{ voluntary: {} }`) keeps
-      // the stableStringify shape of the input, and therefore its
-      // inputHash/idempotencyKey, byte-identical to before this field
-      // existed for every structure with no voluntary deduction lines,
-      // which today is all of them.
-      const input: PayrollCalculationInput = {
-        employeeId: employee.id,
-        countryCode: ruleSet.countryCode,
-        currency: salaryStructure.currency,
-        earnings: {
-          basicSalary: salaryStructure.basicSalary,
-          allowances,
-        },
-        ...(Object.keys(voluntaryDeductions).length > 0
-          ? { deductions: { voluntary: voluntaryDeductions } }
-          : {}),
-        period: { periodStart: periodStartInput, periodEnd: periodEndInput },
-      };
-
-      computations.push({
-        employee,
-        result: runPayrollCalculation(input, ruleSet),
-        loanRepayments,
-      });
-    }
+        return {
+          employee,
+          result: runPayrollCalculation(input, ruleSet),
+          loanRepayments,
+        };
+      },
+    );
+    const computations: Computation[] = perEmployeeResults.filter(
+      (c): c is Computation => c !== null,
+    );
 
     // Currency is single-currency-per-tenant: every employee in a run must
     // be paid in the run's country's currency (ruleSet.currency) — there is
