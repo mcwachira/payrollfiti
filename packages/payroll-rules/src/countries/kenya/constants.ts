@@ -39,3 +39,11 @@ export const NHIF_BANDS: Array<{ max: number; amount: number }> = [
 
 /** Affordable Housing Levy — 1.5% employee + 1.5% employer, uncapped */
 export const HOUSING_LEVY_RATE = 0.015;
+
+export const KENYA_V2_VERSION = 'KE-2024.2';
+/** SHIF Act 2023 commencement date — NHIF was replaced by SHIF on this date */
+export const KENYA_V2_EFFECTIVE_FROM = '2024-10-01';
+
+/** Social Health Insurance Fund — replaced NHIF from 1 Oct 2024 (SHIF Act 2023) */
+export const SHIF_RATE = 0.0275;
+export const SHIF_MINIMUM_CONTRIBUTION = 300;

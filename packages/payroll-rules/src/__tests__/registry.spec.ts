@@ -26,6 +26,11 @@ describe('country rule registry (strategy pattern)', () => {
 
   it('picks the most recent version effective on or before the given date', () => {
     const ruleSet = getCountryRuleSet('KE', new Date('2099-01-01'));
+    expect(ruleSet.version).toBe('KE-2024.2');
+  });
+
+  it('falls back to the prior version for a date before the newer one takes effect', () => {
+    const ruleSet = getCountryRuleSet('KE', new Date('2024-05-01'));
     expect(ruleSet.version).toBe('KE-2024.1');
   });
 });

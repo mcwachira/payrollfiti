@@ -50,7 +50,7 @@ describe('PayrollCalculatorService', () => {
       expect(result.currency).toBe('KES');
       expect(result.grossPay).toBe(80_000);
       expect(result.statutoryDeductions.map((d) => d.code).sort()).toEqual(
-        ['HOUSING_LEVY', 'NHIF', 'NSSF'].sort(),
+        ['HOUSING_LEVY', 'SHIF', 'NSSF'].sort(),
       );
       expect(result.netPay).toBeLessThan(result.grossPay);
       expect(result.netPay).toBeGreaterThan(0);

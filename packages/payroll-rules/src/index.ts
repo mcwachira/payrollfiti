@@ -9,6 +9,6 @@ export {
   UnsupportedCountryError,
   NoApplicableRuleVersionError,
 } from './registry';
-export { kenyaV1, kenyaRuleSets } from './countries/kenya';
+export { kenyaV1, kenyaV2, kenyaRuleSets } from './countries/kenya';
 export { nigeriaV1, nigeriaRuleSets } from './countries/nigeria';
 export { southAfricaV1, southAfricaRuleSets } from './countries/south-africa';
