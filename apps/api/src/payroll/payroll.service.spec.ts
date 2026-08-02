@@ -77,7 +77,7 @@ describe('PayrollService', () => {
       }),
     };
     payslipEmailService = {
-      sendPayslipEmailsForRun: asyncMock(undefined),
+      enqueueForRun: asyncMock(undefined),
     };
     notificationsService = {
       dispatchForRoles: asyncMock(undefined),
@@ -162,7 +162,7 @@ describe('PayrollService', () => {
     );
     const runArgs = txPrisma.payrollRun.create.mock.calls[0][0].data;
     expect(runArgs.isOffCycle).toBe(false);
-    expect(payslipEmailService.sendPayslipEmailsForRun).toHaveBeenCalledWith(
+    expect(payslipEmailService.enqueueForRun).toHaveBeenCalledWith(
       'tenant-1',
       'run-1',
     );

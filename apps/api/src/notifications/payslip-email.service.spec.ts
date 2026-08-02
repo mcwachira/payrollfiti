@@ -1,9 +1,14 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
+import { getQueueToken } from '@nestjs/bullmq';
 import { PayslipEmailService } from './payslip-email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PayslipsService } from '../payslips/payslips.service';
 import { MailService } from './mail.service';
+import {
+  PAYSLIP_EMAILS_DELIVER_JOB,
+  PAYSLIP_EMAILS_QUEUE,
+} from './payslip-emails.queue';
 
 const asyncMock = (value?: unknown) =>
   jest.fn<(...args: any[]) => Promise<any>>().mockResolvedValue(value);
@@ -13,6 +18,7 @@ describe('PayslipEmailService', () => {
   let prisma: any;
   let payslipsService: any;
   let mailService: any;
+  let payslipEmailsQueue: any;
 
   const baseEntry = {
     id: 'entry-1',
@@ -34,6 +40,7 @@ describe('PayslipEmailService', () => {
     };
     payslipsService = { generate: asyncMock(Buffer.from('pdf-bytes')) };
     mailService = { sendMail: asyncMock(undefined) };
+    payslipEmailsQueue = { add: asyncMock(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -41,6 +48,10 @@ describe('PayslipEmailService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: PayslipsService, useValue: payslipsService },
         { provide: MailService, useValue: mailService },
+        {
+          provide: getQueueToken(PAYSLIP_EMAILS_QUEUE),
+          useValue: payslipEmailsQueue,
+        },
       ],
     }).compile();
 
@@ -114,6 +125,19 @@ describe('PayslipEmailService', () => {
       await service.sendPayslipEmailsForRun('tenant-1', 'missing-run');
 
       expect(payslipsService.generate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('enqueueForRun', () => {
+    it('adds a job to the payslip-emails queue instead of sending inline', async () => {
+      await service.enqueueForRun('tenant-1', 'run-1');
+
+      expect(payslipEmailsQueue.add).toHaveBeenCalledWith(
+        PAYSLIP_EMAILS_DELIVER_JOB,
+        { tenantId: 'tenant-1', payrollRunId: 'run-1' },
+      );
+      expect(payslipsService.generate).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
     });
   });
 });

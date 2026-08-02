@@ -1,7 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { PayslipsService } from '../payslips/payslips.service';
 import { MailService } from './mail.service';
+import {
+  PAYSLIP_EMAILS_DELIVER_JOB,
+  PAYSLIP_EMAILS_QUEUE,
+} from './payslip-emails.queue';
 
 @Injectable()
 export class PayslipEmailService {
@@ -11,7 +17,22 @@ export class PayslipEmailService {
     private readonly prisma: PrismaService,
     private readonly payslipsService: PayslipsService,
     private readonly mailService: MailService,
+    @InjectQueue(PAYSLIP_EMAILS_QUEUE)
+    private readonly payslipEmailsQueue: Queue,
   ) {}
+
+  /**
+   * Enqueues payslip email delivery for every entry in a run, off the
+   * payroll-run request thread — see PayslipEmailsProcessor. Call this
+   * instead of sendPayslipEmailsForRun() directly from request-handling
+   * code; sendPayslipEmailsForRun() is what the queue processor calls.
+   */
+  async enqueueForRun(tenantId: string, payrollRunId: string): Promise<void> {
+    await this.payslipEmailsQueue.add(PAYSLIP_EMAILS_DELIVER_JOB, {
+      tenantId,
+      payrollRunId,
+    });
+  }
 
   /**
    * Never throws — a failure here must never fail the payroll-run HTTP

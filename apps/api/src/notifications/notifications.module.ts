@@ -7,9 +7,11 @@ import { NotificationsController } from './notifications.controller';
 import { NotificationsProcessor } from './notifications.processor';
 import { MailService } from './mail.service';
 import { PayslipEmailService } from './payslip-email.service';
+import { PayslipEmailsProcessor } from './payslip-emails.processor';
 import { PayrollReminderService } from './payroll-reminder.service';
 import { PayslipsModule } from '../payslips/payslips.module';
 import { NOTIFICATIONS_QUEUE } from './notifications.queue';
+import { PAYSLIP_EMAILS_QUEUE } from './payslip-emails.queue';
 import { SMS_PROVIDER, SmsProvider } from './sms-provider.interface';
 import { NoopSmsProvider } from './providers/noop-sms.provider';
 import { AfricasTalkingSmsProvider } from './providers/africas-talking-sms.provider';
@@ -21,7 +23,10 @@ import { AppConfig } from '../config/configuration';
   imports: [
     ScheduleModule.forRoot(),
     PayslipsModule,
-    BullModule.registerQueue({ name: NOTIFICATIONS_QUEUE }),
+    BullModule.registerQueue(
+      { name: NOTIFICATIONS_QUEUE },
+      { name: PAYSLIP_EMAILS_QUEUE },
+    ),
   ],
   controllers: [NotificationsController],
   providers: [
@@ -30,6 +35,7 @@ import { AppConfig } from '../config/configuration';
     PayslipEmailService,
     PayrollReminderService,
     NotificationsProcessor,
+    PayslipEmailsProcessor,
     NoopSmsProvider,
     AfricasTalkingSmsProvider,
     {

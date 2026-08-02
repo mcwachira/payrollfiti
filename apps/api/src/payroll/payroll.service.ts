@@ -272,10 +272,11 @@ export class PayrollService {
       after: totals as unknown as Prisma.InputJsonValue,
     });
 
-    // PayslipEmailService is internally safe (never throws) — a failure to
-    // email payslips must never fail the HTTP response for a run that has
-    // already been committed.
-    await this.payslipEmailService.sendPayslipEmailsForRun(tenantId, run.id);
+    // Enqueued rather than run inline — rendering + emailing a payslip per
+    // employee would otherwise add request latency proportional to
+    // headcount. PayslipEmailsProcessor (BullMQ) picks this up off the
+    // request thread; sendPayslipEmailsForRun itself never throws.
+    await this.payslipEmailService.enqueueForRun(tenantId, run.id);
 
     // Marks the loan installments folded into this run's voluntaryDeductions
     // (see resolvePayrollDeductions above) as paid — never throws (see
