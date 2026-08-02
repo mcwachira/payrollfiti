@@ -6,9 +6,15 @@ import { AuthController } from './auth.controller';
 import { JwtAccessStrategy } from './strategies/jwt-access.strategy';
 import { JwtRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { BillingModule } from '../billing/billing.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [PassportModule, JwtModule.register({}), BillingModule],
+  imports: [
+    PassportModule,
+    JwtModule.register({}),
+    BillingModule,
+    NotificationsModule,
+  ],
   controllers: [AuthController],
   providers: [AuthService, JwtAccessStrategy, JwtRefreshStrategy],
   exports: [AuthService],

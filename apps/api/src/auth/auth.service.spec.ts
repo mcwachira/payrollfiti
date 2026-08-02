@@ -8,6 +8,7 @@ import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingService } from '../billing/billing.service';
+import { MailService } from '../notifications/mail.service';
 
 jest.mock('bcrypt');
 const bcryptMock = bcrypt as jest.Mocked<typeof bcrypt>;
@@ -24,6 +25,7 @@ describe('AuthService', () => {
   let prisma: any;
   let jwtService: any;
   let billingService: any;
+  let mailService: any;
 
   const user = {
     id: 'user-1',
@@ -46,10 +48,16 @@ describe('AuthService', () => {
         findUnique: asyncMock(null),
         delete: asyncMock(undefined),
       },
+      passwordResetToken: {
+        findUnique: asyncMock(null),
+        upsert: asyncMock(undefined),
+        delete: asyncMock(undefined),
+      },
       $transaction: jest.fn(),
     };
     jwtService = { signAsync: asyncMock('signed-token') };
     billingService = { startTrial: asyncMock(undefined) };
+    mailService = { sendMail: asyncMock(undefined) };
 
     (bcryptMock.hash as jest.Mock).mockResolvedValue(
       'hashed-password' as never,
@@ -62,6 +70,7 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: JwtService, useValue: jwtService },
         { provide: BillingService, useValue: billingService },
+        { provide: MailService, useValue: mailService },
         {
           provide: ConfigService,
           useValue: {
@@ -74,6 +83,7 @@ describe('AuthService', () => {
                   refreshExpiresIn: '7d',
                 };
               }
+              if (key === 'corsOrigin') return 'http://localhost:4200';
               return undefined;
             },
           },
@@ -260,6 +270,88 @@ describe('AuthService', () => {
       await expect(service.acceptInvite(dto)).rejects.toThrow(
         ConflictException,
       );
+    });
+  });
+
+  describe('forgotPassword', () => {
+    it('creates a reset token and emails a reset link when the email is registered', async () => {
+      prisma.user.findUnique.mockResolvedValueOnce(user);
+
+      await service.forgotPassword({ email: user.email });
+
+      expect(prisma.passwordResetToken.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: user.id },
+          create: expect.objectContaining({ userId: user.id }),
+          update: expect.any(Object),
+        }),
+      );
+      expect(mailService.sendMail).toHaveBeenCalledWith(
+        user.email,
+        expect.any(String),
+        expect.stringContaining('http://localhost:4200/reset-password?token='),
+      );
+    });
+
+    it('silently resolves for an unregistered email, without creating a token or sending mail', async () => {
+      prisma.user.findUnique.mockResolvedValueOnce(null);
+
+      await expect(
+        service.forgotPassword({ email: 'nobody@acme.co.ke' }),
+      ).resolves.toBeUndefined();
+      expect(prisma.passwordResetToken.upsert).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('resetPassword', () => {
+    const dto = { token: 'raw-reset-token', password: 'NewPassword123!' };
+    const resetToken = {
+      id: 'reset-1',
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 60_000),
+    };
+
+    it('updates the password, deletes the token, and logs the user in', async () => {
+      prisma.passwordResetToken.findUnique.mockResolvedValueOnce(resetToken);
+      const txPrisma = {
+        user: { update: asyncMock({ ...user, passwordHash: 'new-hash' }) },
+        passwordResetToken: { delete: asyncMock(undefined) },
+      };
+      prisma.$transaction.mockImplementation((cb: any) => cb(txPrisma));
+
+      const result = await service.resetPassword(dto);
+
+      expect(txPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: user.id },
+        data: { passwordHash: 'hashed-password' },
+      });
+      expect(txPrisma.passwordResetToken.delete).toHaveBeenCalledWith({
+        where: { id: resetToken.id },
+      });
+      expect(result.user.email).toBe(user.email);
+      expect(result.accessToken).toBe('signed-token');
+    });
+
+    it('rejects an unknown token without touching the database further', async () => {
+      prisma.passwordResetToken.findUnique.mockResolvedValueOnce(null);
+
+      await expect(service.resetPassword(dto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('rejects an expired token', async () => {
+      prisma.passwordResetToken.findUnique.mockResolvedValueOnce({
+        ...resetToken,
+        expiresAt: new Date(Date.now() - 60_000),
+      });
+
+      await expect(service.resetPassword(dto)).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
   });
 

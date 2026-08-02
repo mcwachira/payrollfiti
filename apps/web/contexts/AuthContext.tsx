@@ -32,6 +32,13 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<AuthenticatedUserDto>;
   signup: (input: SignupInput) => Promise<void>;
   acceptInvite: (token: string, password: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  // Same shape/rationale as login() — resetPassword logs the user in
+  // immediately, so the caller needs the fresh user back to redirect by role.
+  resetPassword: (
+    token: string,
+    password: string,
+  ) => Promise<AuthenticatedUserDto>;
   logout: () => Promise<void>;
 }
 
@@ -107,6 +114,31 @@ export function AuthProvider({ children }: PropsWithChildren) {
     [queryClient],
   );
 
+  const forgotPassword = useCallback(async (email: string) => {
+    await apiFetch<void>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+      skipAuth: true,
+    } as RequestInit & { skipAuth: boolean });
+  }, []);
+
+  const resetPassword = useCallback(
+    async (token: string, password: string) => {
+      const data = await apiFetch<
+        { user: AuthenticatedUserDto } & AuthTokensDto
+      >('/auth/reset-password', {
+        method: 'POST',
+        body: JSON.stringify({ token, password }),
+        skipAuth: true,
+      } as RequestInit & { skipAuth: boolean });
+      queryClient.clear();
+      tokenStorage.setTokens(data.accessToken, data.refreshToken);
+      setUser(data.user);
+      return data.user;
+    },
+    [queryClient],
+  );
+
   const logout = useCallback(async () => {
     try {
       await apiFetch('/auth/logout', { method: 'POST' });
@@ -122,7 +154,16 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, login, signup, acceptInvite, logout }}
+      value={{
+        user,
+        isLoading,
+        login,
+        signup,
+        acceptInvite,
+        forgotPassword,
+        resetPassword,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

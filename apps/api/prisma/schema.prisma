@@ -156,28 +156,29 @@ model Company {
 // Login identity + RBAC role. Optionally linked 1:1 to an Employee when the
 // role is EMPLOYEE, so self-service endpoints can resolve "my" records.
 model User {
-  id                        String             @id @default(uuid())
+  id                        String              @id @default(uuid())
   tenantId                  String
-  tenant                    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  email                     String             @unique
+  tenant                    Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email                     String              @unique
   passwordHash              String
-  role                      Role               @default(EMPLOYEE)
-  isActive                  Boolean            @default(true)
+  role                      Role                @default(EMPLOYEE)
+  isActive                  Boolean             @default(true)
   refreshTokenHash          String?
   phone                     String? // E.164 format; used only as an SMS delivery target (see SmsProvider)
-  employeeId                String?            @unique
-  employee                  Employee?          @relation(fields: [employeeId], references: [id])
+  employeeId                String?             @unique
+  employee                  Employee?           @relation(fields: [employeeId], references: [id])
   auditLogs                 AuditLog[]
   notifications             Notification[]
   pushSubscriptions         PushSubscription[]
+  passwordResetToken        PasswordResetToken?
   apiKeysCreated            ApiKey[]
   approvedLeaveRequests     LeaveRequest[]
   recordedAttendanceRecords AttendanceRecord[]
   uploadedDocuments         Document[]
-  loansRequested            Loan[]             @relation("LoanRequestedBy")
-  loansApproved             Loan[]             @relation("LoanApprovedBy")
-  createdAt                 DateTime           @default(now())
-  updatedAt                 DateTime           @updatedAt
+  loansRequested            Loan[]              @relation("LoanRequestedBy")
+  loansApproved             Loan[]              @relation("LoanApprovedBy")
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
 
   @@index([tenantId])
 }
@@ -241,6 +242,21 @@ model EmployeeInvite {
   expiresAt   DateTime
   createdById String?
   createdAt   DateTime @default(now())
+}
+
+// Forgot-password flow — one row per user with an active reset request,
+// same shape as EmployeeInvite: tokenHash is a one-way SHA-256 digest of a
+// server-generated token, never the raw value. userId is unique so a new
+// request supersedes any previous unused one rather than accumulating rows
+// (see AuthService.forgotPassword's upsert). Works identically for ADMIN,
+// HR, and EMPLOYEE — password reset isn't role-gated in any way.
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }
 
 // Onboarding checklist item for a newly-created employee. A default set is
