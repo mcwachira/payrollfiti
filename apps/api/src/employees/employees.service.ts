@@ -70,6 +70,7 @@ export class EmployeesService {
           taxIdNumber: this.encryptionService.encrypt(dto.taxIdNumber),
           pensionNumber: this.encryptionService.encrypt(dto.pensionNumber),
           jobRole: dto.jobRole,
+          department: dto.department,
           employmentType: dto.employmentType,
           currency:
             dto.currency ?? getPricingForCountry(tenant.countryCode).currency,

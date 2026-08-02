@@ -51,6 +51,10 @@ export class CreateEmployeeDto {
   @IsOptional()
   jobRole?: string;
 
+  @IsString()
+  @IsOptional()
+  department?: string;
+
   @IsEnum(EmploymentType)
   @IsOptional()
   employmentType?: EmploymentType;

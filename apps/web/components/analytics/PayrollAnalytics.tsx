@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   BarChart,
@@ -26,26 +25,22 @@ import {
   LineChart,
   Line,
 } from 'recharts';
-import {
-  DollarSign,
-  Users,
-  TrendingUp,
-  Clock,
-  AlertTriangle,
-} from 'lucide-react';
-import payrollData from '@/data/payroll.json';
-import { DepartmentData, LeaveImpact } from '@/types/payroll-data';
+import { DollarSign, Users, TrendingUp, Clock } from 'lucide-react';
+import { DepartmentData } from '@/types/payroll-data';
 import {
   listCompanies,
   listEmployees,
   type Company,
+  type Employee,
 } from '@/lib/employees-api';
 import { listPayrollRuns } from '@/lib/payroll-api';
+import { listLeaveRequests } from '@/lib/leave-api';
 import { ApiError } from '@/lib/api-client';
 import { CardsSkeleton } from '@/components/ui/loading-skeleton';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const UNASSIGNED_DEPARTMENT = 'Unassigned';
 
 function formatCurrency(amount: number, currency = 'KES') {
   return new Intl.NumberFormat('en-KE', {
@@ -70,20 +65,72 @@ interface CurrentSummary {
   totalDeductions: number;
 }
 
+interface LeaveUsagePoint {
+  month: string;
+  totalDays: number;
+  requestCount: number;
+}
+
+/** Current basic salary: the salary structure effective as of today, most-recent first. */
+function currentBasicSalary(employee: Employee): number {
+  const now = Date.now();
+  const active = (employee.salaryStructures ?? [])
+    .filter((s) => {
+      const from = new Date(s.effectiveFrom).getTime();
+      const to = s.effectiveTo ? new Date(s.effectiveTo).getTime() : Infinity;
+      return from <= now && now <= to;
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.effectiveFrom).getTime() -
+        new Date(a.effectiveFrom).getTime(),
+    );
+  return active[0]?.basicSalary ?? 0;
+}
+
+function buildDepartmentBreakdown(employees: Employee[]): DepartmentData[] {
+  const byDepartment = new Map<string, DepartmentData>();
+  for (const employee of employees) {
+    const name = employee.department?.trim() || UNASSIGNED_DEPARTMENT;
+    const entry = byDepartment.get(name) ?? { name, count: 0, totalSalary: 0 };
+    entry.count += 1;
+    entry.totalSalary += currentBasicSalary(employee);
+    byDepartment.set(name, entry);
+  }
+  return Array.from(byDepartment.values()).sort((a, b) => b.count - a.count);
+}
+
+function buildLeaveUsage(
+  requests: Awaited<ReturnType<typeof listLeaveRequests>>,
+): LeaveUsagePoint[] {
+  const byMonth = new Map<string, LeaveUsagePoint>();
+  for (const request of requests) {
+    if (request.status !== 'APPROVED') continue;
+    const month = request.startDate.slice(0, 7); // "YYYY-MM"
+    const entry = byMonth.get(month) ?? {
+      month,
+      totalDays: 0,
+      requestCount: 0,
+    };
+    entry.totalDays += request.daysRequested;
+    entry.requestCount += 1;
+    byMonth.set(month, entry);
+  }
+  return Array.from(byMonth.values()).sort((a, b) =>
+    a.month.localeCompare(b.month),
+  );
+}
+
 const PayrollAnalytics = () => {
   const [company, setCompany] = useState<Company | null>(null);
   const [trend, setTrend] = useState<PeriodTrendPoint[]>([]);
   const [currentSummary, setCurrentSummary] = useState<CurrentSummary | null>(
     null,
   );
+  const [departmentData, setDepartmentData] = useState<DepartmentData[]>([]);
+  const [leaveUsage, setLeaveUsage] = useState<LeaveUsagePoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // department_breakdown and leave_impact have no backing Prisma model
-  // (no Employee.department field, no leave backend) — kept as clearly
-  // labeled demo data below.
-  const departmentData: DepartmentData[] = payrollData.department_breakdown;
-  const leaveImpact: LeaveImpact[] = payrollData.leave_impact;
 
   useEffect(() => {
     let cancelled = false;
@@ -101,9 +148,10 @@ const PayrollAnalytics = () => {
         if (cancelled) return;
         setCompany(primaryCompany);
 
-        const [employees, runs] = await Promise.all([
+        const [employees, runs, leaveRequests] = await Promise.all([
           listEmployees(primaryCompany.id),
           listPayrollRuns(primaryCompany.id),
+          listLeaveRequests(),
         ]);
         if (cancelled) return;
 
@@ -130,6 +178,9 @@ const PayrollAnalytics = () => {
           totalNet: latest?.netPay ?? 0,
           totalDeductions: latest?.totalDeductions ?? 0,
         });
+
+        setDepartmentData(buildDepartmentBreakdown(employees));
+        setLeaveUsage(buildLeaveUsage(leaveRequests));
       } catch (err) {
         if (!cancelled)
           setError(
@@ -217,7 +268,7 @@ const PayrollAnalytics = () => {
             <CardTitle className="text-sm font-medium">
               Total Deductions
             </CardTitle>
-            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-extrabold">
@@ -250,7 +301,7 @@ const PayrollAnalytics = () => {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="departments">Departments</TabsTrigger>
           <TabsTrigger value="trends">Trends</TabsTrigger>
-          <TabsTrigger value="leave-impact">Leave Impact</TabsTrigger>
+          <TabsTrigger value="leave-usage">Leave Usage</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -319,65 +370,76 @@ const PayrollAnalytics = () => {
             {/* Department Distribution */}
             <Card>
               <CardHeader>
-                <div className="flex items-center gap-2">
-                  <CardTitle>Employee Distribution by Department</CardTitle>
-                  <Badge variant="outline">Demo data</Badge>
-                </div>
+                <CardTitle>Employee Distribution by Department</CardTitle>
                 <CardDescription>
-                  No department field exists on employees yet — illustrative
-                  only.
+                  Employees without a department set are grouped under
+                  &quot;Unassigned&quot;.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={departmentData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="count"
-                      label={({ name, value }) => `${name}: ${value}`}
-                    >
-                      {departmentData?.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                {departmentData.length === 0 ? (
+                  <p className="text-muted-foreground py-12 text-center">
+                    No employees yet.
+                  </p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={departmentData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="count"
+                        label={({ name, value }) => `${name}: ${value}`}
+                      >
+                        {departmentData.map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
 
             {/* Department Salary Costs */}
             <Card>
               <CardHeader>
-                <div className="flex items-center gap-2">
-                  <CardTitle>Salary Costs by Department</CardTitle>
-                  <Badge variant="outline">Demo data</Badge>
-                </div>
+                <CardTitle>Salary Costs by Department</CardTitle>
+                <CardDescription>
+                  Sum of each employee&apos;s current basic salary
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={departmentData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis
-                      tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
-                    />
-                    <Tooltip
-                      formatter={(value: number) => [
-                        formatCurrency(value),
-                        'Total Salary',
-                      ]}
-                    />
-                    <Bar dataKey="totalSalary" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
+                {departmentData.length === 0 ? (
+                  <p className="text-muted-foreground py-12 text-center">
+                    No employees yet.
+                  </p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={departmentData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis
+                        tickFormatter={(value) =>
+                          `${(value / 1000).toFixed(0)}K`
+                        }
+                      />
+                      <Tooltip
+                        formatter={(value: number) => [
+                          formatCurrency(value, currency),
+                          'Total Salary',
+                        ]}
+                      />
+                      <Bar dataKey="totalSalary" fill="#8884d8" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -418,55 +480,53 @@ const PayrollAnalytics = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="leave-impact" className="space-y-4">
+        <TabsContent value="leave-usage" className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center gap-2">
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Leave Impact on Payroll
-                </CardTitle>
-                <Badge variant="outline">Demo data</Badge>
-              </div>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Leave Usage by Month
+              </CardTitle>
               <CardDescription>
-                No leave backend exists yet — illustrative only.
+                Approved leave days taken, from real leave requests. This system
+                doesn&apos;t deduct leave from payroll, so there&apos;s no
+                monetary figure to show here.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={leaveImpact}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis
-                    yAxisId="left"
-                    tickFormatter={(value) => `${(value / 1000).toFixed(0)}K`}
-                  />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip
-                    formatter={(value: number, name: string) => [
-                      name === 'totalDeduction'
-                        ? formatCurrency(value)
-                        : `${value} days`,
-                      name === 'totalDeduction'
-                        ? 'Amount Deducted'
-                        : 'Leave Days',
-                    ]}
-                  />
-                  <Legend />
-                  <Bar
-                    yAxisId="left"
-                    dataKey="totalDeduction"
-                    fill="#8884d8"
-                    name="Amount Deducted"
-                  />
-                  <Bar
-                    yAxisId="right"
-                    dataKey="totalDays"
-                    fill="#82ca9d"
-                    name="Leave Days"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              {leaveUsage.length === 0 ? (
+                <p className="text-muted-foreground py-12 text-center">
+                  No approved leave requests yet.
+                </p>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={leaveUsage}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis yAxisId="left" />
+                    <YAxis yAxisId="right" orientation="right" />
+                    <Tooltip
+                      formatter={(value: number, name: string) => [
+                        value,
+                        name === 'totalDays' ? 'Leave Days' : 'Requests',
+                      ]}
+                    />
+                    <Legend />
+                    <Bar
+                      yAxisId="left"
+                      dataKey="totalDays"
+                      fill="#8884d8"
+                      name="Leave Days"
+                    />
+                    <Bar
+                      yAxisId="right"
+                      dataKey="requestCount"
+                      fill="#82ca9d"
+                      name="Requests"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

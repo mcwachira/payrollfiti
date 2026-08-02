@@ -90,6 +90,7 @@ export const EmployeeForm: React.FC<EmployeeFormProps> = ({
       nssfNumber: formData.nssf_number || undefined,
       nhifNumber: formData.nhif_number || undefined,
       jobRole: formData.job_title || undefined,
+      department: formData.department || undefined,
       bankName: formData.bank_name || undefined,
       bankAccountNumber: formData.bank_account || undefined,
       bankBranchCode: formData.bank_branch || undefined,

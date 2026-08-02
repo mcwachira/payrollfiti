@@ -198,6 +198,7 @@ model Employee {
   // RSA PIN (pension). Kenya uses nssfNumber instead.
   pensionNumber  String?
   jobRole        String?
+  department     String?
   employmentType EmploymentType   @default(PERMANENT)
   currency       String           @default("KES")
   status         String           @default("ACTIVE")

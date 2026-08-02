@@ -6,6 +6,15 @@ export interface Company {
   currency: string;
 }
 
+export interface SalaryStructure {
+  id: string;
+  employeeId: string;
+  basicSalary: number;
+  currency: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+}
+
 export interface Employee {
   id: string;
   companyId: string;
@@ -14,9 +23,11 @@ export interface Employee {
   lastName: string;
   email: string;
   jobRole: string | null;
+  department: string | null;
   employmentType: string;
   status: string;
   createdAt: string;
+  salaryStructures?: SalaryStructure[];
 }
 
 export interface CreateEmployeeInput {
@@ -29,6 +40,7 @@ export interface CreateEmployeeInput {
   nssfNumber?: string;
   nhifNumber?: string;
   jobRole?: string;
+  department?: string;
   employmentType?: 'PERMANENT' | 'CONTRACT' | 'CASUAL' | 'INTERN';
   currency?: string;
   bankName?: string;
@@ -94,10 +106,10 @@ export function addOnboardingTask(
   employeeId: string,
   input: { title: string; isRequired?: boolean },
 ): Promise<OnboardingTask> {
-  return apiFetch<OnboardingTask>(
-    `/employees/${employeeId}/onboarding-tasks`,
-    { method: 'POST', body: JSON.stringify(input) },
-  );
+  return apiFetch<OnboardingTask>(`/employees/${employeeId}/onboarding-tasks`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
 }
 
 export function updateOnboardingTask(
@@ -126,7 +138,7 @@ export function toEmployeeListItem(employee: Employee) {
     email: employee.email,
     employee_number: employee.employeeNumber ?? '—',
     job_title: employee.jobRole ?? undefined,
-    department: undefined,
+    department: employee.department ?? undefined,
     employment_status: employee.status.toLowerCase(),
     hire_date: employee.createdAt,
   };
