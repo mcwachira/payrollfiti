@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { InvoiceStatus, PaymentProviderType } from '@prisma/client';
 import { BillingService } from './billing.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { StripeProvider } from './providers/stripe.provider';
+import { PaystackProvider } from './providers/paystack.provider';
 import { MpesaProvider } from './providers/mpesa.provider';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { ACCOUNTING_PROVIDER } from '../accounting/accounting-provider.interface';
@@ -19,7 +19,7 @@ const asyncMock = (value?: unknown) =>
 describe('BillingService', () => {
   let service: BillingService;
   let prisma: any;
-  let stripeProvider: any;
+  let paystackProvider: any;
   let mpesaProvider: any;
   let webhooksService: any;
   let accountingProvider: any;
@@ -38,7 +38,7 @@ describe('BillingService', () => {
     tenantId: 'tenant-1',
     planId: plan.id,
     plan,
-    provider: PaymentProviderType.STRIPE,
+    provider: PaymentProviderType.PAYSTACK,
     providerCustomerId: 'cus_123',
   };
 
@@ -65,13 +65,21 @@ describe('BillingService', () => {
         findUnique: asyncMock(null),
         update: asyncMock({ id: 'invoice-1', status: InvoiceStatus.PAID }),
       },
-      paymentTransaction: { create: asyncMock({ id: 'txn-1' }) },
+      paymentTransaction: {
+        create: asyncMock({ id: 'txn-1' }),
+        findFirst: asyncMock(null),
+        update: asyncMock({ id: 'txn-1', status: 'succeeded' }),
+        updateMany: asyncMock({ count: 1 }),
+      },
     };
-    stripeProvider = {
-      type: PaymentProviderType.STRIPE,
+    // Mock $transaction by just invoking the callback with the same mock
+    // client — the individual model mocks above are what tests assert on.
+    prisma.$transaction = jest.fn((fn: any) => fn(prisma));
+    paystackProvider = {
+      type: PaymentProviderType.PAYSTACK,
       createCustomer: asyncMock('cus_123'),
       createSubscription: asyncMock({
-        providerSubscriptionId: 'sub_stripe_1',
+        providerSubscriptionId: 'paystack-manual-1',
         currentPeriodStart: new Date('2026-07-01'),
         currentPeriodEnd: new Date('2026-08-01'),
       }),
@@ -107,7 +115,7 @@ describe('BillingService', () => {
       providers: [
         BillingService,
         { provide: PrismaService, useValue: prisma },
-        { provide: StripeProvider, useValue: stripeProvider },
+        { provide: PaystackProvider, useValue: paystackProvider },
         { provide: MpesaProvider, useValue: mpesaProvider },
         { provide: WebhooksService, useValue: webhooksService },
         { provide: ACCOUNTING_PROVIDER, useValue: accountingProvider },
@@ -118,12 +126,12 @@ describe('BillingService', () => {
   });
 
   describe('subscribe', () => {
-    it('subscribes via the default Stripe provider', async () => {
+    it('subscribes via the default Paystack provider', async () => {
       const result = await service.subscribe('tenant-1', {
         planCode: 'STARTER',
       });
 
-      expect(stripeProvider.createCustomer).toHaveBeenCalledWith(
+      expect(paystackProvider.createCustomer).toHaveBeenCalledWith(
         expect.objectContaining({
           tenantId: 'tenant-1',
           name: 'Acme',
@@ -134,7 +142,7 @@ describe('BillingService', () => {
         expect.objectContaining({
           where: { tenantId: 'tenant-1' },
           create: expect.objectContaining({
-            provider: PaymentProviderType.STRIPE,
+            provider: PaymentProviderType.PAYSTACK,
           }),
         }),
       );
@@ -156,7 +164,38 @@ describe('BillingService', () => {
       });
 
       expect(mpesaProvider.createCustomer).toHaveBeenCalledTimes(1);
-      expect(stripeProvider.createCustomer).not.toHaveBeenCalled();
+      expect(paystackProvider.createCustomer).not.toHaveBeenCalled();
+    });
+
+    it('rejects subscribing to a plan priced for a different country', async () => {
+      prisma.plan.findUnique.mockResolvedValueOnce({
+        ...plan,
+        countryCode: 'NG',
+      });
+      prisma.tenant.findUniqueOrThrow.mockResolvedValueOnce({
+        ...tenant,
+        countryCode: 'KE',
+      });
+
+      await expect(
+        service.subscribe('tenant-1', { planCode: 'STARTER' }),
+      ).rejects.toThrow(BadRequestException);
+      expect(paystackProvider.createCustomer).not.toHaveBeenCalled();
+    });
+
+    it('allows subscribing to a country-matched plan', async () => {
+      prisma.plan.findUnique.mockResolvedValueOnce({
+        ...plan,
+        countryCode: 'KE',
+      });
+      prisma.tenant.findUniqueOrThrow.mockResolvedValueOnce({
+        ...tenant,
+        countryCode: 'KE',
+      });
+
+      await expect(
+        service.subscribe('tenant-1', { planCode: 'STARTER' }),
+      ).resolves.toEqual(expect.objectContaining({ id: 'sub-1' }));
     });
   });
 
@@ -192,21 +231,29 @@ describe('BillingService', () => {
       subscriptionId: 'sub-1',
       amount: 2000,
       currency: 'KES',
-      provider: PaymentProviderType.STRIPE,
+      provider: PaymentProviderType.PAYSTACK,
     };
 
-    it('marks the invoice PAID on a successful charge', async () => {
+    it('passes the tenant admin email to the provider charge (required by Paystack)', async () => {
       prisma.invoice.findUnique.mockResolvedValueOnce(invoice);
 
-      const result = await service.payInvoice('tenant-1', 'invoice-1', {});
+      await service.payInvoice('tenant-1', 'invoice-1', {});
 
-      expect(stripeProvider.charge).toHaveBeenCalledWith(
+      expect(paystackProvider.charge).toHaveBeenCalledWith(
         expect.objectContaining({
           amount: 2000,
           currency: 'KES',
           reference: 'invoice-1',
+          email: 'admin@acme.co.ke',
         }),
       );
+    });
+
+    it('marks the invoice PAID immediately when the provider charge succeeds synchronously (dev-stub fallback)', async () => {
+      prisma.invoice.findUnique.mockResolvedValueOnce(invoice);
+
+      const result = await service.payInvoice('tenant-1', 'invoice-1', {});
+
       expect(prisma.invoice.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'invoice-1' },
@@ -236,16 +283,17 @@ describe('BillingService', () => {
       );
     });
 
-    it('does not dispatch a webhook or accounting sync when the charge is not successful', async () => {
+    it('leaves the invoice OPEN when a real charge returns pending (awaiting webhook confirmation)', async () => {
       prisma.invoice.findUnique.mockResolvedValueOnce(invoice);
-      stripeProvider.charge.mockResolvedValueOnce({
-        providerReference: 'ch_pending',
+      paystackProvider.charge.mockResolvedValueOnce({
+        providerReference: 'invoice-1',
         status: 'pending',
-        raw: {},
+        raw: { authorization_url: 'https://checkout.paystack.com/abc' },
       });
 
       await service.payInvoice('tenant-1', 'invoice-1', {});
 
+      expect(prisma.invoice.update).not.toHaveBeenCalled();
       expect(webhooksService.dispatch).not.toHaveBeenCalled();
       expect(accountingProvider.syncInvoice).not.toHaveBeenCalled();
     });
@@ -262,19 +310,6 @@ describe('BillingService', () => {
       expect(prisma.invoice.update).not.toHaveBeenCalled();
     });
 
-    it('does not mark the invoice PAID when the provider status is not succeeded/paid', async () => {
-      prisma.invoice.findUnique.mockResolvedValueOnce(invoice);
-      stripeProvider.charge.mockResolvedValueOnce({
-        providerReference: 'ch_pending',
-        status: 'pending',
-        raw: {},
-      });
-
-      await service.payInvoice('tenant-1', 'invoice-1', {});
-
-      expect(prisma.invoice.update).not.toHaveBeenCalled();
-    });
-
     it('routes the charge through the MPESA provider when the invoice provider is MPESA', async () => {
       prisma.invoice.findUnique.mockResolvedValueOnce({
         ...invoice,
@@ -288,16 +323,185 @@ describe('BillingService', () => {
       expect(mpesaProvider.charge).toHaveBeenCalledWith(
         expect.objectContaining({ phoneNumber: '254700000000' }),
       );
-      expect(stripeProvider.charge).not.toHaveBeenCalled();
+      expect(paystackProvider.charge).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('confirmInvoicePaidByTransactionReference', () => {
+    const transaction = {
+      id: 'txn-1',
+      invoiceId: 'invoice-1',
+      provider: PaymentProviderType.PAYSTACK,
+      reference: 'invoice-1',
+    };
+    const openInvoice = {
+      id: 'invoice-1',
+      tenantId: 'tenant-1',
+      amount: 2000,
+      currency: 'KES',
+      status: InvoiceStatus.OPEN,
+    };
+
+    it('marks the invoice PAID and dispatches side effects when a matching pending transaction is found', async () => {
+      prisma.paymentTransaction.findFirst.mockResolvedValueOnce(transaction);
+      prisma.invoice.findUnique.mockResolvedValueOnce(openInvoice);
+
+      await service.confirmInvoicePaidByTransactionReference(
+        PaymentProviderType.PAYSTACK,
+        'invoice-1',
+      );
+
+      expect(prisma.paymentTransaction.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'txn-1' },
+          data: { status: 'succeeded' },
+        }),
+      );
+      expect(prisma.invoice.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'invoice-1' },
+          data: expect.objectContaining({ status: InvoiceStatus.PAID }),
+        }),
+      );
+      expect(webhooksService.dispatch).toHaveBeenCalledWith(
+        'tenant-1',
+        'invoice.paid',
+        expect.objectContaining({ invoiceId: 'invoice-1' }),
+      );
+    });
+
+    it('runs both writes inside a single $transaction so they commit or fail together', async () => {
+      prisma.paymentTransaction.findFirst.mockResolvedValueOnce(transaction);
+      prisma.invoice.findUnique.mockResolvedValueOnce(openInvoice);
+
+      await service.confirmInvoicePaidByTransactionReference(
+        PaymentProviderType.PAYSTACK,
+        'invoice-1',
+      );
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      const txCallOrder = prisma.paymentTransaction.update.mock
+        .invocationCallOrder[0];
+      const invoiceCallOrder =
+        prisma.invoice.update.mock.invocationCallOrder[0];
+      const transactionCallOrder =
+        prisma.$transaction.mock.invocationCallOrder[0];
+      // Both writes must happen inside the $transaction call, not before it.
+      expect(txCallOrder).toBeGreaterThan(transactionCallOrder);
+      expect(invoiceCallOrder).toBeGreaterThan(transactionCallOrder);
+    });
+
+    it('does not mark the invoice PAID if the transaction status update throws (atomic rollback)', async () => {
+      prisma.paymentTransaction.findFirst.mockResolvedValueOnce(transaction);
+      prisma.invoice.findUnique.mockResolvedValueOnce(openInvoice);
+      prisma.paymentTransaction.update.mockRejectedValueOnce(
+        new Error('db write failed'),
+      );
+
+      await expect(
+        service.confirmInvoicePaidByTransactionReference(
+          PaymentProviderType.PAYSTACK,
+          'invoice-1',
+        ),
+      ).rejects.toThrow('db write failed');
+
+      expect(prisma.invoice.update).not.toHaveBeenCalled();
+      expect(webhooksService.dispatch).not.toHaveBeenCalled();
+    });
+
+    it('is a no-op when no transaction matches the reference', async () => {
+      prisma.paymentTransaction.findFirst.mockResolvedValueOnce(null);
+
+      const result = await service.confirmInvoicePaidByTransactionReference(
+        PaymentProviderType.MPESA,
+        'unknown-checkout-id',
+      );
+
+      expect(result).toBeNull();
+      expect(prisma.invoice.update).not.toHaveBeenCalled();
+    });
+
+    it('is idempotent — does nothing if the invoice is already PAID', async () => {
+      prisma.paymentTransaction.findFirst.mockResolvedValueOnce(transaction);
+      prisma.invoice.findUnique.mockResolvedValueOnce({
+        ...openInvoice,
+        status: InvoiceStatus.PAID,
+      });
+
+      await service.confirmInvoicePaidByTransactionReference(
+        PaymentProviderType.PAYSTACK,
+        'invoice-1',
+      );
+
+      expect(prisma.invoice.update).not.toHaveBeenCalled();
+      expect(webhooksService.dispatch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('recordTransactionFailure', () => {
+    it('marks the matching transaction as failed', async () => {
+      await service.recordTransactionFailure(
+        PaymentProviderType.MPESA,
+        'checkout-id-1',
+      );
+
+      expect(prisma.paymentTransaction.updateMany).toHaveBeenCalledWith({
+        where: {
+          provider: PaymentProviderType.MPESA,
+          reference: 'checkout-id-1',
+        },
+        data: { status: 'failed' },
+      });
     });
   });
 
   describe('listPlans', () => {
-    it('returns only active plans', async () => {
+    it('returns only active plans when called with no tenantId', async () => {
       const result = await service.listPlans();
 
       expect(prisma.plan.findMany).toHaveBeenCalledWith({
         where: { isActive: true },
+      });
+      expect(result).toEqual([plan]);
+    });
+
+    it('scopes plans to the tenant country when a tenantId is given', async () => {
+      prisma.tenant.findUniqueOrThrow.mockResolvedValueOnce({
+        ...tenant,
+        countryCode: 'NG',
+      });
+      const ngPlan = {
+        ...plan,
+        code: 'ng-starter',
+        countryCode: 'NG',
+        currency: 'NGN',
+      };
+      prisma.plan.findMany.mockResolvedValueOnce([ngPlan]);
+
+      const result = await service.listPlans('tenant-1');
+
+      expect(prisma.plan.findMany).toHaveBeenCalledWith({
+        where: { isActive: true, countryCode: 'NG' },
+      });
+      expect(result).toEqual([ngPlan]);
+    });
+
+    it('falls back to the default country plans when none exist for the tenant country', async () => {
+      prisma.tenant.findUniqueOrThrow.mockResolvedValueOnce({
+        ...tenant,
+        countryCode: 'ZW',
+      });
+      prisma.plan.findMany
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([plan]);
+
+      const result = await service.listPlans('tenant-1');
+
+      expect(prisma.plan.findMany).toHaveBeenNthCalledWith(1, {
+        where: { isActive: true, countryCode: 'ZW' },
+      });
+      expect(prisma.plan.findMany).toHaveBeenNthCalledWith(2, {
+        where: { isActive: true, countryCode: 'KE' },
       });
       expect(result).toEqual([plan]);
     });

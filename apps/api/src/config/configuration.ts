@@ -14,9 +14,8 @@ export interface AppConfig {
     refreshSecret: string;
     refreshExpiresIn: string;
   };
-  stripe: {
+  paystack: {
     secretKey?: string;
-    webhookSecret?: string;
   };
   mpesa: {
     consumerKey?: string;
@@ -25,6 +24,9 @@ export interface AppConfig {
     passkey?: string;
     env: string;
     callbackUrl?: string;
+    /** Shared secret appended to the callback URL query string, since
+     *  Safaricom does not sign its STK push callbacks. */
+    callbackToken?: string;
   };
   redisUrl?: string;
   encryptionKey?: string;
@@ -61,9 +63,8 @@ export default (): AppConfig => ({
       process.env.JWT_REFRESH_SECRET ?? 'dev-refresh-secret-change-me',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
   },
-  stripe: {
-    secretKey: process.env.STRIPE_SECRET_KEY,
-    webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  paystack: {
+    secretKey: process.env.PAYSTACK_SECRET_KEY,
   },
   mpesa: {
     consumerKey: process.env.MPESA_CONSUMER_KEY,
@@ -72,6 +73,7 @@ export default (): AppConfig => ({
     passkey: process.env.MPESA_PASSKEY,
     env: process.env.MPESA_ENV ?? 'sandbox',
     callbackUrl: process.env.MPESA_CALLBACK_URL,
+    callbackToken: process.env.MPESA_CALLBACK_TOKEN,
   },
   redisUrl: process.env.REDIS_URL,
   encryptionKey: process.env.ENCRYPTION_KEY,

@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   InvoiceStatus,
   PaymentProviderType,
@@ -7,7 +12,7 @@ import {
 } from '@prisma/client';
 import { round2 } from '@repo/payroll-rules';
 import { PrismaService } from '../prisma/prisma.service';
-import { StripeProvider } from './providers/stripe.provider';
+import { PaystackProvider } from './providers/paystack.provider';
 import { MpesaProvider } from './providers/mpesa.provider';
 import { PaymentProvider } from './providers/payment-provider.interface';
 import { SubscribeDto } from './dto/subscribe.dto';
@@ -19,12 +24,13 @@ import {
 } from '../accounting/accounting-provider.interface';
 
 const INVOICE_DUE_DAYS = 14;
+const DEFAULT_PLAN_COUNTRY = 'KE';
 
 @Injectable()
 export class BillingService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly stripeProvider: StripeProvider,
+    private readonly paystackProvider: PaystackProvider,
     private readonly mpesaProvider: MpesaProvider,
     private readonly webhooksService: WebhooksService,
     @Inject(ACCOUNTING_PROVIDER)
@@ -34,7 +40,7 @@ export class BillingService {
   private getProvider(type: PaymentProviderType): PaymentProvider {
     return type === PaymentProviderType.MPESA
       ? this.mpesaProvider
-      : this.stripeProvider;
+      : this.paystackProvider;
   }
 
   async subscribe(tenantId: string, dto: SubscribeDto) {
@@ -46,10 +52,19 @@ export class BillingService {
     const tenant = await this.prisma.tenant.findUniqueOrThrow({
       where: { id: tenantId },
     });
+    // A plan with a countryCode is priced in that country's currency;
+    // subscribing a tenant to a plan priced for a different country would
+    // silently bill them in the wrong currency. Legacy plans with no
+    // countryCode (pre-dating per-country pricing) are unrestricted.
+    if (plan.countryCode && plan.countryCode !== tenant.countryCode) {
+      throw new BadRequestException(
+        `Plan "${plan.code}" is priced for ${plan.countryCode}, but this tenant's country is ${tenant.countryCode}`,
+      );
+    }
     const adminUser = await this.prisma.user.findFirst({
       where: { tenantId, role: 'ADMIN' },
     });
-    const providerType = dto.provider ?? PaymentProviderType.STRIPE;
+    const providerType = dto.provider ?? PaymentProviderType.PAYSTACK;
     const provider = this.getProvider(providerType);
 
     const employeeCount = await this.countActiveEmployees(tenantId);
@@ -96,8 +111,29 @@ export class BillingService {
     });
   }
 
-  listPlans() {
-    return this.prisma.plan.findMany({ where: { isActive: true } });
+  /**
+   * Without a tenantId, returns the full active plan catalog (used
+   * internally). With one, scopes to plans priced for that tenant's
+   * country, falling back to the default country's plans if none exist yet
+   * for it — mirrors @repo/pricing's getPricingForCountry fallback so the
+   * billing page never shows an empty plan list.
+   */
+  async listPlans(tenantId?: string) {
+    if (!tenantId) {
+      return this.prisma.plan.findMany({ where: { isActive: true } });
+    }
+
+    const tenant = await this.prisma.tenant.findUniqueOrThrow({
+      where: { id: tenantId },
+    });
+    const countryPlans = await this.prisma.plan.findMany({
+      where: { isActive: true, countryCode: tenant.countryCode },
+    });
+    if (countryPlans.length > 0) return countryPlans;
+
+    return this.prisma.plan.findMany({
+      where: { isActive: true, countryCode: DEFAULT_PLAN_COUNTRY },
+    });
   }
 
   async recordUsage(tenantId: string, period: string) {
@@ -153,6 +189,9 @@ export class BillingService {
       where: { id: invoice.subscriptionId },
     });
     const provider = this.getProvider(invoice.provider);
+    const adminUser = await this.prisma.user.findFirst({
+      where: { tenantId, role: 'ADMIN' },
+    });
 
     const result = await provider.charge({
       amount: invoice.amount,
@@ -160,52 +199,136 @@ export class BillingService {
       reference: invoice.id,
       customerId: subscription.providerCustomerId ?? undefined,
       phoneNumber: dto.phoneNumber,
+      email: adminUser?.email,
     });
 
-    await this.prisma.paymentTransaction.create({
-      data: {
-        invoiceId: invoice.id,
-        provider: invoice.provider,
-        reference: result.providerReference,
-        amount: invoice.amount,
-        currency: invoice.currency,
-        status: result.status,
-        rawResponse: (result.raw ?? Prisma.JsonNull) as Prisma.InputJsonValue,
-      },
-    });
-
-    if (result.status === 'succeeded' || result.status === 'paid') {
-      await this.prisma.invoice.update({
-        where: { id: invoice.id },
+    // paymentTransaction.create and the conditional invoice.update below
+    // must commit together: if the process died between the two writes,
+    // a transaction could be recorded 'succeeded' against an invoice that
+    // stays OPEN forever. The provider.charge() call itself happens before
+    // the transaction starts, since it's an external HTTP call that must
+    // not hold a DB transaction open.
+    const chargeSucceeded = await this.prisma.$transaction(async (tx) => {
+      await tx.paymentTransaction.create({
         data: {
-          status: InvoiceStatus.PAID,
-          paidAt: new Date(),
-          providerInvoiceId: result.providerReference,
+          invoiceId: invoice.id,
+          provider: invoice.provider,
+          reference: result.providerReference,
+          amount: invoice.amount,
+          currency: invoice.currency,
+          status: result.status,
+          rawResponse: (result.raw ??
+            Prisma.JsonNull) as Prisma.InputJsonValue,
         },
       });
 
-      // Best-effort side effects of a paid invoice — neither may fail the
-      // already-committed payment response.
-      void this.webhooksService
-        .dispatch(tenantId, 'invoice.paid', {
-          invoiceId: invoice.id,
-          amount: invoice.amount,
-          currency: invoice.currency,
-        })
-        .catch(() => {});
+      // Paystack and (real, non-stub) M-Pesa charges only ever return
+      // 'pending' here — actual confirmation arrives asynchronously via
+      // confirmInvoicePaidByTransactionReference below, triggered by the
+      // provider's webhook/callback. 'succeeded'/'paid' only happens
+      // synchronously for the unconfigured-provider dev stub.
+      if (result.status === 'succeeded' || result.status === 'paid') {
+        await this.markInvoicePaidTx(tx, invoice, result.providerReference);
+        return true;
+      }
+      return false;
+    });
 
-      await this.accountingProvider
-        .syncInvoice({
-          id: invoice.id,
-          tenantId,
-          amount: invoice.amount,
-          currency: invoice.currency,
-          status: InvoiceStatus.PAID,
-        })
-        .catch(() => {});
+    if (chargeSucceeded) {
+      await this.dispatchInvoicePaidSideEffects(tenantId, invoice);
     }
 
     return result;
+  }
+
+  /**
+   * Called from the Paystack webhook (`charge.success`) and the M-Pesa STK
+   * push callback once a charge that started as 'pending' actually
+   * completes. `transactionReference` is whatever PaymentTransaction.reference
+   * was set to for that charge: the invoice id for Paystack (its own
+   * `reference` echoed back), or the CheckoutRequestID for M-Pesa.
+   */
+  async confirmInvoicePaidByTransactionReference(
+    provider: PaymentProviderType,
+    transactionReference: string,
+  ) {
+    const transaction = await this.prisma.paymentTransaction.findFirst({
+      where: { provider, reference: transactionReference },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!transaction) return null;
+
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: transaction.invoiceId },
+    });
+    if (!invoice || invoice.status === InvoiceStatus.PAID) return invoice;
+
+    // Both writes must commit together, or a crash in between leaves the
+    // transaction marked 'succeeded' against an invoice that never gets
+    // marked PAID.
+    await this.prisma.$transaction(async (tx) => {
+      await tx.paymentTransaction.update({
+        where: { id: transaction.id },
+        data: { status: 'succeeded' },
+      });
+      await this.markInvoicePaidTx(tx, invoice, transactionReference);
+    });
+
+    await this.dispatchInvoicePaidSideEffects(invoice.tenantId, invoice);
+    return invoice;
+  }
+
+  async recordTransactionFailure(
+    provider: PaymentProviderType,
+    transactionReference: string,
+  ) {
+    await this.prisma.paymentTransaction.updateMany({
+      where: { provider, reference: transactionReference },
+      data: { status: 'failed' },
+    });
+  }
+
+  private markInvoicePaidTx(
+    tx: Prisma.TransactionClient,
+    invoice: { id: string },
+    providerReference: string,
+  ) {
+    return tx.invoice.update({
+      where: { id: invoice.id },
+      data: {
+        status: InvoiceStatus.PAID,
+        paidAt: new Date(),
+        providerInvoiceId: providerReference,
+      },
+    });
+  }
+
+  /**
+   * Best-effort side effects of a paid invoice, run after the payment
+   * confirmation transaction has committed — neither may fail or roll back
+   * the already-committed payment state.
+   */
+  private async dispatchInvoicePaidSideEffects(
+    tenantId: string,
+    invoice: { id: string; amount: number; currency: string },
+  ) {
+    void this.webhooksService
+      .dispatch(tenantId, 'invoice.paid', {
+        invoiceId: invoice.id,
+        amount: invoice.amount,
+        currency: invoice.currency,
+      })
+      .catch(() => {});
+
+    await this.accountingProvider
+      .syncInvoice({
+        id: invoice.id,
+        tenantId,
+        amount: invoice.amount,
+        currency: invoice.currency,
+        status: InvoiceStatus.PAID,
+      })
+      .catch(() => {});
   }
 
   private countActiveEmployees(tenantId: string): Promise<number> {

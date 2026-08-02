@@ -19,6 +19,8 @@ export interface ChargeParams {
   customerId?: string;
   /** Required by phone-based providers like M-Pesa */
   phoneNumber?: string;
+  /** Required by hosted-checkout providers like Paystack */
+  email?: string;
 }
 
 export interface ChargeResult {
@@ -28,9 +30,9 @@ export interface ChargeResult {
 }
 
 /**
- * Every payment/billing provider (card-based SaaS billing via Stripe, local
- * mobile money via M-Pesa, future providers) implements this so BillingService
- * never has to branch on which provider a tenant picked.
+ * Every payment/billing provider (card/bank rails via Paystack, local mobile
+ * money via M-Pesa, future providers) implements this so BillingService never
+ * has to branch on which provider a tenant picked.
  */
 export interface PaymentProvider {
   readonly type: PaymentProviderType;

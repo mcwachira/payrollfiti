@@ -1,19 +1,56 @@
 import { PrismaClient, Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { getPricingForCountry, getSupportedPricingCountries } from '@repo/pricing';
 
 const prisma = new PrismaClient();
 
+// Legacy global USD plans predate per-country pricing and are ambiguous about
+// which currency a tenant would actually be charged in. Deactivate rather
+// than delete so any pre-existing Subscription rows that still reference
+// them by planId keep resolving.
+async function deactivateLegacyPlans() {
+  for (const code of ['starter', 'growth']) {
+    await prisma.plan.updateMany({
+      where: { code },
+      data: { isActive: false },
+    });
+  }
+}
+
+// Seed one billable Plan per (supported country x self-serve tier), priced
+// from the same @repo/pricing catalog the marketing site reads from, so the
+// price a tenant sees on the pricing page is the price they're actually
+// billed. Enterprise is excluded — it's "contact sales", not self-serve.
+async function seedCountryPlans() {
+  for (const countryCode of getSupportedPricingCountries()) {
+    const pricing = getPricingForCountry(countryCode);
+    for (const tier of pricing.tiers) {
+      if (tier.price === null) continue;
+      const code = `${countryCode.toLowerCase()}-${tier.code}`;
+      await prisma.plan.upsert({
+        where: { code },
+        create: {
+          code,
+          name: `${tier.name} (${countryCode})`,
+          pricePerEmployee: tier.price,
+          currency: pricing.currency,
+          tier: tier.code,
+          countryCode,
+        },
+        update: {
+          name: `${tier.name} (${countryCode})`,
+          pricePerEmployee: tier.price,
+          currency: pricing.currency,
+          isActive: true,
+        },
+      });
+    }
+  }
+}
+
 async function main() {
-  await prisma.plan.upsert({
-    where: { code: 'starter' },
-    create: { code: 'starter', name: 'Starter', pricePerEmployee: 5, currency: 'USD', tier: 'starter' },
-    update: {},
-  });
-  await prisma.plan.upsert({
-    where: { code: 'growth' },
-    create: { code: 'growth', name: 'Growth', pricePerEmployee: 8, currency: 'USD', tier: 'growth' },
-    update: {},
-  });
+  await deactivateLegacyPlans();
+  await seedCountryPlans();
 
   const tenant = await prisma.tenant.upsert({
     where: { id: 'demo-tenant' },

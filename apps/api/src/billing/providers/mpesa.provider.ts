@@ -80,6 +80,12 @@ export class MpesaProvider implements PaymentProvider {
     const password = Buffer.from(
       `${mpesaConfig.shortcode}${mpesaConfig.passkey}${timestamp}`,
     ).toString('base64');
+    // Safaricom does not sign STK push callbacks, so a shared-secret token
+    // is embedded in the callback URL itself to reject spoofed requests —
+    // see payment-webhooks.controller.ts.
+    const callbackUrl = mpesaConfig.callbackToken
+      ? `${mpesaConfig.callbackUrl}?token=${encodeURIComponent(mpesaConfig.callbackToken)}`
+      : mpesaConfig.callbackUrl;
 
     const response = await axios.post(
       `${this.baseUrl}/mpesa/stkpush/v1/processrequest`,
@@ -92,7 +98,7 @@ export class MpesaProvider implements PaymentProvider {
         PartyA: params.phoneNumber,
         PartyB: mpesaConfig.shortcode,
         PhoneNumber: params.phoneNumber,
-        CallBackURL: mpesaConfig.callbackUrl,
+        CallBackURL: callbackUrl,
         AccountReference: params.reference,
         TransactionDesc: params.reference,
       },

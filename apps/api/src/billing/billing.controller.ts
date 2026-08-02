@@ -13,8 +13,8 @@ export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
   @Get('plans')
-  listPlans() {
-    return this.billingService.listPlans();
+  listPlans(@CurrentTenant() tenantId: string) {
+    return this.billingService.listPlans(tenantId);
   }
 
   @Post('subscribe')

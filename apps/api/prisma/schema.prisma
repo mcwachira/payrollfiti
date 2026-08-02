@@ -46,7 +46,7 @@ enum InvoiceStatus {
 }
 
 enum PaymentProviderType {
-  STRIPE
+  PAYSTACK
   MPESA
 }
 
@@ -180,6 +180,8 @@ model Employee {
   employmentType EmploymentType   @default(PERMANENT)
   currency       String           @default("KES")
   status         String           @default("ACTIVE")
+  terminatedAt      DateTime?
+  terminationReason String?
   bankName          String?
   bankAccountNumber String?
   bankCode          String?
@@ -459,10 +461,15 @@ model Plan {
   pricePerEmployee Float
   currency        String         @default("USD")
   tier            String?
+  // ISO-3166 alpha-2 country this plan is priced for (e.g. "KE"). Null means
+  // a legacy/global plan not tied to a specific country's pricing catalog.
+  countryCode     String?
   isActive        Boolean        @default(true)
   subscriptions   Subscription[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+
+  @@index([countryCode])
 }
 
 model Subscription {
@@ -472,7 +479,7 @@ model Subscription {
   planId                 String
   plan                   Plan                @relation(fields: [planId], references: [id])
   status                 SubscriptionStatus  @default(TRIALING)
-  provider               PaymentProviderType @default(STRIPE)
+  provider               PaymentProviderType @default(PAYSTACK)
   providerCustomerId     String?
   providerSubscriptionId String?
   currentPeriodStart     DateTime
@@ -493,7 +500,7 @@ model Invoice {
   status           InvoiceStatus @default(DRAFT)
   dueDate          DateTime
   paidAt           DateTime?
-  provider         PaymentProviderType @default(STRIPE)
+  provider         PaymentProviderType @default(PAYSTACK)
   providerInvoiceId String?
   transactions     PaymentTransaction[]
   createdAt        DateTime      @default(now())

@@ -7,6 +7,7 @@ export interface Plan {
   pricePerEmployee: number;
   currency: string;
   tier: string | null;
+  countryCode: string | null;
   isActive: boolean;
 }
 
@@ -16,7 +17,7 @@ export interface Subscription {
   planId: string;
   plan: Plan;
   status: 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED';
-  provider: 'STRIPE' | 'MPESA';
+  provider: 'PAYSTACK' | 'MPESA';
   currentPeriodStart: string;
   currentPeriodEnd: string;
 }
@@ -30,13 +31,13 @@ export interface Invoice {
   status: 'DRAFT' | 'OPEN' | 'PAID' | 'VOID' | 'UNCOLLECTIBLE';
   dueDate: string;
   paidAt: string | null;
-  provider: 'STRIPE' | 'MPESA';
+  provider: 'PAYSTACK' | 'MPESA';
   createdAt: string;
 }
 
 export interface SubscribeInput {
   planCode: string;
-  provider?: 'STRIPE' | 'MPESA';
+  provider?: 'PAYSTACK' | 'MPESA';
 }
 
 export interface PayInvoiceInput {

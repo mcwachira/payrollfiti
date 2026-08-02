@@ -8,7 +8,12 @@ import { AppModule } from './app.module';
 import { AppConfig } from './config/configuration';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+    // Needed to verify the Paystack webhook signature, which is computed
+    // over the exact raw request bytes rather than the re-serialized body.
+    rawBody: true,
+  });
   app.useLogger(app.get(Logger));
   app.use(helmet());
   const configService = app.get(ConfigService<AppConfig, true>);
