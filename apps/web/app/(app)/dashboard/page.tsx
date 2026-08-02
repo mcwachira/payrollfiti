@@ -8,6 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -17,12 +19,38 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Users, DollarSign, Calendar, TrendingUp } from 'lucide-react';
+import {
+  Users,
+  DollarSign,
+  Calendar,
+  TrendingUp,
+  AlertTriangle,
+  Bell,
+  Clock,
+} from 'lucide-react';
+import { Role } from '@repo/api';
 import { listCompanies, listEmployees } from '@/lib/employees-api';
 import { listPayrollRuns, getPayrollRun } from '@/lib/payroll-api';
+import { listInvoices } from '@/lib/billing-api';
+import { listNotifications } from '@/lib/notifications-api';
+import { useAuth } from '@/contexts/AuthContext';
 import { ApiError } from '@/lib/api-client';
 import { getPayrollStatusColor } from '@/lib/status-styles';
 import { PageSkeleton } from '@/components/ui/loading-skeleton';
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function daysUntil(date: Date): number {
+  return Math.ceil((date.getTime() - Date.now()) / MS_PER_DAY);
+}
+
+function formatDate(date: Date): string {
+  return date.toLocaleDateString('en', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
 
 function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat('en-KE', {
@@ -37,6 +65,8 @@ function errorMessage(error: unknown, fallback: string) {
 }
 
 const Dashboard = () => {
+  const { user } = useAuth();
+
   const companiesQuery = useQuery({
     queryKey: ['companies'],
     queryFn: listCompanies,
@@ -63,6 +93,20 @@ const Dashboard = () => {
     queryKey: ['payrollRun', mostRecentCompleted?.id],
     queryFn: () => getPayrollRun(mostRecentCompleted!.id),
     enabled: !!mostRecentCompleted,
+  });
+
+  // Invoices are ADMIN-only server-side (BillingController requires
+  // Role.ADMIN + BILLING_MANAGE) — only fetch for admins so an HR user
+  // doesn't fire a request that's guaranteed to 403.
+  const invoicesQuery = useQuery({
+    queryKey: ['invoices'],
+    queryFn: listInvoices,
+    enabled: user?.role === Role.ADMIN,
+  });
+
+  const unreadNotificationsQuery = useQuery({
+    queryKey: ['notifications', 'unread'],
+    queryFn: () => listNotifications(true),
   });
 
   const isLoading =
@@ -99,6 +143,42 @@ const Dashboard = () => {
   const activeEmployees = employees.filter((e) => e.status === 'ACTIVE');
   const currency = company?.currency ?? 'KES';
   const monthlyPayrollTotal = latestRun?.totals?.netPay ?? null;
+
+  const overdueInvoices = (invoicesQuery.data ?? []).filter(
+    (invoice) =>
+      invoice.status === 'OPEN' && new Date(invoice.dueDate) < new Date(),
+  );
+  const unreadCount = unreadNotificationsQuery.data?.length ?? 0;
+
+  // Next payroll is estimated as one calendar month after the last
+  // COMPLETED run's period end — there's no separate "payroll schedule"
+  // concept in the backend to read this from, so this is a projection, not
+  // a stored due date.
+  const nextPayrollDate = mostRecentCompleted
+    ? new Date(
+        new Date(mostRecentCompleted.periodEnd).getFullYear(),
+        new Date(mostRecentCompleted.periodEnd).getMonth() + 1,
+        new Date(mostRecentCompleted.periodEnd).getDate(),
+      )
+    : null;
+  const nextPayrollDays = nextPayrollDate ? daysUntil(nextPayrollDate) : null;
+
+  const alerts: { icon: typeof AlertTriangle; text: string; href: string }[] =
+    [];
+  if (overdueInvoices.length > 0) {
+    alerts.push({
+      icon: AlertTriangle,
+      text: `${overdueInvoices.length} invoice${overdueInvoices.length > 1 ? 's' : ''} overdue`,
+      href: '/billing',
+    });
+  }
+  if (unreadCount > 0) {
+    alerts.push({
+      icon: Bell,
+      text: `${unreadCount} unread notification${unreadCount > 1 ? 's' : ''}`,
+      href: '/dashboard',
+    });
+  }
 
   const stats = [
     {
@@ -137,10 +217,47 @@ const Dashboard = () => {
 
       {!company && (
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-6 flex items-center justify-between gap-4">
             <p className="text-muted-foreground">
-              No company set up for this tenant yet. Create a company under
-              Settings before running payroll.
+              No company set up for this tenant yet — finish setup to start
+              running payroll.
+            </p>
+            <Button asChild size="sm">
+              <Link href="/onboarding">Finish setup</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {alerts.length > 0 && (
+        <div className="flex flex-wrap gap-3">
+          {alerts.map((alert) => (
+            <Link
+              key={alert.text}
+              href={alert.href}
+              className="flex items-center gap-2 rounded-lg border-2 border-border bg-card px-4 py-2 text-sm font-bold hover:bg-accent transition-colors"
+            >
+              <alert.icon className="h-4 w-4 text-primary" />
+              {alert.text}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {company && nextPayrollDate && (
+        <Card>
+          <CardContent className="p-4 flex items-center gap-3">
+            <Clock className="h-5 w-5 text-primary shrink-0" />
+            <p className="text-sm">
+              <span className="font-bold">
+                Next payroll estimated {formatDate(nextPayrollDate)}
+              </span>
+              {' — '}
+              <span className="text-muted-foreground">
+                {nextPayrollDays !== null && nextPayrollDays >= 0
+                  ? `in ${nextPayrollDays} day${nextPayrollDays === 1 ? '' : 's'}`
+                  : 'overdue — run it when ready'}
+              </span>
             </p>
           </CardContent>
         </Card>
