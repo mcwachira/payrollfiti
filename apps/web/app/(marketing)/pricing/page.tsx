@@ -37,6 +37,7 @@ import {
 } from '@/lib/payroll-calculator-api';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { ApiError } from '@/lib/api-client';
+import { getCountryName } from '@/lib/countries';
 
 interface AmountRow {
   id: string;
@@ -250,7 +251,7 @@ export default function PricingPage() {
               <SelectContent>
                 {(countriesQuery.data ?? []).map((c) => (
                   <SelectItem key={c.countryCode} value={c.countryCode}>
-                    {c.countryCode} — {c.currency}
+                    {getCountryName(c.countryCode)} ({c.currency})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -343,8 +344,9 @@ export default function PricingPage() {
               </h2>
             </div>
             <p className="text-muted-foreground">
-              Live PAYE and statutory deduction estimate for {country}, computed
-              by the same rules engine that runs real payroll.
+              Live PAYE and statutory deduction estimate for{' '}
+              {getCountryName(country)}, computed by the same rules engine that
+              runs real payroll.
             </p>
           </div>
 
