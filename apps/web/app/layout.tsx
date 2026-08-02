@@ -9,6 +9,7 @@ import { BrandingProvider } from '@/contexts/BrandingContext';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/components/theme-provider';
 import { QueryProvider } from '@/components/query-provider';
+import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -47,6 +48,7 @@ export default function RootLayout({ children }: Readonly<PropsWithChildren>) {
               <BrandingProvider>{children}</BrandingProvider>
             </AuthProvider>
             <Toaster />
+            <InstallPrompt />
           </QueryProvider>
         </ThemeProvider>
       </body>
