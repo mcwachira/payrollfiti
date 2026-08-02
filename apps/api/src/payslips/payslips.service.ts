@@ -1,9 +1,15 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { PrismaService } from '../prisma/prisma.service';
 import { BrandingService } from '../branding/branding.service';
+import { AuthenticatedRequestUser } from '../auth/types';
 import { PayslipDocument, PayslipLineItem } from './payslip.template';
 
 const STORAGE_DIR =
@@ -16,7 +22,19 @@ export class PayslipsService {
     private readonly brandingService: BrandingService,
   ) {}
 
-  async generate(tenantId: string, payrollEntryId: string) {
+  /**
+   * `actor` is omitted for system-initiated generation (e.g. the
+   * post-payroll-run bulk email job in PayslipEmailService), which isn't
+   * scoped to any one employee's request. When present and the actor is an
+   * EMPLOYEE, they may only generate their own payslip — ADMIN/HR are
+   * unrestricted within their tenant, matching this controller's existing
+   * (no @Roles) access.
+   */
+  async generate(
+    tenantId: string,
+    payrollEntryId: string,
+    actor?: AuthenticatedRequestUser,
+  ) {
     const entry = await this.prisma.payrollEntry.findUnique({
       where: { id: payrollEntryId },
       include: {
@@ -26,6 +44,9 @@ export class PayslipsService {
     });
     if (!entry || entry.employee.company.tenantId !== tenantId) {
       throw new NotFoundException('Payroll entry not found');
+    }
+    if (actor?.role === Role.EMPLOYEE && actor.employeeId !== entry.employeeId) {
+      throw new ForbiddenException('You may only access your own payslip');
     }
 
     const branding = await this.brandingService.getBranding(tenantId);

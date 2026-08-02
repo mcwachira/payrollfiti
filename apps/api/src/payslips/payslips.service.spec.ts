@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Role } from '@prisma/client';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { PayslipsService } from './payslips.service';
@@ -38,6 +39,7 @@ describe('PayslipsService', () => {
 
   const entry = {
     id: 'entry-1',
+    employeeId: 'emp-1',
     currency: 'KES',
     grossPay: 85000,
     totalDeductions: 15000,
@@ -126,5 +128,42 @@ describe('PayslipsService', () => {
     );
     expect(renderToBuffer).not.toHaveBeenCalled();
     expect(writeFile).not.toHaveBeenCalled();
+  });
+
+  describe('ownership check', () => {
+    it('allows an EMPLOYEE actor to generate their own payslip', async () => {
+      const result = await service.generate('tenant-1', 'entry-1', {
+        role: Role.EMPLOYEE,
+        employeeId: 'emp-1',
+      } as any);
+
+      expect(result).toBe(fixtureBuffer);
+    });
+
+    it('rejects an EMPLOYEE actor generating a co-worker\'s payslip', async () => {
+      await expect(
+        service.generate('tenant-1', 'entry-1', {
+          role: Role.EMPLOYEE,
+          employeeId: 'someone-else',
+        } as any),
+      ).rejects.toThrow(ForbiddenException);
+      expect(renderToBuffer).not.toHaveBeenCalled();
+      expect(writeFile).not.toHaveBeenCalled();
+    });
+
+    it('allows ADMIN/HR actors to generate any payslip in their tenant', async () => {
+      const result = await service.generate('tenant-1', 'entry-1', {
+        role: Role.ADMIN,
+        employeeId: 'someone-else',
+      } as any);
+
+      expect(result).toBe(fixtureBuffer);
+    });
+
+    it('allows system-initiated generation with no actor at all', async () => {
+      const result = await service.generate('tenant-1', 'entry-1');
+
+      expect(result).toBe(fixtureBuffer);
+    });
   });
 });
