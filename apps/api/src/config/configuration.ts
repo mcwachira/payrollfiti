@@ -70,6 +70,14 @@ export interface AppConfig {
     };
   };
   sentryDsn?: string;
+  sanity: {
+    projectId?: string;
+    dataset: string;
+    /** Write-scoped API token — server-side only, never exposed to the
+     *  frontend. Public blog pages read Sanity directly with just
+     *  projectId/dataset; only the admin dashboard's CRUD calls need this. */
+    apiToken?: string;
+  };
 }
 
 export default (): AppConfig => ({
@@ -142,4 +150,9 @@ export default (): AppConfig => ({
     },
   },
   sentryDsn: process.env.SENTRY_DSN,
+  sanity: {
+    projectId: process.env.SANITY_PROJECT_ID,
+    dataset: process.env.SANITY_DATASET ?? 'production',
+    apiToken: process.env.SANITY_API_TOKEN,
+  },
 });

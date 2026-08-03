@@ -27,6 +27,7 @@ import {
   Settings,
   Wallet,
   History,
+  Newspaper,
 } from 'lucide-react';
 
 // `roles` mirrors each page's own server-side @Roles() gate — every entry
@@ -82,6 +83,7 @@ const navigation = [
   // hide the links themselves too so non-admins don't see a
   // permission-denied page.
   { name: 'Audit Log', href: '/audit-log', icon: History, roles: [Role.ADMIN] },
+  { name: 'Blog', href: '/blog-admin', icon: Newspaper, roles: [Role.ADMIN] },
   { name: 'Billing', href: '/billing', icon: CreditCard, roles: [Role.ADMIN] },
   { name: 'Settings', href: '/settings', icon: Settings, roles: [Role.ADMIN] },
 ];

@@ -6,8 +6,9 @@ export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
 // Default OG image for any page that doesn't define its own — a nested
-// route can override this by adding its own opengraph-image.tsx (Part 20's
-// blog post pages do exactly that with a per-post title).
+// route can override this by adding its own opengraph-image.tsx (the blog
+// post pages at (marketing)/blog/[slug] do exactly that with a per-post
+// title).
 export default async function Image() {
   return new ImageResponse(
     (

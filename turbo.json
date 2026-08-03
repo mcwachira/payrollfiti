@@ -46,7 +46,10 @@
     "ZOHO_BOOKS_CLIENT_ID",
     "ZOHO_BOOKS_CLIENT_SECRET",
     "ZOHO_BOOKS_REGION",
-    "SENTRY_DSN"
+    "SENTRY_DSN",
+    "SANITY_PROJECT_ID",
+    "SANITY_DATASET",
+    "SANITY_API_TOKEN"
   ],
   "ui": "tui",
   "tasks": {
@@ -57,7 +60,13 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**"],
-      "env": ["NEXT_PUBLIC_API_URL", "NEXT_PUBLIC_APP_NAME", "NEXT_PUBLIC_SITE_URL"]
+      "env": [
+        "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_APP_NAME",
+        "NEXT_PUBLIC_SITE_URL",
+        "NEXT_PUBLIC_SANITY_PROJECT_ID",
+        "NEXT_PUBLIC_SANITY_DATASET"
+      ]
     },
     "lint": {},
     "test": {},

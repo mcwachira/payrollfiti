@@ -12,7 +12,7 @@ pandoc parts/00-cover.md parts/01-intro.md parts/02-scaffolding-db.md parts/03-e
   parts/10-frontend-foundations.md parts/11-frontend-app.md parts/12-testing-devops.md \
   parts/13-auth-lifecycle.md parts/14-pwa.md parts/15-developer-self-service.md \
   parts/16-2fa-and-sessions.md parts/17-payslip-fanout.md \
-  parts/18-accounting-and-notification-center.md \
+  parts/18-accounting-and-notification-center.md parts/19-blog-sanity-cms.md \
   --toc --toc-depth=2 -s --css style.css -o guide.html
 
 chromium --headless --disable-gpu --no-sandbox --no-pdf-header-footer \

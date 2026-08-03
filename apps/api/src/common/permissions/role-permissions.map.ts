@@ -11,6 +11,7 @@ const ADMIN_ONLY_PERMISSIONS: Permission[] = [
   Permission.EMPLOYEE_TERMINATE,
   Permission.BRANDING_MANAGE,
   Permission.AUDIT_LOG_READ,
+  Permission.BLOG_MANAGE,
 ];
 
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {

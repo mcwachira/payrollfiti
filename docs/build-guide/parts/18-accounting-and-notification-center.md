@@ -285,3 +285,5 @@ const connectMutation = useMutation({
 `disabled={!status.configured}` on the "Connect" button means an unconfigured platform's row still renders — so an `ADMIN` can see QuickBooks/Xero/Zoho Books all exist as options — but can't be clicked into a dead OAuth flow that would fail server-side anyway.
 
 End to end: an `ADMIN` clicks "Connect" next to QuickBooks on `/settings`, gets redirected to Intuit's real consent screen, approves access, lands back on `/settings?accounting=connected&provider=QUICKBOOKS`, and from that point on, every subscription payment and every completed payroll run posts a real balanced journal entry into that tenant's actual QuickBooks company file — no polling, no manual export, and no code in `BillingService` or `PayrollService` that had to know which of three platforms, or none, a given tenant uses.
+
+The footer's `/blog` link has pointed at a "coming soon" placeholder since Part 1. Part 19 finally builds it.

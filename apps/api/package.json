@@ -37,6 +37,7 @@
     "@repo/api": "workspace:*",
     "@repo/payroll-rules": "workspace:*",
     "@repo/pricing": "workspace:*",
+    "@sanity/client": "^7.26.0",
     "@sentry/node": "^10.69.0",
     "axios": "^1.7.4",
     "bcrypt": "^5.1.1",

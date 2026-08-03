@@ -23,4 +23,5 @@ export enum Permission {
   LOAN_MANAGE = 'loan:manage',
   SALARY_COMPONENT_MANAGE = 'salary-component:manage',
   AUDIT_LOG_READ = 'audit-log:read',
+  BLOG_MANAGE = 'blog:manage',
 }

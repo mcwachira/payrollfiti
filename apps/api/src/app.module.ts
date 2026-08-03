@@ -32,6 +32,7 @@ import { ApiKeysModule } from './api-keys/api-keys.module';
 import { PublicApiModule } from './public-api/public-api.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { AccountingModule } from './accounting/accounting.module';
+import { BlogModule } from './blog/blog.module';
 import { SalaryComponentsModule } from './salary-components/salary-components.module';
 import { DocumentsModule } from './documents/documents.module';
 import { LeaveModule } from './leave/leave.module';
@@ -121,6 +122,7 @@ import { AppController } from './app.controller';
     PublicApiModule,
     WebhooksModule,
     AccountingModule,
+    BlogModule,
     SalaryComponentsModule,
     DocumentsModule,
     LeaveModule,
