@@ -228,4 +228,64 @@ Everything above already works against a real Sanity project — this is the one
 
 5. **Restart both apps.** `GET /blog-posts/status` should now report `{ "configured": true }`, `/blog-admin` shows the real dashboard instead of the "Sanity isn't connected yet" card, and `/blog` will start rendering real posts the moment the first one is published.
 
-From here on, day-to-day blogging never touches Sanity's own UI — write, save, and publish posts entirely from `/blog-admin`, the same place every other piece of this app's content lives.
+## 19.6 One More Gate: Restricting Blog Management to One Tenant
+
+`@Roles(ADMIN)` on `BlogController` was never enough by itself, and it's worth being explicit about why: `ADMIN` is a **per-tenant** role. Every customer who signs up for this product gets their own tenant and becomes *that tenant's* `ADMIN` — the exact same role, in the exact same enum, as the platform owner's own account. `@Roles(ADMIN)` alone would have let any customer's admin open `/blog-admin` and publish to the company's own public marketing blog, since nothing about that decorator distinguishes "an admin of some tenant" from "an admin of *the one tenant that owns this software*."
+
+The fix reuses the entire existing auth system rather than inventing a new "platform staff" role — the platform owner signs up through the exact same `/signup` flow every customer uses, and one specific tenant ID is designated, by configuration, as the only one allowed past this gate:
+
+```typescript
+// common/decorators/platform-only.decorator.ts
+export const PLATFORM_ONLY_KEY = 'platformOnly';
+
+/** Restricts a route to the platform-owner's own tenant (PLATFORM_TENANT_ID),
+ *  regardless of role — distinct from @Roles(), which only checks role
+ *  *within whichever tenant the request already belongs to*. */
+export const PlatformOnly = () => SetMetadata(PLATFORM_ONLY_KEY, true);
+```
+
+```typescript
+// common/guards/platform-tenant.guard.ts
+@Injectable()
+export class PlatformTenantGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const isPlatformOnly = this.reflector.getAllAndOverride<boolean>(PLATFORM_ONLY_KEY, [
+      context.getHandler(), context.getClass(),
+    ]);
+    if (!isPlatformOnly) return true;
+
+    const platformTenantId = this.configService.get('platformTenantId', { infer: true });
+    const user: AuthenticatedRequestUser | undefined = request.user;
+
+    // Fail closed: an unset PLATFORM_TENANT_ID means nobody passes, not
+    // "everyone passes" — the opposite mistake would silently reopen this
+    // route to every customer tenant's admin.
+    if (!platformTenantId || !user || user.tenantId !== platformTenantId) {
+      throw new ForbiddenException('This action is restricted to the platform team');
+    }
+    return true;
+  }
+}
+```
+
+Registered globally (`APP_GUARD`, alongside `RolesGuard`/`PermissionsGuard` in `app.module.ts`) and applied to `BlogController` alongside its existing `@Roles(ADMIN)`:
+
+```typescript
+// blog/blog.controller.ts
+@Controller('blog-posts')
+@Roles(Role.ADMIN)
+@RequirePermission(Permission.BLOG_MANAGE)
+@PlatformOnly()
+export class BlogController { /* ... */ }
+```
+
+**Setup**: sign up your own account through `/signup` like any customer would, find its tenant id (`SELECT "tenantId" FROM "User" WHERE email = '...'`), and set it:
+
+```bash
+# apps/api's .env
+PLATFORM_TENANT_ID=<your own tenant's id>
+```
+
+Live-verified against the running dev server: a second, genuinely different tenant's freshly-signed-up `ADMIN` hits `GET /blog-posts/status` and correctly gets `403 { "error": "Forbidden", "message": "This action is restricted to the platform team" }`, while the platform tenant itself passes through untouched. The frontend's `/blog-admin` distinguishes this 403 from an unconfigured-Sanity response, so a customer who stumbles onto the URL sees "you don't have permission" rather than a misleading "Sanity isn't connected yet."
+
+From here on, day-to-day blogging never touches Sanity's own UI — write, save, and publish posts entirely from `/blog-admin`, the same place every other piece of this app's content lives, and only the platform's own account can do it.

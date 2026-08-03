@@ -44,6 +44,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { SubscriptionGuard } from './common/guards/subscription.guard';
+import { PlatformTenantGuard } from './common/guards/platform-tenant.guard';
 import { SentryExceptionFilter } from './common/filters/sentry-exception.filter';
 import { AppController } from './app.controller';
 
@@ -136,6 +137,7 @@ import { AppController } from './app.controller';
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
+    { provide: APP_GUARD, useClass: PlatformTenantGuard },
     { provide: APP_GUARD, useClass: SubscriptionGuard },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },

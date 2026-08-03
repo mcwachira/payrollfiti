@@ -49,7 +49,8 @@
     "SENTRY_DSN",
     "SANITY_PROJECT_ID",
     "SANITY_DATASET",
-    "SANITY_API_TOKEN"
+    "SANITY_API_TOKEN",
+    "PLATFORM_TENANT_ID"
   ],
   "ui": "tui",
   "tasks": {

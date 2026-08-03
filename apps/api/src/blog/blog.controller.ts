@@ -14,10 +14,15 @@ import { UpdateBlogPostDto } from './dto/update-blog-post.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RequirePermission } from '../common/permissions/require-permission.decorator';
 import { Permission } from '../common/permissions/permission.enum';
+import { PlatformOnly } from '../common/decorators/platform-only.decorator';
 
+// @Roles(ADMIN) alone would pass for ANY customer tenant's admin, since
+// ADMIN is per-tenant — @PlatformOnly() is the actual gate restricting this
+// to the platform owner's own tenant (PLATFORM_TENANT_ID).
 @Controller('blog-posts')
 @Roles(Role.ADMIN)
 @RequirePermission(Permission.BLOG_MANAGE)
+@PlatformOnly()
 export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 

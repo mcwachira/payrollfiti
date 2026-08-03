@@ -78,6 +78,11 @@ export interface AppConfig {
      *  projectId/dataset; only the admin dashboard's CRUD calls need this. */
     apiToken?: string;
   };
+  /** The one tenant allowed to manage the public blog (see PlatformTenantGuard)
+   *  — @Roles(ADMIN) alone would let ANY customer tenant's admin write to
+   *  payrollfiti.com/blog, since ADMIN is a per-tenant role, not a platform
+   *  one. Unset means nobody passes (fail closed), not "everyone passes". */
+  platformTenantId?: string;
 }
 
 export default (): AppConfig => ({
@@ -155,4 +160,5 @@ export default (): AppConfig => ({
     dataset: process.env.SANITY_DATASET ?? 'production',
     apiToken: process.env.SANITY_API_TOKEN,
   },
+  platformTenantId: process.env.PLATFORM_TENANT_ID,
 });

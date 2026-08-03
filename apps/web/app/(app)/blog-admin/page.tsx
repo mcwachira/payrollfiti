@@ -425,6 +425,34 @@ function BlogAdminContent() {
     return <PageSkeleton cards={1} rows={6} />;
   }
 
+  // Only the platform-owner's own tenant can manage the blog (@PlatformOnly()
+  // on the backend) — @Roles(ADMIN) alone isn't enough, since ADMIN is a
+  // per-tenant role every customer account also has. A 403 here means this
+  // is a real customer tenant's admin, not a missing Sanity config.
+  const isForbidden =
+    statusQuery.error instanceof ApiError && statusQuery.error.status === 403;
+
+  if (isForbidden) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-extrabold">Blog</h1>
+        </div>
+        <Card>
+          <CardContent className="pt-6 flex flex-col items-center text-center py-12 gap-4">
+            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+              <Newspaper className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <p className="text-sm text-muted-foreground max-w-md">
+              You don&apos;t have permission to manage the blog. This is
+              restricted to the platform team&apos;s own account.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!statusQuery.data?.configured) {
     return (
       <div className="space-y-6">
