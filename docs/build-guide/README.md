@@ -10,7 +10,8 @@ pandoc parts/00-cover.md parts/01-intro.md parts/02-scaffolding-db.md parts/03-e
   parts/04-backend-foundations.md parts/05-payroll-api.md parts/06-compliance.md \
   parts/07-billing.md parts/08-notifications.md parts/09-hr-features.md \
   parts/10-frontend-foundations.md parts/11-frontend-app.md parts/12-testing-devops.md \
-  parts/13-auth-lifecycle.md parts/14-pwa.md \
+  parts/13-auth-lifecycle.md parts/14-pwa.md parts/15-developer-self-service.md \
+  parts/16-2fa-and-sessions.md parts/17-payslip-fanout.md \
   --toc --toc-depth=2 -s --css style.css -o guide.html
 
 chromium --headless --disable-gpu --no-sandbox --no-pdf-header-footer \
