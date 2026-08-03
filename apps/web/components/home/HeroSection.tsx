@@ -19,8 +19,8 @@ const HeroSection = () => {
 
             <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl">
               Run payroll, calculate statutory deductions, and manage your team
-              in one cloud-based platform — compliant with Kenya's PAYE, NSSF,
-              and SHIF, with Nigeria and South Africa rule sets built in.
+              in one cloud-based platform — live in Kenya, Nigeria, and South
+              Africa today, with more African countries on the way.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -75,7 +75,7 @@ const HeroSection = () => {
               <div className="absolute -top-4 -left-4 bg-primary text-primary-foreground p-4 rounded-lg border-2 border-border shadow-brutal">
                 <div className="text-2xl font-extrabold">3</div>
                 <div className="text-sm opacity-90">
-                  Countries&apos; Rules Built In
+                  Countries Live, More Coming
                 </div>
               </div>
 

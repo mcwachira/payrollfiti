@@ -13,7 +13,7 @@ import { APP_NAME, SITE_URL } from '@/lib/config';
 export const metadata: Metadata = {
   title: 'Payroll & Statutory Compliance Software for Africa',
   description:
-    'Run payroll and stay compliant in Kenya, Nigeria, and South Africa. Automatic PAYE, NSSF, SHIF, and payslip generation — built for how African businesses actually operate.',
+    'Payroll software built for Africa — live in Kenya, Nigeria, and South Africa today, with more African countries on the roadmap. Automatic PAYE, NSSF, SHIF, and payslip generation.',
   alternates: { canonical: SITE_URL },
 };
 

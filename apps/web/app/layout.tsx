@@ -14,7 +14,7 @@ import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 const inter = Inter({ subsets: ['latin'] });
 
 const DEFAULT_DESCRIPTION =
-  'Payroll and statutory compliance software for Kenya, Nigeria, and South Africa. Automate PAYE, NSSF, SHIF, and payslips in minutes.';
+  'Payroll and statutory compliance software built for Africa — live in Kenya, Nigeria, and South Africa today, with more African countries on the roadmap. Automate PAYE, NSSF, SHIF, and payslips in minutes.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -24,6 +24,8 @@ export const metadata: Metadata = {
   },
   description: DEFAULT_DESCRIPTION,
   keywords: [
+    'payroll software Africa',
+    'pan-African payroll software',
     'payroll software Kenya',
     'PAYE calculator Kenya',
     'NSSF SHIF payroll',

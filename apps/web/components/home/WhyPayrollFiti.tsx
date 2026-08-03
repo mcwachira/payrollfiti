@@ -6,7 +6,7 @@ const benefits = [
     icon: MapPin,
     title: 'Localized for African Regulations',
     description:
-      'Built specifically for Kenyan, Nigerian, and South African tax law and statutory requirements — not a global product with Africa bolted on.',
+      'Built specifically for Kenyan, Nigerian, and South African tax law today, with more African countries on the roadmap — not a global product with Africa bolted on.',
   },
   {
     icon: Zap,
@@ -66,7 +66,7 @@ const WhyPayrollFiti = () => {
           <div className="grid grid-cols-2 gap-6">
             <Card className="p-6 text-center bg-primary text-primary-foreground">
               <div className="text-3xl font-extrabold mb-2">3</div>
-              <div className="text-sm opacity-90">Countries Supported</div>
+              <div className="text-sm opacity-90">Countries Live Today</div>
             </Card>
 
             <Card className="p-6 text-center bg-green-600 text-white">

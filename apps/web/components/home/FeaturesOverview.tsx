@@ -39,9 +39,9 @@ const features = [
   },
   {
     icon: Globe,
-    title: 'Multi-country Support',
+    title: 'Built to Expand Across Africa',
     description:
-      'Localized compliance rule sets for Kenya, Nigeria, and South Africa, in one platform.',
+      'Localized compliance rule sets for Kenya, Nigeria, and South Africa today — more African countries are on the roadmap.',
     color: 'bg-teal-500',
   },
   {
@@ -59,11 +59,11 @@ const FeaturesOverview = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
-            Payroll Software Built for Kenya, Nigeria & South Africa
+            Payroll Software Built for Africa
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Run payroll, stay statutory-compliant, and manage your team from one
-            platform — designed around how African businesses actually operate.
+            Live in Kenya, Nigeria, and South Africa today, expanding across the
+            continent — designed around how African businesses actually operate.
           </p>
         </div>
 

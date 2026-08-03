@@ -272,7 +272,7 @@ exports[`Root page should match the snapshot 1`] = `
             <p
               class="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl"
             >
-              Run payroll, calculate statutory deductions, and manage your team in one cloud-based platform — compliant with Kenya's PAYE, NSSF, and SHIF, with Nigeria and South Africa rule sets built in.
+              Run payroll, calculate statutory deductions, and manage your team in one cloud-based platform — live in Kenya, Nigeria, and South Africa today, with more African countries on the way.
             </p>
             <div
               class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
@@ -389,7 +389,7 @@ exports[`Root page should match the snapshot 1`] = `
                 <div
                   class="text-sm opacity-90"
                 >
-                  Countries' Rules Built In
+                  Countries Live, More Coming
                 </div>
               </div>
               <div
@@ -423,12 +423,12 @@ exports[`Root page should match the snapshot 1`] = `
           <h2
             class="text-3xl md:text-4xl font-extrabold text-foreground mb-4"
           >
-            Payroll Software Built for Kenya, Nigeria & South Africa
+            Payroll Software Built for Africa
           </h2>
           <p
             class="text-lg text-muted-foreground max-w-2xl mx-auto"
           >
-            Run payroll, stay statutory-compliant, and manage your team from one platform — designed around how African businesses actually operate.
+            Live in Kenya, Nigeria, and South Africa today, expanding across the continent — designed around how African businesses actually operate.
           </p>
         </div>
         <div
@@ -674,12 +674,12 @@ exports[`Root page should match the snapshot 1`] = `
             <h3
               class="text-xl font-extrabold text-card-foreground mb-3"
             >
-              Multi-country Support
+              Built to Expand Across Africa
             </h3>
             <p
               class="text-muted-foreground"
             >
-              Localized compliance rule sets for Kenya, Nigeria, and South Africa, in one platform.
+              Localized compliance rule sets for Kenya, Nigeria, and South Africa today — more African countries are on the roadmap.
             </p>
           </div>
           <div
@@ -791,7 +791,7 @@ exports[`Root page should match the snapshot 1`] = `
                   <p
                     class="text-muted-foreground"
                   >
-                    Built specifically for Kenyan, Nigerian, and South African tax law and statutory requirements — not a global product with Africa bolted on.
+                    Built specifically for Kenyan, Nigerian, and South African tax law today, with more African countries on the roadmap — not a global product with Africa bolted on.
                   </p>
                 </div>
               </div>
@@ -928,7 +928,7 @@ exports[`Root page should match the snapshot 1`] = `
               <div
                 class="text-sm opacity-90"
               >
-                Countries Supported
+                Countries Live Today
               </div>
             </div>
             <div

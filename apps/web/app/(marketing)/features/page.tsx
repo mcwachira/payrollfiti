@@ -81,9 +81,9 @@ const features = [
   },
   {
     icon: Globe,
-    title: 'Multi-country Support',
+    title: 'Built to Expand Across Africa',
     description:
-      'Built to expand beyond Kenya, with country-specific rule sets for Nigeria and South Africa already in the engine.',
+      'Country-specific rule sets for Kenya, Nigeria, and South Africa already live in the engine, with more African countries on the roadmap.',
     color: 'bg-lime-500',
   },
 ];
@@ -91,7 +91,7 @@ const features = [
 export const metadata: Metadata = {
   title: 'Features — Payroll, Compliance & HR Tools',
   description:
-    'Payroll automation, PAYE/NSSF/SHIF compliance, payslips, leave management, analytics, and bank export — everything for running payroll across Kenya, Nigeria, and South Africa.',
+    'Payroll automation, PAYE/NSSF/SHIF compliance, payslips, leave management, analytics, and bank export — built for Africa, live in Kenya, Nigeria, and South Africa today.',
   alternates: { canonical: '/features' },
 };
 
