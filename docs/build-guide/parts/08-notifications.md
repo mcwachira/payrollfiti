@@ -49,7 +49,7 @@ export class NotificationsService {
 }
 ```
 
-Every method here is wrapped in try/catch-and-log rather than letting an error propagate — this is a deliberate, repeated pattern across the whole notifications layer (mirrored in `MailService.sendMail`, `PayslipEmailService.sendPayslipEmail`, and `AuditService.record`): **side-effect services that run as a consequence of a primary action must never be able to fail that primary action.** A payroll run that completed successfully stays completed even if the email provider is down.
+Every method here is wrapped in try/catch-and-log rather than letting an error propagate — this is a deliberate, repeated pattern across the whole notifications layer (mirrored in `MailService.sendMail`, `PayslipEmailService.enqueueForRun`, and `AuditService.record`): **a service call that's awaited directly in a primary request's path must never be able to fail that request.** A payroll run that completed successfully stays completed even if the email provider is down. (`PayslipEmailService.sendPayslipEmail` itself is the one exception, and deliberately so — see Part 17 §17.2: once payslip delivery moved to one BullMQ job per entry, that function is only ever called from inside the queue processor, where letting an error through is what makes BullMQ retry it.)
 
 The processor consumes the job and fans out to whichever channels were requested:
 

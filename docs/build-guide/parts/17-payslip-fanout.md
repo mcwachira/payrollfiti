@@ -135,4 +135,4 @@ $ npx ts-node check-fanout.ts
 8 completed {"tenantId":"9c7847bd-...","payrollEntryId":"3514c870-..."}
 ```
 
-That closes the six-feature arc this part and the two before it cover: developer self-service that's actually auditable (Part 15), a login that's actually hardened against both a stolen password and a stale token (Part 16), and now a payroll run whose email delivery scales with headcount instead of against it, with failures isolated and retried per employee instead of silently dropped for the whole batch.
+That closes the six-feature arc this part and the two before it cover: developer self-service that's actually auditable (Part 15), a login that's actually hardened against both a stolen password and a stale token (Part 16), and now a payroll run whose email delivery scales with headcount instead of against it, with failures isolated and retried per employee instead of silently dropped for the whole batch. Part 18 closes out two remaining gaps from earlier in the build: the notification bell's frontend half, and the accounting-sync integration Part 7 only ever mentioned in passing.
