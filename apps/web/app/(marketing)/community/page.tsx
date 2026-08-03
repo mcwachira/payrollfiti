@@ -1,7 +1,15 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Users2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+
+export const metadata: Metadata = {
+  title: 'Community',
+  description:
+    'A space for HR and finance teams across Africa to share payroll and compliance know-how — launching soon.',
+  alternates: { canonical: '/community' },
+};
 
 export default function CommunityPage() {
   return (

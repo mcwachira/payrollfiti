@@ -1,4 +1,12 @@
+import type { Metadata } from 'next';
 import { Card, CardContent } from '@/components/ui/card';
+
+export const metadata: Metadata = {
+  title: 'Terms of Service',
+  description: 'The terms that govern your use of PayrollFiti.',
+  alternates: { canonical: '/terms' },
+  robots: { index: false, follow: true },
+};
 
 export default function TermsPage() {
   return (

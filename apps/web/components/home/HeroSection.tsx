@@ -11,16 +11,16 @@ const HeroSection = () => {
           {/* Content */}
           <div className="text-center lg:text-left">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground mb-6 leading-tight">
-              Effortless Payroll and
-              <span className="text-primary"> HR Compliance</span>
+              Payroll and Statutory
+              <span className="text-primary"> Compliance</span>
               <br />
-              Across Africa
+              Built for Africa
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl">
-              Manage payroll, statutory deductions, and HR tasks in one
-              powerful, cloud-based platform — fully compliant with Kenya's
-              PAYE, NSSF, and NHIF requirements.
+              Run payroll, calculate statutory deductions, and manage your team
+              in one cloud-based platform — compliant with Kenya's PAYE, NSSF,
+              and SHIF, with Nigeria and South Africa rule sets built in.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -73,13 +73,19 @@ const HeroSection = () => {
 
               {/* Floating Cards */}
               <div className="absolute -top-4 -left-4 bg-primary text-primary-foreground p-4 rounded-lg border-2 border-border shadow-brutal">
-                <div className="text-2xl font-extrabold">1,000+</div>
-                <div className="text-sm opacity-90">Businesses Trust Us</div>
+                <div className="text-2xl font-extrabold">3</div>
+                <div className="text-sm opacity-90">
+                  Countries&apos; Rules Built In
+                </div>
               </div>
 
               <div className="absolute -bottom-4 -right-4 bg-green-600 text-white p-4 rounded-lg border-2 border-border shadow-brutal">
-                <div className="text-2xl font-extrabold">99.9%</div>
-                <div className="text-sm opacity-90">Compliance Rate</div>
+                <div className="text-2xl font-extrabold">
+                  PAYE · NSSF · SHIF
+                </div>
+                <div className="text-sm opacity-90">
+                  Calculated Automatically
+                </div>
               </div>
             </div>
           </div>

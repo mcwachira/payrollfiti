@@ -1,6 +1,16 @@
+import type { Metadata } from 'next';
 import { CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+
+export const metadata: Metadata = {
+  title: 'System Status',
+  description: 'Current status of PayrollFiti services.',
+  alternates: { canonical: '/status' },
+  // Illustrative placeholder, not real uptime monitoring yet (see the page
+  // copy) — not worth indexing until it reflects something real.
+  robots: { index: false, follow: true },
+};
 
 const components = [
   { name: 'Web Application', status: 'Operational' },

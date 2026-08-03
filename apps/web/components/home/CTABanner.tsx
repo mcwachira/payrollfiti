@@ -13,7 +13,7 @@ const CTABanner = () => {
             </div>
           </div>
           <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4">
-            Join 1,000+ Businesses Transforming Payroll Across Africa
+            Transform How You Run Payroll Across Africa
           </h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
             Start your journey to effortless payroll management and statutory

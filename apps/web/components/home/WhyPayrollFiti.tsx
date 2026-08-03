@@ -6,25 +6,25 @@ const benefits = [
     icon: MapPin,
     title: 'Localized for African Regulations',
     description:
-      'Built specifically for African tax laws, labor regulations, and compliance requirements.',
+      'Built specifically for Kenyan, Nigerian, and South African tax law and statutory requirements — not a global product with Africa bolted on.',
   },
   {
     icon: Zap,
-    title: 'API Integration Ready',
+    title: 'API, Webhooks & Accounting Sync',
     description:
-      'Seamlessly integrate with banks, government portals, and third-party systems.',
+      'A read-only public API, outbound webhooks, and direct sync to QuickBooks, Xero, or Zoho Books — connect payroll to the rest of your stack.',
   },
   {
     icon: Shield,
-    title: 'Cloud-based & Secure',
+    title: 'Built Security-First',
     description:
-      'Enterprise-grade security with 99.9% uptime and automated backups.',
+      'Field-level encryption for sensitive employee data, role-based access control, two-factor authentication, and a full audit trail.',
   },
   {
     icon: Clock,
-    title: 'Save Time & Reduce Errors',
+    title: 'Run Payroll in Minutes',
     description:
-      'Eliminate manual calculations and reduce payroll processing time by 80%.',
+      'Gross-to-net calculations, statutory deductions, and payslips generated automatically for every employee, every period — no spreadsheets.',
   },
 ];
 
@@ -62,26 +62,30 @@ const WhyPayrollFiti = () => {
             </div>
           </div>
 
-          {/* Statistics */}
+          {/* What the platform actually does */}
           <div className="grid grid-cols-2 gap-6">
             <Card className="p-6 text-center bg-primary text-primary-foreground">
-              <div className="text-3xl font-extrabold mb-2">1,000+</div>
-              <div className="text-sm opacity-90">Businesses Served</div>
+              <div className="text-3xl font-extrabold mb-2">3</div>
+              <div className="text-sm opacity-90">Countries Supported</div>
             </Card>
 
             <Card className="p-6 text-center bg-green-600 text-white">
-              <div className="text-3xl font-extrabold mb-2">50,000+</div>
-              <div className="text-sm opacity-90">Employees Managed</div>
+              <div className="text-3xl font-extrabold mb-2">Auto</div>
+              <div className="text-sm opacity-90">
+                Statutory Remittance Files
+              </div>
             </Card>
 
             <Card className="p-6 text-center bg-orange-500 text-white">
-              <div className="text-3xl font-extrabold mb-2">99.9%</div>
-              <div className="text-sm opacity-90">Uptime Guarantee</div>
+              <div className="text-3xl font-extrabold mb-2">Minutes</div>
+              <div className="text-sm opacity-90">
+                To Run a Full Payroll Cycle
+              </div>
             </Card>
 
             <Card className="p-6 text-center bg-purple-600 text-white">
-              <div className="text-3xl font-extrabold mb-2">3</div>
-              <div className="text-sm opacity-90">Countries Supported</div>
+              <div className="text-3xl font-extrabold mb-2">Real-Time</div>
+              <div className="text-sm opacity-90">Payroll Cost Analytics</div>
             </Card>
           </div>
         </div>

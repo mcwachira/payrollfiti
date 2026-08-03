@@ -20,7 +20,7 @@ const features = [
     icon: Shield,
     title: 'Statutory Compliance',
     description:
-      'Stay compliant with PAYE, NSSF, NHIF, and other African regulatory requirements.',
+      'PAYE, NSSF, SHIF, and the Housing Levy calculated automatically, using current KRA rule sets.',
     color: 'bg-green-500',
   },
   {
@@ -41,7 +41,7 @@ const features = [
     icon: Globe,
     title: 'Multi-country Support',
     description:
-      'Expand across Africa with localized compliance for Kenya, Uganda, Nigeria, and more.',
+      'Localized compliance rule sets for Kenya, Nigeria, and South Africa, in one platform.',
     color: 'bg-teal-500',
   },
   {
@@ -59,11 +59,11 @@ const FeaturesOverview = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
-            Everything You Need for Modern HR & Payroll
+            Payroll Software Built for Kenya, Nigeria & South Africa
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Streamline your entire HR and payroll process with our comprehensive
-            suite of tools
+            Run payroll, stay statutory-compliant, and manage your team from one
+            platform — designed around how African businesses actually operate.
           </p>
         </div>
 

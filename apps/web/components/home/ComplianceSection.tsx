@@ -28,14 +28,16 @@ const ComplianceSection = () => {
               PAYE Tax
             </h3>
             <p className="text-muted-foreground mb-4">
-              Automatic calculation of Pay As You Earn tax with current KRA
-              brackets
+              Automatic calculation of Pay As You Earn tax across all five KRA
+              bands, per the Finance Act
             </p>
 
-            <div className="space-y-2">
-              <Badge variant="secondary">0-24,000: 10%</Badge>
-              <Badge variant="secondary">24,001-32,333: 25%</Badge>
-              <Badge variant="secondary">32,334+: 30%</Badge>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary">0 – 24,000: 10%</Badge>
+              <Badge variant="secondary">24,000 – 32,333: 25%</Badge>
+              <Badge variant="secondary">32,333 – 500,000: 30%</Badge>
+              <Badge variant="secondary">500,000 – 800,000: 32.5%</Badge>
+              <Badge variant="secondary">800,000+: 35%</Badge>
             </div>
           </Card>
 
@@ -49,31 +51,35 @@ const ComplianceSection = () => {
               NSSF
             </h3>
             <p className="text-muted-foreground mb-4">
-              Tier I & II contributions calculated automatically
+              Tier I & II contributions calculated automatically, matched by
+              employer
             </p>
 
             <div className="space-y-2">
-              <Badge variant="secondary">Tier I: KES 360</Badge>
-              <Badge variant="secondary">Tier II: 12% of pensionable pay</Badge>
+              <Badge variant="secondary">Tier I: 6% up to KES 7,000</Badge>
+              <Badge variant="secondary">
+                Tier II: 6% from KES 7,000 – 36,000
+              </Badge>
             </div>
           </Card>
 
-          {/* NHIF */}
+          {/* SHIF */}
           <Card className="p-6 bg-orange-50 dark:bg-orange-950/30">
             <div className="bg-orange-500 w-12 h-12 rounded-lg border-2 border-border flex items-center justify-center mb-4">
               <Calculator className="h-6 w-6 text-white" />
             </div>
 
             <h3 className="text-xl font-extrabold text-foreground mb-3">
-              NHIF
+              SHIF
             </h3>
             <p className="text-muted-foreground mb-4">
-              Health insurance contributions based on salary bands
+              Social Health Insurance Fund contributions — replaced NHIF in
+              October 2024
             </p>
 
             <div className="space-y-2">
-              <Badge variant="secondary">Salary-based rates</Badge>
-              <Badge variant="secondary">Auto-updated annually</Badge>
+              <Badge variant="secondary">2.75% of gross pay</Badge>
+              <Badge variant="secondary">KES 300 minimum contribution</Badge>
             </div>
           </Card>
         </div>

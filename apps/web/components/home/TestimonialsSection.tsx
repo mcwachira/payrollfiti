@@ -13,11 +13,11 @@ const TestimonialsSection = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
-            Trusted by Growing Businesses Across Africa
+            What Running Payroll on PayrollFiti Looks Like
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            See how PayrollFiti is helping businesses streamline their HR and
-            payroll operations
+            Illustrative scenarios based on the problems PayrollFiti is built to
+            solve for HR and finance teams across Africa
           </p>
         </div>
 

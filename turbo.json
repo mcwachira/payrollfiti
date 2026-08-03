@@ -57,7 +57,7 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**"],
-      "env": ["NEXT_PUBLIC_API_URL", "NEXT_PUBLIC_APP_NAME"]
+      "env": ["NEXT_PUBLIC_API_URL", "NEXT_PUBLIC_APP_NAME", "NEXT_PUBLIC_SITE_URL"]
     },
     "lint": {},
     "test": {},

@@ -1,9 +1,17 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, MessageSquareQuote } from 'lucide-react';
 import { testimonials } from '@/lib/testimonials-data';
+
+export const metadata: Metadata = {
+  title: 'Reviews',
+  description:
+    'What running payroll on PayrollFiti looks like for HR and finance teams in Kenya, Nigeria, and South Africa.',
+  alternates: { canonical: '/reviews' },
+};
 
 export default function ReviewsPage() {
   return (
@@ -14,11 +22,11 @@ export default function ReviewsPage() {
             <MessageSquareQuote className="h-7 w-7 text-primary" />
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-foreground mb-4">
-            What Teams Say About PayrollFiti
+            What Running Payroll on PayrollFiti Looks Like
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Real feedback from HR and finance teams running payroll across
-            Kenya, Nigeria, and South Africa.
+            Illustrative scenarios for HR and finance teams running payroll
+            across Kenya, Nigeria, and South Africa.
           </p>
         </div>
 

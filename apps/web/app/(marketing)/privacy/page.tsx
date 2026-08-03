@@ -1,4 +1,12 @@
+import type { Metadata } from 'next';
 import { Card, CardContent } from '@/components/ui/card';
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy',
+  description: 'How PayrollFiti collects, stores, and protects your data.',
+  alternates: { canonical: '/privacy' },
+  robots: { index: false, follow: true },
+};
 
 export default function PrivacyPage() {
   return (

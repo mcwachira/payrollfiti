@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 
 import './globals.css';
-import { APP_NAME } from '@/lib/config';
+import { APP_NAME, SITE_URL } from '@/lib/config';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { BrandingProvider } from '@/contexts/BrandingContext';
 import { Toaster } from '@/components/ui/sonner';
@@ -13,9 +13,24 @@ import { InstallPrompt } from '@/components/pwa/InstallPrompt';
 
 const inter = Inter({ subsets: ['latin'] });
 
+const DEFAULT_DESCRIPTION =
+  'Payroll and statutory compliance software for Kenya, Nigeria, and South Africa. Automate PAYE, NSSF, SHIF, and payslips in minutes.';
+
 export const metadata: Metadata = {
-  title: APP_NAME,
-  description: `${APP_NAME} — payroll, made for Africa`,
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: `${APP_NAME} — Payroll & Compliance Software for Africa`,
+    template: `%s | ${APP_NAME}`,
+  },
+  description: DEFAULT_DESCRIPTION,
+  keywords: [
+    'payroll software Kenya',
+    'PAYE calculator Kenya',
+    'NSSF SHIF payroll',
+    'Nigeria payroll software',
+    'South Africa payroll software',
+    'statutory compliance software Africa',
+  ],
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
@@ -24,6 +39,18 @@ export const metadata: Metadata = {
   },
   icons: {
     apple: '/icons/apple-touch-icon.png',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: APP_NAME,
+    title: `${APP_NAME} — Payroll & Compliance Software for Africa`,
+    description: DEFAULT_DESCRIPTION,
+    url: SITE_URL,
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${APP_NAME} — Payroll & Compliance Software for Africa`,
+    description: DEFAULT_DESCRIPTION,
   },
 };
 

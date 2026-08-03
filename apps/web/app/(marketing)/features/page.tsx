@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   Calculator,
@@ -26,7 +27,7 @@ const features = [
     icon: Shield,
     title: 'Statutory Compliance',
     description:
-      'PAYE, NSSF, NHIF, and the Housing Levy are calculated using up-to-date KRA rule sets, with remittance files ready for submission.',
+      'PAYE, NSSF, SHIF, and the Housing Levy are calculated using up-to-date KRA rule sets, with remittance files ready for submission.',
     color: 'bg-green-500',
   },
   {
@@ -40,7 +41,7 @@ const features = [
     icon: FileText,
     title: 'Payslips & Compliance Reports',
     description:
-      'Generate professional payslips, P9 tax certificates, and P10/NSSF/NHIF remittance files directly from the platform.',
+      'Generate professional payslips, P9 tax certificates, and P10/NSSF/SHIF remittance files directly from the platform.',
     color: 'bg-orange-500',
   },
   {
@@ -86,6 +87,13 @@ const features = [
     color: 'bg-lime-500',
   },
 ];
+
+export const metadata: Metadata = {
+  title: 'Features — Payroll, Compliance & HR Tools',
+  description:
+    'Payroll automation, PAYE/NSSF/SHIF compliance, payslips, leave management, analytics, and bank export — everything for running payroll across Kenya, Nigeria, and South Africa.',
+  alternates: { canonical: '/features' },
+};
 
 export default function FeaturesPage() {
   return (

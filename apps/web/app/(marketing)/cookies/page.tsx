@@ -1,4 +1,12 @@
+import type { Metadata } from 'next';
 import { Card, CardContent } from '@/components/ui/card';
+
+export const metadata: Metadata = {
+  title: 'Cookie Policy',
+  description: 'How PayrollFiti uses cookies across the site and app.',
+  alternates: { canonical: '/cookies' },
+  robots: { index: false, follow: true },
+};
 
 export default function CookiePolicyPage() {
   return (

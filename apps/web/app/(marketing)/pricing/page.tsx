@@ -67,7 +67,8 @@ function formatMoney(amount: number, currency: string) {
 
 const DEDUCTION_TOOLTIPS: Record<string, string> = {
   NSSF: 'National Social Security Fund — mandatory retirement savings contribution (Tier I & II).',
-  NHIF: 'National Hospital Insurance Fund — mandatory health insurance contribution.',
+  SHIF: 'Social Health Insurance Fund — replaced NHIF on 1 October 2024; 2.75% of gross pay, KES 300 minimum.',
+  NHIF: 'National Hospital Insurance Fund — mandatory health insurance contribution (superseded by SHIF from October 2024).',
   HOUSING_LEVY:
     'Affordable Housing Levy — 1.5% of gross pay, per the Finance Act 2023.',
   PENSION: 'Mandatory employee pension contribution.',

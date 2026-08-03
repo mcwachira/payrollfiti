@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +9,14 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { LifeBuoy } from 'lucide-react';
+import { JsonLd } from '@/components/JsonLd';
+
+export const metadata: Metadata = {
+  title: 'Help Center — Payroll & Compliance FAQs',
+  description:
+    'Answers to common questions about running payroll, statutory deductions, employee self-service, billing, and data security on PayrollFiti.',
+  alternates: { canonical: '/help' },
+};
 
 const faqs = [
   {
@@ -43,9 +52,20 @@ const faqs = [
   },
 ];
 
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((faq) => ({
+    '@type': 'Question',
+    name: faq.question,
+    acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+  })),
+};
+
 export default function HelpPage() {
   return (
     <div className="py-20">
+      <JsonLd data={faqJsonLd} />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-3xl">
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 border-2 border-border mb-4">
