@@ -40,7 +40,7 @@ describe('PayslipEmailService', () => {
     };
     payslipsService = { generate: asyncMock(Buffer.from('pdf-bytes')) };
     mailService = { sendMail: asyncMock(undefined) };
-    payslipEmailsQueue = { add: asyncMock(undefined) };
+    payslipEmailsQueue = { addBulk: asyncMock(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -86,14 +86,18 @@ describe('PayslipEmailService', () => {
       expect(mailService.sendMail).not.toHaveBeenCalled();
     });
 
-    it('never throws even when the entry lookup fails', async () => {
+    it('propagates a lookup failure so BullMQ retries just this job', async () => {
+      // Unlike enqueueForRun, this is called only by PayslipEmailsProcessor
+      // with one job per entry — letting the error through (rather than
+      // swallowing it) is what lets BullMQ retry this one entry without
+      // resending every other payslip in the run.
       prisma.payrollEntry.findUnique.mockRejectedValueOnce(
         new Error('db down'),
       );
 
       await expect(
         service.sendPayslipEmail('tenant-1', 'entry-1'),
-      ).resolves.toBeUndefined();
+      ).rejects.toThrow('db down');
     });
 
     it('does nothing for a cross-tenant entry', async () => {
@@ -111,33 +115,43 @@ describe('PayslipEmailService', () => {
     });
   });
 
-  describe('sendPayslipEmailsForRun', () => {
-    it('sends a payslip email for every entry in the run', async () => {
-      await service.sendPayslipEmailsForRun('tenant-1', 'run-1');
+  describe('enqueueForRun', () => {
+    it('adds one job per entry to the payslip-emails queue instead of sending inline', async () => {
+      prisma.payrollRun.findUnique.mockResolvedValueOnce({
+        id: 'run-1',
+        entries: [{ id: 'entry-1' }, { id: 'entry-2' }],
+      });
 
-      expect(payslipsService.generate).toHaveBeenCalledTimes(1);
-      expect(mailService.sendMail).toHaveBeenCalledTimes(1);
+      await service.enqueueForRun('tenant-1', 'run-1');
+
+      expect(payslipEmailsQueue.addBulk).toHaveBeenCalledWith([
+        {
+          name: PAYSLIP_EMAILS_DELIVER_JOB,
+          data: { tenantId: 'tenant-1', payrollEntryId: 'entry-1' },
+        },
+        {
+          name: PAYSLIP_EMAILS_DELIVER_JOB,
+          data: { tenantId: 'tenant-1', payrollEntryId: 'entry-2' },
+        },
+      ]);
+      expect(payslipsService.generate).not.toHaveBeenCalled();
+      expect(mailService.sendMail).not.toHaveBeenCalled();
     });
 
     it('does nothing when the run does not exist', async () => {
       prisma.payrollRun.findUnique.mockResolvedValueOnce(null);
 
-      await service.sendPayslipEmailsForRun('tenant-1', 'missing-run');
+      await service.enqueueForRun('tenant-1', 'missing-run');
 
-      expect(payslipsService.generate).not.toHaveBeenCalled();
+      expect(payslipEmailsQueue.addBulk).not.toHaveBeenCalled();
     });
-  });
 
-  describe('enqueueForRun', () => {
-    it('adds a job to the payslip-emails queue instead of sending inline', async () => {
-      await service.enqueueForRun('tenant-1', 'run-1');
+    it('never throws — logs and swallows a failure to enqueue, since this runs inline in the payroll-run request', async () => {
+      prisma.payrollRun.findUnique.mockRejectedValueOnce(new Error('db down'));
 
-      expect(payslipEmailsQueue.add).toHaveBeenCalledWith(
-        PAYSLIP_EMAILS_DELIVER_JOB,
-        { tenantId: 'tenant-1', payrollRunId: 'run-1' },
-      );
-      expect(payslipsService.generate).not.toHaveBeenCalled();
-      expect(mailService.sendMail).not.toHaveBeenCalled();
+      await expect(
+        service.enqueueForRun('tenant-1', 'run-1'),
+      ).resolves.toBeUndefined();
     });
   });
 });

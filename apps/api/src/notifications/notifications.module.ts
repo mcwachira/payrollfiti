@@ -27,7 +27,17 @@ import { AppConfig } from '../config/configuration';
     PayslipsModule,
     BullModule.registerQueue(
       { name: NOTIFICATIONS_QUEUE },
-      { name: PAYSLIP_EMAILS_QUEUE },
+      {
+        name: PAYSLIP_EMAILS_QUEUE,
+        // sendPayslipEmail() now throws on failure instead of swallowing it
+        // (see its own comment) specifically so a transient failure —
+        // mail provider hiccup, PDF render error — gets retried instead of
+        // silently dropping that one employee's payslip.
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 5000 },
+        },
+      },
     ),
   ],
   controllers: [NotificationsController, PushSubscriptionsController],

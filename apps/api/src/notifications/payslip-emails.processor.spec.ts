@@ -10,20 +10,19 @@ const makeJob = (data: PayslipEmailsJobData): Job<PayslipEmailsJobData> =>
   ({ data }) as Job<PayslipEmailsJobData>;
 
 describe('PayslipEmailsProcessor', () => {
-  it('delegates to PayslipEmailService.sendPayslipEmailsForRun with the job data', async () => {
+  it('delegates to PayslipEmailService.sendPayslipEmail with the job data', async () => {
     const payslipEmailService = {
-      sendPayslipEmailsForRun: asyncMock(undefined),
+      sendPayslipEmail: asyncMock(undefined),
     };
-    const processor = new PayslipEmailsProcessor(
-      payslipEmailService as any,
-    );
+    const processor = new PayslipEmailsProcessor(payslipEmailService as any);
 
     await processor.process(
-      makeJob({ tenantId: 'tenant-1', payrollRunId: 'run-1' }),
+      makeJob({ tenantId: 'tenant-1', payrollEntryId: 'entry-1' }),
     );
 
-    expect(
-      payslipEmailService.sendPayslipEmailsForRun,
-    ).toHaveBeenCalledWith('tenant-1', 'run-1');
+    expect(payslipEmailService.sendPayslipEmail).toHaveBeenCalledWith(
+      'tenant-1',
+      'entry-1',
+    );
   });
 });

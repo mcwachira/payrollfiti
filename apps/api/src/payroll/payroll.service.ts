@@ -349,10 +349,10 @@ export class PayrollService {
       after: totals as unknown as Prisma.InputJsonValue,
     });
 
-    // Enqueued rather than run inline — rendering + emailing a payslip per
-    // employee would otherwise add request latency proportional to
-    // headcount. PayslipEmailsProcessor (BullMQ) picks this up off the
-    // request thread; sendPayslipEmailsForRun itself never throws.
+    // Enqueued (one BullMQ job per entry) rather than run inline — rendering
+    // + emailing a payslip per employee would otherwise add request latency
+    // proportional to headcount. PayslipEmailsProcessor picks these up off
+    // the request thread, concurrently; enqueueForRun itself never throws.
     await this.payslipEmailService.enqueueForRun(tenantId, run.id);
 
     // Marks the loan installments folded into this run's voluntaryDeductions
