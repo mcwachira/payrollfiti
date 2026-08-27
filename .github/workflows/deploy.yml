@@ -1,0 +1,26 @@
+name: Deploy
+
+on:
+  # Manual only for now — flip to `push: branches: [main]` once a server
+  # actually exists and the secrets below are set, so this doesn't just
+  # fail on every merge to main in the meantime.
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd ${{ secrets.DEPLOY_PATH }}
+            git pull origin main
+            docker compose down
+            docker compose up -d --build
+            docker compose exec -T api php artisan migrate --force
