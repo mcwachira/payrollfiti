@@ -1,7 +1,7 @@
 # apps/web/Dockerfile — TanStack Start, served as a Node process on port 3000
 # (Vinxi build -> .output/server/index.mjs)
 
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 RUN corepack enable
 
 FROM base AS pruner
@@ -14,6 +14,7 @@ FROM base AS installer
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 COPY --from=pruner /app/out/json/ .
+COPY --from=pruner /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 RUN pnpm install --frozen-lockfile
 COPY --from=pruner /app/out/full/ .
 

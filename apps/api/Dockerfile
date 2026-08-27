@@ -22,10 +22,10 @@ RUN apk add --no-cache \
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Dependencies first — layer cache only busts on composer.* changes
-COPY composer.json composer.lock ./
+COPY apps/api/composer.json apps/api/composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
-COPY . .
+COPY apps/api/ .
 
 RUN composer dump-autoload --optimize \
     && php artisan config:clear
