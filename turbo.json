@@ -1,85 +1,21 @@
 {
-  "$schema": "https://turborepo.com/schema.json",
-  "globalDependencies": ["**/.env.*local"],
-  "globalEnv": [
-    "APP_NAME",
-    "NODE_ENV",
-    "PORT",
-    "COUNTRY_DEFAULT",
-    "CORS_ORIGIN",
-    "API_PUBLIC_URL",
-    "THROTTLE_TTL",
-    "THROTTLE_LIMIT",
-    "JWT_ACCESS_SECRET",
-    "JWT_ACCESS_EXPIRES_IN",
-    "JWT_REFRESH_SECRET",
-    "JWT_REFRESH_EXPIRES_IN",
-    "PAYSTACK_SECRET_KEY",
-    "MPESA_CONSUMER_KEY",
-    "MPESA_CONSUMER_SECRET",
-    "MPESA_SHORTCODE",
-    "MPESA_PASSKEY",
-    "MPESA_ENV",
-    "MPESA_CALLBACK_URL",
-    "MPESA_CALLBACK_TOKEN",
-    "REDIS_URL",
-    "PAYSLIP_STORAGE_DIR",
-    "DOCUMENT_STORAGE_DIR",
-    "DATABASE_URL",
-    "ENCRYPTION_KEY",
-    "SMTP_HOST",
-    "SMTP_PORT",
-    "SMTP_USER",
-    "SMTP_PASS",
-    "SMTP_FROM",
-    "AFRICAS_TALKING_API_KEY",
-    "AFRICAS_TALKING_USERNAME",
-    "AFRICAS_TALKING_SENDER_ID",
-    "VAPID_PUBLIC_KEY",
-    "VAPID_PRIVATE_KEY",
-    "VAPID_SUBJECT",
-    "QUICKBOOKS_CLIENT_ID",
-    "QUICKBOOKS_CLIENT_SECRET",
-    "QUICKBOOKS_ENVIRONMENT",
-    "XERO_CLIENT_ID",
-    "XERO_CLIENT_SECRET",
-    "ZOHO_BOOKS_CLIENT_ID",
-    "ZOHO_BOOKS_CLIENT_SECRET",
-    "ZOHO_BOOKS_REGION",
-    "SENTRY_DSN",
-    "SANITY_PROJECT_ID",
-    "SANITY_DATASET",
-    "SANITY_API_TOKEN",
-    "PLATFORM_TENANT_ID"
-  ],
+  "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
   "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".next/**", "!.next/cache/**", "!.next/dev/**"]
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
+    "check-types": {
+      "dependsOn": ["^check-types"]
+    },
     "dev": {
       "cache": false,
       "persistent": true
-    },
-    "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**"],
-      "env": [
-        "NEXT_PUBLIC_API_URL",
-        "NEXT_PUBLIC_APP_NAME",
-        "NEXT_PUBLIC_SITE_URL",
-        "NEXT_PUBLIC_SANITY_PROJECT_ID",
-        "NEXT_PUBLIC_SANITY_DATASET"
-      ]
-    },
-    "lint": {},
-    "test": {},
-    "test:e2e": {},
-    "db:generate": {
-      "cache": false
-    },
-    "db:push": {
-      "cache": false
-    },
-    "db:seed": {
-      "cache": false
     }
   }
 }

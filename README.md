@@ -1,100 +1,159 @@
-# PayrollFiti
+# Turborepo starter
 
-Multi-tenant, multi-country payroll SaaS for Africa — run compliant payroll for
-Kenya, Nigeria, and South Africa (statutory tax/deductions, payslips, bank
-export files, and billing) from one white-labelable platform.
+This Turborepo starter is maintained by the Turborepo core team.
 
-## Monorepo layout
+## Using this example
 
-A pnpm + Turborepo monorepo:
+Run the following command:
 
-```
-.
-├── apps
-│   ├── api                  # NestJS REST API (auth, tenants, employees, payroll, billing, ...)
-│   └── web                  # Next.js (App Router) frontend
-└── packages
-    ├── api                  # Shared DTOs/enums (e.g. Role) used by both api and web
-    ├── payroll-rules        # Pure, country-pluggable tax/statutory engine (KE/NG/ZA) — no I/O
-    ├── eslint-config         # Shared eslint (+ prettier) config
-    ├── jest-config           # Shared jest config
-    └── typescript-config     # Shared tsconfig.json bases
+```sh
+npx create-turbo@latest
 ```
 
-See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for architecture notes, environment
-variables, and production deployment guidance.
+## What's inside?
 
-## Core features
+This Turborepo includes the following packages/apps:
 
-- **Multi-tenant, multi-country payroll runs** — Kenya, Nigeria, and South Africa
-  statutory tax/deduction rules, computed by the pure `packages/payroll-rules`
-  engine and idempotent per period (re-running the same period is a no-op unless
-  underlying salary data changed). Single-currency-per-tenant: a tenant runs
-  payroll in one currency (its country's) — there's no FX conversion, and
-  PayrollService rejects a run if an employee's salary structure currency
-  doesn't match the run's country currency, rather than silently mixing
-  currencies into one run's totals. See the scope note on `Tenant.defaultCurrency`
-  in `apps/api/prisma/schema.prisma`.
-- **Employee management** — companies, employees, contracts, versioned salary
-  structures, and an onboarding checklist (new employees start in `ONBOARDING`
-  status, excluded from payroll/billing until required tasks are complete) and
-  offboarding/termination flow, all scoped and isolated per tenant.
-- **Payslips** — PDF payslip generation and download per payroll entry.
-- **Compliance reports** — Kenya (P9, P10, NSSF/NHIF remittance), Nigeria (PAYE,
-  PenCom pension, NHF remittance schedules), and South Africa (EMP201, IRP5)
-  statutory filing documents generated from real payroll data.
-- **Bank export** — CSV bank-file generation per payroll run for salary
-  disbursement.
-- **Billing** — subscription plans priced per country/currency, invoicing, and
-  payment collection via Paystack or M-Pesa.
-- **White-label branding** — per-tenant app name, logo, and color customization.
-- **Role-based access control** — Admin / HR / Employee roles enforced at the API
-  layer, plus an employee self-service portal (profile, payslip history, leave).
-- **Production hardening** — Helmet security headers, per-IP rate limiting,
-  structured JSON logging (`nestjs-pino`), and a real `/health` check
-  (`@nestjs/terminus`) covering both Postgres and Redis.
+### Apps and Packages
 
-## Local dev quickstart
+- `docs`: a [Next.js](https://nextjs.org/) app
+- `web`: another [Next.js](https://nextjs.org/) app
+- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
+- `@repo/eslint-config`: `eslint` configurations (includes `@next/eslint-plugin-next` and `eslint-config-prettier`)
+- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
 
-```bash
-# 1. Install dependencies
-pnpm install
+Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
 
-# 2. Start Postgres + Redis
-docker compose up -d db redis
+### Utilities
 
-# 3. Copy env vars and adjust as needed
-cp .env.example .env
+This Turborepo has some additional tools already setup for you:
 
-# 4. Apply database migrations
-pnpm --filter api exec prisma migrate deploy
+- [TypeScript](https://www.typescriptlang.org/) for static type checking
+- [ESLint](https://eslint.org/) for code linting
+- [Prettier](https://prettier.io) for code formatting
 
-# 5. Seed demo data (dev only — do not run against production)
-pnpm --filter api db:seed
+### Build
 
-# 6. Run api + web together
-pnpm dev
+To build all apps and packages, run the following command:
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+
+```sh
+cd my-turborepo
+turbo build
 ```
 
-`apps/api` runs on `http://localhost:3000`, `apps/web` on `http://localhost:3001`.
+Without global `turbo`, use your package manager:
 
-The seed script (`apps/api/prisma/seed.ts`) creates a demo tenant with:
-
-- **Admin login:** `admin@acme.co.ke` / `Password123!`
-- **Employee login:** `jane.wanjiru@acme.co.ke` / `Password123!`
-
-## Testing
-
-```bash
-# Unit tests across every app/package
-pnpm turbo run test
-
-# API end-to-end tests (needs a real Postgres — see docker compose step above)
-pnpm --filter api test:e2e
+```sh
+cd my-turborepo
+npx turbo build
+pnpm exec turbo build
+pnpm exec turbo build
 ```
 
-## Deployment
+You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
 
-See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the full guide: required
-environment variables, secrets handling, migrations, health checks, logging,
-scaling notes, and CI/CD.
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+
+```sh
+turbo build --filter=docs
+```
+
+Without global `turbo`:
+
+```sh
+npx turbo build --filter=docs
+pnpm exec turbo build --filter=docs
+pnpm exec turbo build --filter=docs
+```
+
+### Develop
+
+To develop all apps and packages, run the following command:
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+
+```sh
+cd my-turborepo
+turbo dev
+```
+
+Without global `turbo`, use your package manager:
+
+```sh
+cd my-turborepo
+npx turbo dev
+pnpm exec turbo dev
+pnpm exec turbo dev
+```
+
+You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+
+```sh
+turbo dev --filter=web
+```
+
+Without global `turbo`:
+
+```sh
+npx turbo dev --filter=web
+pnpm exec turbo dev --filter=web
+pnpm exec turbo dev --filter=web
+```
+
+### Remote Caching
+
+> [!TIP]
+> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+
+Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+
+By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+
+```sh
+cd my-turborepo
+turbo login
+```
+
+Without global `turbo`, use your package manager:
+
+```sh
+cd my-turborepo
+npx turbo login
+pnpm exec turbo login
+pnpm exec turbo login
+```
+
+This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+
+Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+
+With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+
+```sh
+turbo link
+```
+
+Without global `turbo`:
+
+```sh
+npx turbo link
+pnpm exec turbo link
+pnpm exec turbo link
+```
+
+## Useful Links
+
+Learn more about the power of Turborepo:
+
+- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
+- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
+- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
+- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
+- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
+- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
