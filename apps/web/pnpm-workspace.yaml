@@ -1,5 +1,8 @@
+packages: []
+
 allowBuilds:
-  core-js: set this to true or false
+  core-js: true
+  unrs-resolver: true
   esbuild: true
   lightningcss: true
-  unrs-resolver: set this to true or false
+  sharp: set this to true or false
