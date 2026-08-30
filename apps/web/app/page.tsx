@@ -1,19 +1,45 @@
 import { Button } from "@/components/ui/button"
+import { APP_NAME, SITE_URL } from '@/lib/config';
+import { Metadata } from "next"
+import { JsonLd } from "@/components/JsonLd"
+import Header from "@/components/home/Header"
 
+export const metadata: Metadata = {
+  title: 'Payroll & Statutory Compliance Software for Africa',
+  description:
+    'Payroll software built for Africa — live in Kenya, Nigeria, and South Africa today, with more African countries on the roadmap. Automatic PAYE, NSSF, SHIF, and payslip generation.',
+  alternates: { canonical: SITE_URL },
+};
+
+const organizationJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: APP_NAME,
+  applicationCategory: 'BusinessApplication',
+  operatingSystem: 'Web',
+  description:
+    'Payroll and statutory compliance software for Kenya, Nigeria, and South Africa.',
+  url: SITE_URL,
+  offers: {
+    '@type': 'Offer',
+    priceCurrency: 'KES',
+    availability: 'https://schema.org/InStock',
+  },
+  areaServed: ['KE', 'NG', 'ZA'],
+};
 export default function Page() {
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
+    <div className="min-h-screen bg-background">
+      <JsonLd data={organizationJsonLd} />
+      <Header />
+      {/*<HeroSection />*/}
+
+      {/*<FeaturesOverview />*/}
+      {/*<WhyPayrollFiti />*/}
+      {/*<ComplianceSection />*/}
+      {/*<TestimonialsSection />*/}
+      {/*<CTABanner />*/}
+      {/*<Footer />*/}
     </div>
-  )
-}
+  );
+};
