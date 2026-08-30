@@ -3,6 +3,13 @@ import { APP_NAME, SITE_URL } from '@/lib/config';
 import { Metadata } from "next"
 import { JsonLd } from "@/components/JsonLd"
 import Header from "@/components/home/Header"
+import HeroSection from "@/components/home/HeroSection"
+import FeaturesOverview from "@/components/home/FeaturesOverview"
+import ComplianceSection from "@/components/home/ComplianceSection"
+import WhyPayrollFiti from "@/components/home/WhyPayrollFiti"
+import Footer from "@/components/home/Footer"
+import CTABanner from "@/components/home/CTABanner"
+import TestimonialsSection from "@/components/home/TestimonialsSection"
 
 export const metadata: Metadata = {
   title: 'Payroll & Statutory Compliance Software for Africa',
@@ -32,14 +39,13 @@ export default function Page() {
     <div className="min-h-screen bg-background">
       <JsonLd data={organizationJsonLd} />
       <Header />
-      {/*<HeroSection />*/}
-
-      {/*<FeaturesOverview />*/}
-      {/*<WhyPayrollFiti />*/}
-      {/*<ComplianceSection />*/}
-      {/*<TestimonialsSection />*/}
-      {/*<CTABanner />*/}
-      {/*<Footer />*/}
+      <HeroSection />
+      <FeaturesOverview />
+      <WhyPayrollFiti />
+      <ComplianceSection />
+      <TestimonialsSection />
+      <CTABanner />
+      <Footer />
     </div>
   );
 };
