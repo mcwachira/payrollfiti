@@ -1,3 +1,10 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+allowBuilds:
+  core-js: true
+  unrs-resolver: true
+  esbuild: true
+  lightningcss: true
+  sharp: true

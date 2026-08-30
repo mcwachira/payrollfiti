@@ -1,6 +1,6 @@
 # apps/api/Dockerfile — Laravel API (pure backend, port 8000)
 
-FROM php:8.3-cli-alpine
+FROM php:8.4-cli-alpine
 
 WORKDIR /var/www
 
@@ -21,11 +21,13 @@ RUN apk add --no-cache \
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Dependencies first — layer cache only busts on composer.* changes
-COPY composer.json composer.lock ./
+# Dependencies first — layer cache only busts on composer.* changes.
+# Paths are relative to the build context, which docker-compose.yml sets
+# to the repo root (context: .) — not apps/api itself.
+COPY apps/api/composer.json apps/api/composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
 
-COPY . .
+COPY apps/api/ .
 
 RUN composer dump-autoload --optimize \
     && php artisan config:clear

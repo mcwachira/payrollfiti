@@ -5,7 +5,8 @@
 .PHONY: help up down restart build rebuild ps logs logs-api logs-web logs-db logs-redis \
         shell-api shell-web shell-db \
         artisan migrate migrate-fresh seed key-generate test \
-        pnpm composer-install fresh clean prune
+        pnpm composer-install fresh clean prune \
+        dev dev-web dev-api
 
 ## ---- Core lifecycle ----
 
@@ -27,6 +28,24 @@ rebuild: ## Rebuild images from scratch (no cache) and restart
 
 ps: ## Show running containers and their status
 	docker compose ps
+
+## ---- Local dev (outside Docker, fast HMR) ----
+# Runs web's actual dev server on your host machine instead of rebuilding
+# the Docker image on every change — Next's Fast Refresh doesn't work
+# well through a container rebuild loop, so this is the faster path
+# while actively coding. db/redis/api still run via `make up`; this just
+# swaps out how `web` runs. Requires `make up` (or at least `docker
+# compose up -d db redis api`) already running in another terminal, and
+# apps/web/.env.local pointing NEXT_PUBLIC_API_URL at the api container's
+# host-exposed port (http://localhost:8000/api), not the internal nginx path.
+
+dev: dev-web ## Alias for dev-web — run the web app's dev server locally
+
+dev-web: ## Run Next.js dev server locally (outside Docker) for fast HMR
+	pnpm turbo run dev --filter=web...
+
+dev-api: ## Run Laravel's dev server locally (outside Docker) — needs PHP/composer installed on host
+	cd apps/api && php artisan serve --port=8000
 
 ## ---- Logs ----
 
