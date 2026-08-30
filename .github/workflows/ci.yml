@@ -35,7 +35,10 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          # Matches apps/api/Dockerfile (php:8.4-cli-alpine) — composer.lock's
+          # Symfony 8.1 packages require PHP >=8.4.1, so this must stay in
+          # sync with the Dockerfile's base image version.
+          php-version: '8.4'
           extensions: pdo, pdo_pgsql, zip, mbstring, bcmath
           coverage: none
 
@@ -76,7 +79,7 @@ jobs:
         run: ./vendor/bin/pint --test
 
   web:
-    name: Web (TanStack Start)
+    name: Web (Next.js)
     runs-on: ubuntu-latest
 
     steps:
@@ -84,7 +87,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - run: corepack enable
 
@@ -101,8 +104,11 @@ jobs:
 
       - name: Build
         env:
-          VITE_API_URL: /api
-          VITE_APP_NAME: PayrollFiti
+          # Next.js only inlines env vars prefixed NEXT_PUBLIC_ into the
+          # client bundle — Vite's VITE_ prefix from the old TanStack
+          # setup doesn't apply here.
+          NEXT_PUBLIC_API_URL: /api
+          NEXT_PUBLIC_APP_NAME: PayrollFiti
         run: pnpm turbo run build --filter=web...
 
   docker-build-check:
