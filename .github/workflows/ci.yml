@@ -63,6 +63,14 @@ jobs:
           DB_DATABASE: payrollfiti_test
           DB_USERNAME: payrollfiti
           DB_PASSWORD: payrollfiti
+          # No Redis service running in CI — override the redis-based
+          # drivers from .env.example with ones that need no external
+          # service. Swap back to a real redis: service block (mirroring
+          # the postgres one above) once backend work picks up and Redis
+          # behavior itself needs testing.
+          CACHE_STORE: database
+          SESSION_DRIVER: database
+          QUEUE_CONNECTION: sync
         run: php artisan migrate --force
 
       - name: Run tests
@@ -73,6 +81,9 @@ jobs:
           DB_DATABASE: payrollfiti_test
           DB_USERNAME: payrollfiti
           DB_PASSWORD: payrollfiti
+          CACHE_STORE: database
+          SESSION_DRIVER: database
+          QUEUE_CONNECTION: sync
         run: php artisan test
 
       - name: Lint (Pint)
