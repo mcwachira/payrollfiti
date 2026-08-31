@@ -185,7 +185,7 @@ const Footer = () => {
             <div className="flex gap-2 mb-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button variant="neutral" size="sm" className="flex-1">
                     <Globe className="h-4 w-4 mr-2" />
                     {language}
                   </Button>

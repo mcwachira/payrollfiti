@@ -5,6 +5,11 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils";
 import { Metadata } from "next"
 import { APP_NAME, SITE_URL } from '@/lib/config';
+import { BrandingProvider } from "@/contexts/BrandingContext"
+import { AuthProvider } from "@/contexts/AuthContext"
+import { QueryProvider } from '@/components/query-provider';
+import { Toaster } from "@/components/ui/sonner"
+import React from "react"
 
 const fontSans = Geist({
   subsets: ["latin"],
@@ -67,7 +72,20 @@ export default function RootLayout({
       className={cn("antialiased", fontSans.variable, "font-mono", jetbrainsMono.variable)}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
+      >
+        <QueryProvider>
+          <AuthProvider>
+            <BrandingProvider>{children}</BrandingProvider>
+          </AuthProvider>
+          <Toaster />
+          {/*<InstallPrompt />*/}
+        </QueryProvider>
+      </ThemeProvider>
       </body>
     </html>
   )

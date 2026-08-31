@@ -65,7 +65,7 @@ const TestimonialsSection = () => {
         </div>
 
         <div className="text-center mt-10">
-          <Button variant="outline" asChild>
+          <Button variant="neutral" asChild>
             <Link href="/reviews">
               Read more reviews
               <ArrowRight className="h-4 w-4 ml-2" />

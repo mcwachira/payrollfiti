@@ -2,11 +2,12 @@
 
 import {
   createContext,
+  ReactNode,
   useCallback,
   useContext,
   useEffect,
   useState,
-  PropsWithChildren,
+
 } from 'react';
 
 import { useRouter } from 'next/navigation';
@@ -15,6 +16,10 @@ import { apiFetch, ApiError } from '@/lib/api-client';
 import { TokenStorage } from '@/lib/token-storage';
 import { AuthenticatedUserDto, AuthTokensDto } from "@/shared-types"
 
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
 interface SignupInput {
   tenantName: string;
   countryCode: string;
@@ -62,7 +67,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export function AuthProvider({ children }: PropsWithChildren<AuthContextValue>) {
+export function AuthProvider({ children }: AuthProviderProps) {
 
   const [user, setUser] = useState<AuthenticatedUserDto |  null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -209,3 +214,4 @@ export function useAuth(): AuthContextValue {
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }
+
