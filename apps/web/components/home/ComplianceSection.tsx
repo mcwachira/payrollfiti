@@ -33,11 +33,11 @@ const ComplianceSection = () => {
             </p>
 
             <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">0 – 24,000: 10%</Badge>
-              <Badge variant="secondary">24,000 – 32,333: 25%</Badge>
-              <Badge variant="secondary">32,333 – 500,000: 30%</Badge>
-              <Badge variant="secondary">500,000 – 800,000: 32.5%</Badge>
-              <Badge variant="secondary">800,000+: 35%</Badge>
+              <Badge>0 – 24,000: 10%</Badge>
+              <Badge>24,000 – 32,333: 25%</Badge>
+              <Badge>32,333 – 500,000: 30%</Badge>
+              <Badge>500,000 – 800,000: 32.5%</Badge>
+              <Badge>800,000+: 35%</Badge>
             </div>
           </Card>
 
@@ -56,8 +56,8 @@ const ComplianceSection = () => {
             </p>
 
             <div className="space-y-2">
-              <Badge variant="secondary">Tier I: 6% up to KES 7,000</Badge>
-              <Badge variant="secondary">
+              <Badge>Tier I: 6% up to KES 7,000</Badge>
+              <Badge>
                 Tier II: 6% from KES 7,000 – 36,000
               </Badge>
             </div>
@@ -78,8 +78,8 @@ const ComplianceSection = () => {
             </p>
 
             <div className="space-y-2">
-              <Badge variant="secondary">2.75% of gross pay</Badge>
-              <Badge variant="secondary">KES 300 minimum contribution</Badge>
+              <Badge>2.75% of gross pay</Badge>
+              <Badge>KES 300 minimum contribution</Badge>
             </div>
           </Card>
         </div>
