@@ -39,9 +39,9 @@ ps: ## Show running containers and their status
 # apps/web/.env.local pointing NEXT_PUBLIC_API_URL at the api container's
 # host-exposed port (http://localhost:8000/api), not the internal nginx path.
 
-dev: dev-web ## Alias for dev-web — run the web app's dev server locally
+dev: web-dev ## Alias for web-dev — run the web app's dev server locally
 
-dev-web: ## Run Next.js dev server locally (outside Docker) for fast HMR
+web-dev: ## Run Next.js dev server locally (outside Docker) for fast HMR
 	pnpm turbo run dev --filter=web...
 
 dev-api: ## Run Laravel's dev server locally (outside Docker) — needs PHP/composer installed on host

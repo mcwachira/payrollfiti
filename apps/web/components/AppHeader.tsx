@@ -27,7 +27,7 @@ const AppHeader = () => {
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center gap-2">
             <Button
-              variant="ghost"
+
               size="icon"
               className="lg:hidden"
               onClick={toggle}
@@ -43,7 +43,7 @@ const AppHeader = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="ghost"
+
                   size="sm"
                   className="flex items-center gap-2"
                 >

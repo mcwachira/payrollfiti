@@ -210,7 +210,7 @@ const Footer = () => {
               </DropdownMenu>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex-1">
+                  <Button  size="sm" className="flex-1">
                     {country}
                   </Button>
                 </DropdownMenuTrigger>
