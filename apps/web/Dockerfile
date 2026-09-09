@@ -4,7 +4,7 @@
 # .next/standalone won't exist and this build will fail at the COPY step
 # in the runner stage below.
 
-FROM node:22-alpine AS base
+FROM node:24-alpine AS base
 RUN corepack enable
 
 FROM base AS pruner
@@ -25,12 +25,13 @@ RUN pnpm install --frozen-lockfile
 COPY --from=pruner /app/out/full/ .
 
 # NEXT_PUBLIC_* build args get inlined into the client bundle at build time
-ARG NEXT_PUBLIC_API_URL=http://localhost:8000/api
+ARG NEXT_PUBLIC_API_URL=/api
 ARG NEXT_PUBLIC_APP_NAME=PayrollFiti
+
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME}
 
-RUN pnpm turbo run build --filter=web...
+RUN pnpm turbo run build --filter=web
 
 FROM base AS runner
 WORKDIR /app
@@ -42,6 +43,11 @@ COPY --from=installer --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
 COPY --from=installer --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
 
 USER nextjs
+
+ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
+
 EXPOSE 3000
+
 CMD ["node", "apps/web/server.js"]

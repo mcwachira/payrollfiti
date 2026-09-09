@@ -8,7 +8,7 @@ import { usePushNotifications } from '@/lib/push/use-push-notifications';
 /** Hidden entirely on browsers without Push API support (e.g. iOS Safari < 16.4). */
 
 export function PushNotificationToggle() {
-  const {support, subscribed, busy, unsubscribed} = usePushNotifications();
+  const {support, subscribed, busy, unsubscribe} = usePushNotifications();
   if(support !== 'ready') return null
 
   const handleClick = async() => {
@@ -17,7 +17,7 @@ export function PushNotificationToggle() {
         await unsubscribe();
         toast.success('Notifications turned off');
       } else {
-        await subscribe();
+        await subscribed();
         toast.success('Notifications enabled');
       }
     } catch (error) {
@@ -27,8 +27,9 @@ export function PushNotificationToggle() {
     }
   };
   return (
+
     <Button
-      variant="ghost"
+
       size="icon"
       disabled={busy}
       onClick={handleClick}

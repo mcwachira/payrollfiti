@@ -102,7 +102,7 @@ export function NotificationBell() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant="ghost"
+
           size="icon"
           className="relative"
           aria-label={
@@ -123,7 +123,7 @@ export function NotificationBell() {
         <div className="flex items-center justify-between px-3 py-2 border-b">
           <span className="text-sm font-semibold">Notifications</span>
           <Button
-            variant="ghost"
+
             size="sm"
             className="h-auto p-1 text-xs"
             disabled={unreadCount === 0 || markAllReadMutation.isPending}
