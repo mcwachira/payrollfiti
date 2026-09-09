@@ -109,7 +109,7 @@ export default function LoginPage() {
               </Button>
               <Button
                 type="button"
-                variant="ghost"
+
                 className="w-full"
                 onClick={() => {
                   setChallengeToken(null);

@@ -57,7 +57,7 @@ export default function SignupPage() {
       router.push('/onboarding');
     }catch(error){
       setError(
-        err instanceof ApiError ? err.message : 'Unable to create account',
+        error instanceof ApiError ? error.message : 'Unable to create account',
       );
     } finally {
       setIsSubmitting(false);
