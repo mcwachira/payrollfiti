@@ -7,10 +7,16 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "barryvdh/laravel-dompdf": "^3.1",
         "laravel/framework": "^13.17",
+        "laravel/horizon": "^5.49",
         "laravel/sanctum": "^4.0",
+        "laravel/scout": "^11.7",
         "laravel/tinker": "^3.0",
+        "league/flysystem-aws-s3-v3": "^3.35",
         "predis/predis": "^3.6",
+        "sentry/sentry-laravel": "^4.27",
+        "spatie/browsershot": "^5.4",
         "spatie/laravel-permission": "^8.3"
     },
     "require-dev": {
@@ -18,6 +24,7 @@
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
         "laravel/pint": "^1.27",
+        "laravel/telescope": "^5.24",
         "mockery/mockery": "^1.6",
         "nunomaduro/collision": "^8.6",
         "phpunit/phpunit": "^12.5.12"
