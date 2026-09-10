@@ -44,6 +44,9 @@ dev: web-dev ## Alias for web-dev — run the web app's dev server locally
 web-dev: ## Run Next.js dev server locally (outside Docker) for fast HMR
 	pnpm turbo run dev --filter=web...
 
+test-web:  ##for running test on the frontend
+	pnpm --filter web test
+
 dev-api: ## Run Laravel's dev server locally (outside Docker) — needs PHP/composer installed on host
 	cd apps/api && php artisan serve --port=8000
 
@@ -92,7 +95,7 @@ seed: ## Run database seeders
 key-generate: ## Generate a fresh APP_KEY
 	docker compose exec api php artisan key:generate
 
-test: ## Run the Laravel test suite
+test-backend: ## Run the Laravel test suite
 	docker compose exec api php artisan test
 
 ## ---- Dependencies ----
