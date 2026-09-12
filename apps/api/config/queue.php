@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'default' => env('QUEUE_CONNECTION', 'database'),
+    'default' => env('QUEUE_CONNECTION', 'redis'),
 
     /*
     |--------------------------------------------------------------------------
@@ -70,7 +70,12 @@ return [
             'queue' => env('REDIS_QUEUE', 'default'),
             'retry_after' => (int) env('REDIS_QUEUE_RETRY_AFTER', 90),
             'block_for' => null,
-            'after_commit' => false,
+            // Transaction-aware dispatching (Part 13 §13.7 / §14): jobs are only
+            // added to the queue after the surrounding DB transaction commits, so a
+            // rolled-back transaction can never leave an orphaned job that references
+            // rows that no longer exist. Payroll-run completion and payment settlement
+            // additionally use the outbox table for true durability.
+            'after_commit' => true,
         ],
 
         'deferred' => [

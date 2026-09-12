@@ -17,7 +17,7 @@ return [
          * `Spatie\Permission\Contracts\Permission` contract.
          */
 
-        'permission' => Permission::class,
+        'permission' => App\Models\Permission::class,
 
         /*
          * When using the "HasRoles" trait from this package, we need to know which
@@ -28,7 +28,7 @@ return [
          * `Spatie\Permission\Contracts\Role` contract.
          */
 
-        'role' => Role::class,
+        'role' => App\Models\Role::class,
 
         /*
          * When using the "Teams" feature from this package, we need to know which
@@ -72,20 +72,19 @@ return [
         'model_has_permissions' => 'model_has_permissions',
 
         /*
-         * When using the "HasRoles" trait from this package, we need to know which
-         * table should be used to retrieve your models roles. We have chosen a
-         * basic default value but you may easily change it to any table you like.
+         * The project stores user-to-role assignments in `user_roles`, not the
+         * stock Spatie `model_has_roles` table. Keep the package model key set to
+         * the actual `user_id` column so permission lookups work with the custom
+         * multi-tenant schema.
          */
 
-        'model_has_roles' => 'model_has_roles',
+        'model_has_roles' => 'user_roles',
 
         /*
-         * When using the "HasRoles" trait from this package, we need to know which
-         * table should be used to retrieve your roles permissions. We have chosen a
-         * basic default value but you may easily change it to any table you like.
+         * Role-to-permission assignments are stored in `role_permissions`.
          */
 
-        'role_has_permissions' => 'role_has_permissions',
+        'role_has_permissions' => 'role_permissions',
     ],
 
     'column_names' => [
@@ -103,7 +102,7 @@ return [
          * that case, name this `model_uuid`.
          */
 
-        'model_morph_key' => 'model_id',
+        'model_morph_key' => 'user_id',
 
         /*
          * Change this if you want to use the teams feature and your related model's
