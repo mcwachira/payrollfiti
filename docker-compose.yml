@@ -96,6 +96,83 @@ services:
       retries: 10
       start_period: 15s
 
+  horizon:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: php artisan horizon
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      APP_DEBUG: ${APP_DEBUG:-true}
+      APP_KEY: ${APP_KEY:-}
+
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-payrollfiti}
+      DB_USERNAME: ${POSTGRES_USER:-payrollfiti}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-payrollfiti}
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    command: php artisan schedule:work
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: payrollfiti
+      MINIO_ROOT_PASSWORD: payrollfiti-local
+    ports: [ "9000:9000", "9001:9001" ]
+    volumes: [ "minio-data:/data" ]
+
+
+  prometheus:
+    image: prom/prometheus
+    profiles: [ "observability" ]
+    volumes: [ "./infra/prometheus:/etc/prometheus" ]
+    ports: [ "9090:9090" ]
+
+
+  grafana:
+    image: grafana/grafana
+    profiles: [ "observability" ]
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
+
   web:
     build:
       context: .
@@ -145,3 +222,5 @@ services:
 volumes:
   db-data:
   redis-data:
+  minio-data:
+  grafana-data:
