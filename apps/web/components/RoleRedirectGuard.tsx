@@ -2,8 +2,8 @@
 
 import { PropsWithChildren, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Role } from '@repo/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { Role } from "@/shared-types"
 
 interface RoleRedirectGuardProps {
   allow: Role[];
@@ -19,9 +19,9 @@ interface RoleRedirectGuardProps {
  * error state built around data their role can't fetch.
  */
 export function RoleRedirectGuard({
-                                    allow,
-                                    children,
-                                  }: PropsWithChildren<RoleRedirectGuardProps>) {
+  allow,
+  children,
+}: PropsWithChildren<RoleRedirectGuardProps>) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
