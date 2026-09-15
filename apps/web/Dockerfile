@@ -31,7 +31,7 @@ ARG NEXT_PUBLIC_APP_NAME=PayrollFiti
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_APP_NAME=${NEXT_PUBLIC_APP_NAME}
 
-RUN pnpm turbo run build --filter=web
+RUN cd apps/web && pnpm run build
 
 FROM base AS runner
 WORKDIR /app
@@ -39,8 +39,8 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
 COPY --from=installer /app/apps/web/public ./apps/web/public
-COPY --from=installer --chown=nextjs:nodejs /app/apps/web/.next/standalone ./
-COPY --from=installer --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/.next/static
+COPY --from=installer --chown=nextjs:nodejs /app/apps/web/.next/standalone/. ./
+COPY --from=installer --chown=nextjs:nodejs /app/apps/web/.next/static ./.next/static
 
 USER nextjs
 
@@ -50,4 +50,4 @@ ENV PORT=3000
 
 EXPOSE 3000
 
-CMD ["node", "apps/web/server.js"]
+CMD ["node", "server.js"]

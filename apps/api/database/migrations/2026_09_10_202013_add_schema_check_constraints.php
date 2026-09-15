@@ -9,6 +9,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         $checks = [
             ['payroll_periods', 'payroll_period_dates_check', 'period_end >= period_start'],
             ['payroll_runs', 'payroll_run_period_dates_check', 'period_end >= period_start'],
@@ -36,6 +40,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         $constraints = [
             'payroll_periods' => ['payroll_period_dates_check'],
             'payroll_runs' => ['payroll_run_period_dates_check'],

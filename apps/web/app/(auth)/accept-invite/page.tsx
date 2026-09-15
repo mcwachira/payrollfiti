@@ -43,9 +43,9 @@ function AcceptInviteForm() {
     return;
   }
   setIsSubmitting(true);
-  try {
-    await acceptInvite(token, password);
-    router.push('/employee-portal');
+    try {
+      await acceptInvite(token, password, confirmPassword);
+      router.push('/employee-portal');
   } catch (err) {
     setError(
       err instanceof ApiError ? err.message : 'Unable to set up your account',

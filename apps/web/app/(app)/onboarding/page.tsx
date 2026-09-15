@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-
+import { formatPrice } from '@repo/pricing';
 import { getMyTenant, createCompany, type Tenant } from '@/lib/tenants-api';
 import {
   listCompanies,
@@ -30,8 +30,7 @@ import { calculatePayroll } from '@/lib/payroll-calculator-api';
 import { listPlans, subscribe, type Plan } from '@/lib/billing-api';
 import { getCountryName } from '@/lib/countries';
 import { ApiError } from '@/lib/api-client';
-import { formatPrice } from "@/lib/pricing/format"
-import { SalaryComponentsSettings } from "@/components/settings/SalaryComponentSettings"
+import { SalaryComponentsSettings } from '@/components/settings/SalaryComponentsSettings';
 
 /**
  * Guided post-signup setup. Replaces the previous behavior of dropping a

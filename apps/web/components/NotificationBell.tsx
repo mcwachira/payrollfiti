@@ -1,60 +1,59 @@
 "use client"
-import { useState } from 'react';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { Bell, CheckCheck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { useState } from "react"
+import Link from "next/link"
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
+import { Bell, CheckCheck, ExternalLink } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from "@/components/ui/popover"
 import {
   listNotifications,
   markNotificationRead,
   markAllNotificationsRead,
   type Notification,
-} from '@/lib/notifications-api';
+} from "@/lib/notifications-api"
 
 function formatRelativeTime(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const minutes = Math.round(diffMs / 60_000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  return `${days}d ago`;
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const minutes = Math.round(diffMs / 60_000)
+  if (minutes < 1) return "just now"
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.round(hours / 24)
+  return `${days}d ago`
 }
 
 function NotificationRow({
-                           notification,
-                           onRead,
-                         }: {
-  notification: Notification;
-  onRead: (id: string) => void;
+  notification,
+  onRead,
+}: {
+  notification: Notification
+  onRead: (id: string) => void
 }) {
-
-
   return (
     <button
       onClick={() => !notification.read && onRead(notification.id)}
-      className="w-full text-left px-3 py-2.5 rounded-md hover:bg-accent flex gap-2.5 items-start"
+      className="hover:bg-accent flex w-full items-start gap-2.5 rounded-md px-3 py-2.5 text-left"
     >
       <span
         className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-          notification.read ? 'bg-transparent' : 'bg-blue-600'
+          notification.read ? "bg-transparent" : "bg-blue-600"
         }`}
         aria-hidden
       />
       <div className="min-w-0">
         <p
-          className={`text-sm ${notification.read ? 'text-muted-foreground' : 'font-medium'}`}
+          className={`text-sm ${notification.read ? "text-muted-foreground" : "font-medium"}`}
         >
           {notification.message}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <p className="text-muted-foreground mt-0.5 text-xs">
           {formatRelativeTime(notification.createdAt)}
         </p>
       </div>
@@ -62,85 +61,82 @@ function NotificationRow({
   )
 }
 
-
 export function NotificationBell() {
-  const [open, setOpen] = useState(false);
-  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false)
+  const queryClient = useQueryClient()
 
   const unreadQuery = useQuery({
-    queryKey: ['notifications', 'unread'],
+    queryKey: ["notifications", "unread"],
     queryFn: () => listNotifications(true),
-  });
-  const unreadCount = unreadQuery.data?.length ?? 0;
+  })
+  const unreadCount = unreadQuery.data?.length ?? 0
 
   // Only fetched once the popover is actually opened — the header renders
   // on every page, so the full (read + unread) list shouldn't be a
   // standing request alongside the lightweight unread-count poll above.
   const listQuery = useQuery({
-    queryKey: ['notifications', 'all'],
+    queryKey: ["notifications", "all"],
     queryFn: () => listNotifications(false),
     enabled: open,
-  });
+  })
 
   const markReadMutation = useMutation({
     mutationFn: markNotificationRead,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] })
     },
-  });
+  })
 
   const markAllReadMutation = useMutation({
     mutationFn: markAllNotificationsRead,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] })
     },
-  });
+  })
 
-  const notifications = listQuery.data ?? [];
+  const notifications = listQuery.data ?? []
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-
           size="icon"
           className="relative"
           aria-label={
             unreadCount > 0
               ? `Notifications (${unreadCount} unread)`
-              : 'Notifications'
+              : "Notifications"
           }
         >
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 h-4 min-w-4 px-1 justify-center text-[10px] bg-red-600 text-white hover:bg-red-600">
-              {unreadCount > 9 ? '9+' : unreadCount}
+            <Badge className="absolute -top-1 -right-1 h-4 min-w-4 justify-center bg-red-600 px-1 text-[10px] text-white hover:bg-red-600">
+              {unreadCount > 9 ? "9+" : unreadCount}
             </Badge>
           )}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
-        <div className="flex items-center justify-between px-3 py-2 border-b">
+        <div className="flex items-center justify-between border-b px-3 py-2">
           <span className="text-sm font-semibold">Notifications</span>
           <Button
-
             size="sm"
             className="h-auto p-1 text-xs"
             disabled={unreadCount === 0 || markAllReadMutation.isPending}
             onClick={() => markAllReadMutation.mutate()}
           >
-            <CheckCheck className="h-3.5 w-3.5 mr-1" />
+            <CheckCheck className="mr-1 h-3.5 w-3.5" />
             Mark all read
           </Button>
         </div>
         <ScrollArea className="h-80">
           <div className="p-1.5">
             {listQuery.isPending ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
+              <p className="text-muted-foreground py-8 text-center text-sm">
                 Loading…
               </p>
             ) : notifications.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
+              <p className="text-muted-foreground py-8 text-center text-sm">
                 No notifications yet
               </p>
             ) : (
@@ -154,7 +150,16 @@ export function NotificationBell() {
             )}
           </div>
         </ScrollArea>
+        <div className="border-t p-1.5">
+          <Link
+            href="/notifications"
+            className="text-muted-foreground hover:bg-accent flex items-center justify-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium hover:text-foreground"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            View all notifications
+          </Link>
+        </div>
       </PopoverContent>
     </Popover>
-  );
+  )
 }

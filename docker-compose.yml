@@ -43,7 +43,7 @@ services:
       APP_NAME: ${APP_NAME:-PayrollFiti}
       APP_ENV: ${APP_ENV:-local}
       APP_DEBUG: ${APP_DEBUG:-true}
-      APP_KEY: ${APP_KEY:-}
+      APP_KEY: ${APP_KEY:-base64:Gtx+05f/vfx7SYvZCyVyvM1+cG2jT5rfAMRO6PkSFBI=}
       APP_URL: ${APP_URL:-http://localhost}
 
       DB_CONNECTION: pgsql
@@ -57,6 +57,7 @@ services:
       REDIS_PORT: 6379
       CACHE_STORE: redis
       SESSION_DRIVER: redis
+      SESSION_SAME_SITE: ${SESSION_SAME_SITE:-lax}
       QUEUE_CONNECTION: redis
 
       # Nginx now sits in front of both services on one origin, so the
@@ -74,6 +75,7 @@ services:
       MPESA_PASSKEY: ${MPESA_PASSKEY:-}
       MPESA_ENV: ${MPESA_ENV:-sandbox}
       MPESA_CALLBACK_URL: ${MPESA_CALLBACK_URL:-}
+      MPESA_CALLBACK_TOKEN: ${MPESA_CALLBACK_TOKEN:-}
 
       MAIL_MAILER: ${MAIL_MAILER:-smtp}
       MAIL_HOST: ${MAIL_HOST:-}
@@ -105,7 +107,7 @@ services:
     environment:
       APP_ENV: ${APP_ENV:-local}
       APP_DEBUG: ${APP_DEBUG:-true}
-      APP_KEY: ${APP_KEY:-}
+      APP_KEY: ${APP_KEY:-base64:Gtx+05f/vfx7SYvZCyVyvM1+cG2jT5rfAMRO6PkSFBI=}
 
       DB_CONNECTION: pgsql
       DB_HOST: db
@@ -114,9 +116,25 @@ services:
       DB_USERNAME: ${POSTGRES_USER:-payrollfiti}
       DB_PASSWORD: ${POSTGRES_PASSWORD:-payrollfiti}
 
+      CACHE_STORE: redis
       REDIS_HOST: redis
       REDIS_PORT: 6379
       QUEUE_CONNECTION: redis
+
+      PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY:-}
+      MPESA_CONSUMER_KEY: ${MPESA_CONSUMER_KEY:-}
+      MPESA_CONSUMER_SECRET: ${MPESA_CONSUMER_SECRET:-}
+      MPESA_SHORTCODE: ${MPESA_SHORTCODE:-}
+      MPESA_PASSKEY: ${MPESA_PASSKEY:-}
+      MPESA_ENV: ${MPESA_ENV:-sandbox}
+      MPESA_CALLBACK_URL: ${MPESA_CALLBACK_URL:-}
+      MPESA_CALLBACK_TOKEN: ${MPESA_CALLBACK_TOKEN:-}
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan horizon:status | grep -q running"]
+      interval: 15s
+      timeout: 10s
+      retries: 6
+      start_period: 20s
     depends_on:
       db:
         condition: service_healthy
@@ -130,6 +148,37 @@ services:
       dockerfile: apps/api/Dockerfile
     command: php artisan schedule:work
     restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      APP_DEBUG: ${APP_DEBUG:-true}
+      APP_KEY: ${APP_KEY:-base64:Gtx+05f/vfx7SYvZCyVyvM1+cG2jT5rfAMRO6PkSFBI=}
+
+      CACHE_STORE: redis
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB:-payrollfiti}
+      DB_USERNAME: ${POSTGRES_USER:-payrollfiti}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-payrollfiti}
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+
+      PAYSTACK_SECRET_KEY: ${PAYSTACK_SECRET_KEY:-}
+      MPESA_CONSUMER_KEY: ${MPESA_CONSUMER_KEY:-}
+      MPESA_CONSUMER_SECRET: ${MPESA_CONSUMER_SECRET:-}
+      MPESA_SHORTCODE: ${MPESA_SHORTCODE:-}
+      MPESA_PASSKEY: ${MPESA_PASSKEY:-}
+      MPESA_ENV: ${MPESA_ENV:-sandbox}
+      MPESA_CALLBACK_URL: ${MPESA_CALLBACK_URL:-}
+      MPESA_CALLBACK_TOKEN: ${MPESA_CALLBACK_TOKEN:-}
+    healthcheck:
+      test: ["CMD-SHELL", "php artisan schedule:list >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
     depends_on:
       db:
         condition: service_healthy

@@ -1,17 +1,18 @@
-"use client"
+'use client';
+
+import { PropsWithChildren } from 'react';
+import { Role } from '@repo/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { Role } from "@/shared-types"
-import { PropsWithChildren } from "react"
 
 interface RoleGuardProps {
   allow: Role[];
 }
 
 export function RoleGuard({
-                            allow,
-                            children,
-                          }: PropsWithChildren<RoleGuardProps>) {
+  allow,
+  children,
+}: PropsWithChildren<RoleGuardProps>) {
   const { user } = useAuth();
 
   if (!user || !allow.includes(user.role)) {
@@ -28,4 +29,3 @@ export function RoleGuard({
 
   return <>{children}</>;
 }
-

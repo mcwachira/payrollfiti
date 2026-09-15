@@ -2,24 +2,18 @@
 
 import {
   createContext,
-  ReactNode,
   useCallback,
   useContext,
   useEffect,
   useState,
-
+  PropsWithChildren,
 } from 'react';
-
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
+import type { AuthTokensDto, AuthenticatedUserDto } from '@repo/api';
 import { apiFetch, ApiError } from '@/lib/api-client';
-import { TokenStorage } from '@/lib/token-storage';
-import { AuthenticatedUserDto, AuthTokensDto } from "@/shared-types"
+import { tokenStorage } from '@/lib/token-storage';
 
-
-interface AuthProviderProps {
-  children: ReactNode;
-}
 interface SignupInput {
   tenantName: string;
   countryCode: string;
@@ -43,10 +37,9 @@ interface AuthContextValue {
   // value, since the setUser() call here doesn't re-render the caller's
   // closure synchronously. Returns a TwoFactorChallenge instead when the
   // account has 2FA enabled — see verifyTwoFactor().
-
-  login:(
-    email:string,
-    password:string,
+  login: (
+    email: string,
+    password: string,
   ) => Promise<AuthenticatedUserDto | TwoFactorChallenge>;
   signup: (input: SignupInput) => Promise<void>;
   acceptInvite: (token: string, password: string) => Promise<void>;
@@ -67,22 +60,22 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export function AuthProvider({ children }: AuthProviderProps) {
-
-  const [user, setUser] = useState<AuthenticatedUserDto |  null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-
+export function AuthProvider({ children }: PropsWithChildren) {
+  const [user, setUser] = useState<AuthenticatedUserDto | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if(!TokenStorage.getAccessToken()){
+    if (!tokenStorage.getAccessToken()) {
       setIsLoading(false);
       return;
     }
-    apiFetch<AuthenticatedUserDto>('/auth/me').then(setUser).catch(() => TokenStorage.clear()).finally(() => setIsLoading(false));
-  },[]);
-
+    apiFetch<AuthenticatedUserDto>('/me')
+      .then(setUser)
+      .catch(() => tokenStorage.clear())
+      .finally(() => setIsLoading(false));
+  }, []);
 
   // Query keys like ['tenant', 'me'] or ['companies'] aren't scoped by
   // tenant/user id — without clearing here, switching accounts in the same
@@ -91,7 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const applySession = useCallback(
     (data: { user: AuthenticatedUserDto } & AuthTokensDto) => {
       queryClient.clear();
-      TokenStorage.setToken(data.accessToken, data.refreshToken);
+      tokenStorage.setTokens(data.accessToken, data.refreshToken);
       setUser(data.user);
       return data.user;
     },
@@ -102,7 +95,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     async (email: string, password: string) => {
       const data = await apiFetch<
         ({ user: AuthenticatedUserDto } & AuthTokensDto) | TwoFactorChallenge
-      >('/auth/login', {
+      >('/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
         skipAuth: true,
@@ -117,9 +110,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     async (challengeToken: string, code: string) => {
       const data = await apiFetch<
         { user: AuthenticatedUserDto } & AuthTokensDto
-      >('/auth/2fa/verify', {
+      >('/account/2fa/login/verify', {
         method: 'POST',
-        body: JSON.stringify({ challengeToken, code }),
+        body: JSON.stringify({ challenge_id: challengeToken, code }),
         skipAuth: true,
       } as RequestInit & { skipAuth: boolean });
       return applySession(data);
@@ -131,7 +124,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     async (input: SignupInput) => {
       const data = await apiFetch<
         { user: AuthenticatedUserDto } & AuthTokensDto
-      >('/auth/signup', {
+      >('/signup', {
         method: 'POST',
         body: JSON.stringify(input),
         skipAuth: true,
@@ -145,7 +138,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     async (token: string, password: string) => {
       const data = await apiFetch<
         { user: AuthenticatedUserDto } & AuthTokensDto
-      >('/auth/accept-invite', {
+      >('/accept-invite', {
         method: 'POST',
         body: JSON.stringify({ token, password }),
         skipAuth: true,
@@ -156,7 +149,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   const forgotPassword = useCallback(async (email: string) => {
-    await apiFetch<void>('/auth/forgot-password', {
+    await apiFetch<void>('/forgot-password', {
       method: 'POST',
       body: JSON.stringify({ email }),
       skipAuth: true,
@@ -167,9 +160,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     async (token: string, password: string) => {
       const data = await apiFetch<
         { user: AuthenticatedUserDto } & AuthTokensDto
-      >('/auth/reset-password', {
+      >('/reset-password', {
         method: 'POST',
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ token, password, password_confirmation: password }),
         skipAuth: true,
       } as RequestInit & { skipAuth: boolean });
       return applySession(data);
@@ -179,12 +172,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = useCallback(async () => {
     try {
-      await apiFetch('/auth/logout', { method: 'POST' });
+      await apiFetch('/logout', { method: 'POST' });
     } catch (error) {
       if (!(error instanceof ApiError)) throw error;
     } finally {
       queryClient.clear();
-      TokenStorage.clear();
+      tokenStorage.clear();
       setUser(null);
       router.push('/login');
     }
@@ -214,4 +207,3 @@ export function useAuth(): AuthContextValue {
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }
-

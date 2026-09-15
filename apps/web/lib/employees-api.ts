@@ -50,21 +50,21 @@ export interface CreateEmployeeInput {
 }
 
 export function listCompanies(): Promise<Company[]> {
-  return apiFetch<Company[]>('/tenants/companies');
+  return apiFetch<Company[]>('/v1/tenants/companies');
 }
 
 export function listEmployees(companyId: string): Promise<Employee[]> {
   return apiFetch<Employee[]>(
-    `/employees?companyId=${encodeURIComponent(companyId)}`,
+    `/v1/employees?company_id=${encodeURIComponent(companyId)}`,
   );
 }
 
-export function getEmployee(id:string):Promise<Employee>{
-  return apiFetch<Employee>(`/employees/${id}`);
+export function getEmployee(id: string): Promise<Employee> {
+  return apiFetch<Employee>(`/v1/employees/${id}`);
 }
 
-export function createEmployee(input:CreateEmployeeInput):Promise<Employee>{
-  return apiFetch<Employee>('/employees', {
+export function createEmployee(input: CreateEmployeeInput): Promise<Employee> {
+  return apiFetch<Employee>('/v1/employees', {
     method: 'POST',
     body: JSON.stringify(input),
   });
@@ -78,21 +78,20 @@ export type BulkCreateEmployeeResult =
 export function bulkCreateEmployees(
   employees: CreateEmployeeInput[],
 ): Promise<BulkCreateEmployeeResult[]> {
-  return apiFetch<BulkCreateEmployeeResult[]>('/employees/bulk', {
+  return apiFetch<BulkCreateEmployeeResult[]>('/v1/employees/bulk', {
     method: 'POST',
     body: JSON.stringify({ employees }),
   });
 }
 
 export function removeEmployee(id: string): Promise<Employee> {
-  return apiFetch<Employee>(`/employees/${id}`, { method: 'DELETE' });
+  return apiFetch<Employee>(`/v1/employees/${id}`, { method: 'DELETE' });
 }
 
 /** Sends (or re-sends) a portal-access invite email — the only way an employee ever gets a login. */
 export function inviteEmployee(id: string): Promise<void> {
-  return apiFetch<void>(`/employees/${id}/invite`, { method: 'POST' });
+  return apiFetch<void>(`/v1/employees/${id}/invite`, { method: 'POST' });
 }
-
 
 export interface AddSalaryStructureInput {
   basicSalary: number;
@@ -107,7 +106,7 @@ export function addSalaryStructure(
   input: AddSalaryStructureInput,
 ): Promise<SalaryStructure> {
   return apiFetch<SalaryStructure>(
-    `/employees/${employeeId}/salary-structures`,
+    `/v1/employees/${employeeId}/salary-structures`,
     {
       method: 'POST',
       body: JSON.stringify(input),
@@ -119,7 +118,7 @@ export function updateEmployee(
   id: string,
   input: Partial<Omit<CreateEmployeeInput, 'companyId'>>,
 ): Promise<Employee> {
-  return apiFetch<Employee>(`/employees/${id}`, {
+  return apiFetch<Employee>(`/v1/employees/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(input),
   });
@@ -139,7 +138,7 @@ export function listOnboardingTasks(
   employeeId: string,
 ): Promise<OnboardingTask[]> {
   return apiFetch<OnboardingTask[]>(
-    `/employees/${employeeId}/onboarding-tasks`,
+    `/v1/onboarding/tasks?employee_id=${employeeId}`,
   );
 }
 
@@ -147,9 +146,9 @@ export function addOnboardingTask(
   employeeId: string,
   input: { title: string; isRequired?: boolean },
 ): Promise<OnboardingTask> {
-  return apiFetch<OnboardingTask>(`/employees/${employeeId}/onboarding-tasks`, {
+  return apiFetch<OnboardingTask>(`/v1/onboarding/tasks`, {
     method: 'POST',
-    body: JSON.stringify(input),
+    body: JSON.stringify({ ...input, employee_id: employeeId }),
   });
 }
 
@@ -159,13 +158,13 @@ export function updateOnboardingTask(
   completed: boolean,
 ): Promise<OnboardingTask> {
   return apiFetch<OnboardingTask>(
-    `/employees/${employeeId}/onboarding-tasks/${taskId}`,
+    `/v1/onboarding/tasks/${taskId}`,
     { method: 'PATCH', body: JSON.stringify({ completed }) },
   );
 }
 
 export function completeOnboarding(employeeId: string): Promise<Employee> {
-  return apiFetch<Employee>(`/employees/${employeeId}/onboarding/complete`, {
+  return apiFetch<Employee>(`/v1/employees/${employeeId}/onboarding/complete`, {
     method: 'POST',
   });
 }
