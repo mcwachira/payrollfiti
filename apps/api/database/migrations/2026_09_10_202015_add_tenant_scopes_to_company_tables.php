@@ -38,7 +38,15 @@ return new class extends Migration
 
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         foreach (array_merge(self::COMPANY_TABLES, self::EMPLOYEE_TABLES, array_keys(self::DERIVED_TABLES)) as $table) {
+            if (! Schema::hasTable($table) || Schema::hasColumn($table, 'tenant_id')) {
+                continue;
+            }
+
             Schema::table($table, function (Blueprint $blueprint): void {
                 $blueprint->uuid('tenant_id')->nullable();
             });
@@ -69,14 +77,23 @@ return new class extends Migration
         );
 
         foreach (array_merge(self::COMPANY_TABLES, self::EMPLOYEE_TABLES, array_keys(self::DERIVED_TABLES)) as $table) {
+            if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'tenant_id')) {
+                continue;
+            }
+
             DB::statement(sprintf('ALTER TABLE "%s" ALTER COLUMN tenant_id SET NOT NULL', $table));
-            Schema::table($table, function (Blueprint $blueprint) use ($table): void {
-                $blueprint->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
-                $blueprint->index('tenant_id', $table . '_tenant_id_index');
-            });
+
+            try {
+                Schema::table($table, function (Blueprint $blueprint): void {
+                    $blueprint->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+                    $blueprint->index('tenant_id', $table . '_tenant_id_index');
+                });
+            } catch (\Throwable $e) {
+            }
 
             DB::statement(sprintf('ALTER TABLE "%s" ENABLE ROW LEVEL SECURITY', $table));
             DB::statement(sprintf('ALTER TABLE "%s" FORCE ROW LEVEL SECURITY', $table));
+            DB::statement(sprintf('DROP POLICY IF EXISTS "%s_tenant_isolation" ON "%s"', $table, $table));
             DB::statement(sprintf(
                 'CREATE POLICY "%s_tenant_isolation" ON "%s" USING (tenant_id = NULLIF(current_setting(\'app.current_tenant_id\', true), \'\')::uuid) WITH CHECK (tenant_id = NULLIF(current_setting(\'app.current_tenant_id\', true), \'\')::uuid)',
                 $table,
@@ -89,13 +106,23 @@ return new class extends Migration
     {
         $tables = array_merge(self::COMPANY_TABLES, self::EMPLOYEE_TABLES, array_keys(self::DERIVED_TABLES));
 
-        foreach (array_reverse($tables) as $table) {
+        foreach (array_merge(self::COMPANY_TABLES, self::EMPLOYEE_TABLES, array_keys(self::DERIVED_TABLES)) as $table) {
+            if (! Schema::hasTable($table) || ! Schema::hasColumn($table, 'tenant_id')) {
+                continue;
+            }
+
             DB::statement(sprintf('DROP POLICY IF EXISTS "%s_tenant_isolation" ON "%s"', $table, $table));
             DB::statement(sprintf('ALTER TABLE "%s" NO FORCE ROW LEVEL SECURITY', $table));
             DB::statement(sprintf('ALTER TABLE "%s" DISABLE ROW LEVEL SECURITY', $table));
-            Schema::table($table, function (Blueprint $blueprint): void {
-                $blueprint->dropForeign(['tenant_id']);
-                $blueprint->dropColumn('tenant_id');
+            Schema::table($table, function (Blueprint $blueprint) use ($table): void {
+                try {
+                    $blueprint->dropForeign(['tenant_id']);
+                } catch (\Throwable $e) {
+                }
+                try {
+                    $blueprint->dropColumn('tenant_id');
+                } catch (\Throwable $e) {
+                }
             });
         }
     }

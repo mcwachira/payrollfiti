@@ -8,42 +8,43 @@ import {
   useState,
   PropsWithChildren,
 } from 'react';
+import type { BrandingConfigDto } from '@repo/api';
 import { apiFetch } from '@/lib/api-client';
 import { APP_NAME } from '@/lib/config';
 import { useAuth } from './AuthContext';
-import { BrandingConfigDto } from "@/shared-types"
 
-const DEFAULT_BRANDING:BrandingConfigDto = {appName:APP_NAME}
+const DEFAULT_BRANDING: BrandingConfigDto = { appName: APP_NAME };
 
 interface BrandingContextValue extends BrandingConfigDto {
-  refreshBranding:() => Promise<void>;
+  refreshBranding: () => Promise<void>;
 }
 
 const BrandingContext = createContext<BrandingContextValue>({
   ...DEFAULT_BRANDING,
-  refreshBranding:async() => {},
-})
+  refreshBranding: async () => {},
+});
 
-export function BrandingProvider({children}:PropsWithChildren) {
-  const {user} = useAuth();
+export function BrandingProvider({ children }: PropsWithChildren) {
+  const { user } = useAuth();
   const [branding, setBranding] = useState<BrandingConfigDto>(DEFAULT_BRANDING);
 
   const fetchBranding = useCallback(async () => {
     const path = user ? '/branding' : '/branding/default';
-    try{
+    try {
       const result = await apiFetch<BrandingConfigDto>(
         path,
-        user ?{}:({skipAuth:true} as RequestInit & {skipAuth:true})
+        user ? {} : ({ skipAuth: true } as RequestInit & { skipAuth: boolean }),
       );
       setBranding(result);
-    }catch{
-      setBranding(DEFAULT_BRANDING)
+    } catch {
+      setBranding(DEFAULT_BRANDING);
     }
-  }, [user])
+  }, [user]);
 
   useEffect(() => {
     void fetchBranding();
   }, [fetchBranding]);
+
   return (
     <BrandingContext.Provider
       value={{ ...branding, refreshBranding: fetchBranding }}

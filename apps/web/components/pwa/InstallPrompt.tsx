@@ -1,28 +1,26 @@
-"use client"
+'use client';
 import { useEffect, useState } from 'react';
 import { Download, Share, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { APP_NAME } from '@/lib/config';
 
-
 const DISMISS_KEY = 'pwa-install-dismissed-at';
 const DISMISS_COOLDOWN_MS = 14 * 24 * 60 * 60 * 1000;
 
 interface BeforeInstallPromptEvent extends Event {
-  prompt:() => Promise<void>;
-userChoice:Promise<{outcome:'accepted' | 'dismissed'}>
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-function isStandalone(){
+function isStandalone() {
   return (
-    window.matchMedia('(display-mode: standalone)').matches  ||
+    window.matchMedia('(display-mode: standalone)').matches ||
     // iOS Safari's own non-standard flag — there's no matchMedia equivalent.
     (window.navigator as { standalone?: boolean }).standalone === true
-  )
+  );
 }
 
-
-function isIos(){
+function isIos() {
   return /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
 }
 
@@ -38,7 +36,6 @@ function recentlyDismissed() {
  * iOS Safari never fires that event — "Add to Home Screen" is
  * Share-sheet-only there — so we show static instructions instead.
  */
-
 export function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
@@ -46,7 +43,7 @@ export function InstallPrompt() {
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
-    if(isStandalone() || recentlyDismissed()) return ;
+    if (isStandalone() || recentlyDismissed()) return;
     setDismissed(false);
 
     if (isIos()) {
@@ -54,11 +51,10 @@ export function InstallPrompt() {
       return;
     }
 
-    const onBeforeInstallPrompt =  (event:Event) => {
+    const onBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       setDeferredPrompt(event as BeforeInstallPromptEvent);
-    }
-
+    };
     const onInstalled = () => {
       setDeferredPrompt(null);
       setDismissed(true);
@@ -71,24 +67,24 @@ export function InstallPrompt() {
       window.removeEventListener('beforeinstallprompt', onBeforeInstallPrompt);
       window.removeEventListener('appinstalled', onInstalled);
     };
-  },[])
+  }, []);
 
   const dismiss = () => {
     window.localStorage.setItem(DISMISS_KEY, String(Date.now()));
     setDismissed(true);
-  }
+  };
 
-  const install = async() => {
-    if(!deferredPrompt) return;
+  const install = async () => {
+    if (!deferredPrompt) return;
     await deferredPrompt.prompt();
-    const {outcome} = await deferredPrompt.userChoice;
-    setDeferredPrompt(null)
+    const { outcome } = await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
     if (outcome === 'accepted') {
       window.localStorage.removeItem(DISMISS_KEY);
     } else {
       dismiss();
     }
-  }
+  };
 
   if (dismissed || (!deferredPrompt && !showIosInstructions)) return null;
 
@@ -125,4 +121,3 @@ export function InstallPrompt() {
     </div>
   );
 }
-

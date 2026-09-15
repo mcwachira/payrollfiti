@@ -45,29 +45,29 @@ export interface PayInvoiceInput {
 }
 
 export function listPlans(): Promise<Plan[]> {
-  return apiFetch<Plan[]>('/billing/plans');
+  return apiFetch<Plan[]>('/v1/billing/plans');
 }
 
 export function getSubscription(): Promise<Subscription | null> {
-  return apiFetch<Subscription | null>('/billing/subscription');
+  return apiFetch<Subscription | null>('/v1/billing/subscription');
 }
 
 export function subscribe(input: SubscribeInput): Promise<Subscription> {
-  return apiFetch<Subscription>('/billing/subscribe', {
+  return apiFetch<Subscription>('/v1/billing/subscription', {
     method: 'POST',
     body: JSON.stringify(input),
   });
 }
 
 export function listInvoices(): Promise<Invoice[]> {
-  return apiFetch<Invoice[]>('/billing/invoices');
+  return apiFetch<Invoice[]>('/v1/billing/invoices');
 }
 
 export function payInvoice(
   id: string,
   input: PayInvoiceInput = {},
 ): Promise<{ status: string }> {
-  return apiFetch<{ status: string }>(`/billing/invoices/${id}/pay`, {
+  return apiFetch<{ status: string }>(`/v1/billing/invoices/${id}/payments`, {
     method: 'POST',
     body: JSON.stringify(input),
   });

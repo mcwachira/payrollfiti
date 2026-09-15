@@ -28,14 +28,27 @@ return new class extends Migration
                 ->constrained('users')
                 ->nullOnDelete();
 
+            $table->foreignUuid('tenant_id')
+                ->after('employee_id')
+                ->constrained('tenants')
+                ->cascadeOnDelete();
+
+            $table->foreignUuid('company_id')
+                ->after('tenant_id')
+                ->nullable()
+                ->constrained('companies')
+                ->nullOnDelete();
+
             $table->timestampTz('completed_at')->nullable();
 
             $table->timestampsTz();
 
             $table->index([
                 'employee_id',
-                'status'
+                'status',
             ]);
+
+            $table->index(['tenant_id', 'status'], 'onboarding_tasks_tenant_status_idx');
         });
     }
 

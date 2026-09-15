@@ -22,30 +22,30 @@ function urlBase64ToUint8Array(base64Url: string): Uint8Array {
  * service worker's PushManager. The service worker itself (app/sw.ts)
  * handles the incoming `push` event once a subscription exists.
  */
-
-export function usePushNotifications(){
-  const [support, setSupport] = useState<PushSupportState>("checking");
+export function usePushNotifications() {
+  const [support, setSupport] = useState<PushSupportState>('checking');
   const [subscribed, setSubscribed] = useState(false);
   const [busy, setBusy] = useState(false);
 
-
   useEffect(() => {
-    if(!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      setSupport("unsupported");
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setSupport('unsupported');
       return;
     }
+    setSupport('ready');
 
-    setSupport("ready");
+    navigator.serviceWorker.ready
+      .then((registration) => registration.pushManager.getSubscription())
+      .then((subscription) => setSubscribed(subscription !== null))
+      .catch(() => setSubscribed(false));
+  }, []);
 
-    navigator.serviceWorker.ready.then((registration) => registration.pushManager.getSubscription()).then((subscription) => setSubscribed(subscription !==null)).catch(() => setSubscribed(false));
-  },[]);
-
-  const subscribe = useCallback(async() => {
+  const subscribe = useCallback(async () => {
     setBusy(true);
-    try{
+    try {
       const permission = await Notification.requestPermission();
-      if(permission !== 'granted' ) {
-        throw new Error('Notification Permission was not granted');
+      if (permission !== 'granted') {
+        throw new Error('Notification permission was not granted');
       }
 
       const publicKey = await getVapidPublicKey();

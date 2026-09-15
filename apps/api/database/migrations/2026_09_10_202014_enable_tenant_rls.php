@@ -59,11 +59,20 @@ return new class extends Migration
         'audit_logs',
         'report_jobs',
         'export_jobs',
+        'compliance_reports',
     ];
 
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         foreach (self::TABLES as $table) {
+            if (! Schema::hasTable($table)) {
+                continue;
+            }
+
             DB::statement(sprintf('ALTER TABLE "%s" ENABLE ROW LEVEL SECURITY', $table));
             DB::statement(sprintf('ALTER TABLE "%s" FORCE ROW LEVEL SECURITY', $table));
             DB::statement(sprintf(
@@ -76,7 +85,15 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         foreach (array_reverse(self::TABLES) as $table) {
+            if (! Schema::hasTable($table)) {
+                continue;
+            }
+
             DB::statement(sprintf('DROP POLICY IF EXISTS "%s_tenant_isolation" ON "%s"', $table, $table));
             DB::statement(sprintf('ALTER TABLE "%s" NO FORCE ROW LEVEL SECURITY', $table));
             DB::statement(sprintf('ALTER TABLE "%s" DISABLE ROW LEVEL SECURITY', $table));

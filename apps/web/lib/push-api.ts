@@ -1,13 +1,13 @@
-import {apiFetch} from "@/lib/api-client"
+import { apiFetch } from './api-client';
 
 interface VapidPublicKeyResponse {
   publicKey: string | null;
 }
 
-export async function getVapidPublicKey():Promise<string | null> {
-  const {publicKey} = await apiFetch<VapidPublicKeyResponse>('/push-subscriptions/vapid-public-key', {
-
-  });
+export async function getVapidPublicKey(): Promise<string | null> {
+  const { publicKey } = await apiFetch<VapidPublicKeyResponse>(
+    '/push-subscriptions/vapid-public-key',
+  );
   return publicKey;
 }
 

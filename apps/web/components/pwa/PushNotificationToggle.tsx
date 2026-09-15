@@ -1,23 +1,23 @@
-"use client"
+'use client';
 import { Bell, BellOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { usePushNotifications } from '@/lib/push/use-push-notifications';
 
-
 /** Hidden entirely on browsers without Push API support (e.g. iOS Safari < 16.4). */
-
 export function PushNotificationToggle() {
-  const {support, subscribed, busy, unsubscribe} = usePushNotifications();
-  if(support !== 'ready') return null
+  const { support, subscribed, busy, subscribe, unsubscribe } =
+    usePushNotifications();
 
-  const handleClick = async() => {
+  if (support !== 'ready') return null;
+
+  const handleClick = async () => {
     try {
       if (subscribed) {
         await unsubscribe();
         toast.success('Notifications turned off');
       } else {
-        await subscribed();
+        await subscribe();
         toast.success('Notifications enabled');
       }
     } catch (error) {
@@ -26,10 +26,10 @@ export function PushNotificationToggle() {
       });
     }
   };
+
   return (
-
     <Button
-
+      variant="ghost"
       size="icon"
       disabled={busy}
       onClick={handleClick}

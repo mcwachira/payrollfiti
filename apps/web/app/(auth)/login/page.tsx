@@ -16,7 +16,17 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useBranding } from '@/contexts/BrandingContext';
 import { ApiError } from '@/lib/api-client';
+import { AuthenticatedUserDto, TwoFactorChallenge } from '@/shared-types';
 import { Role } from "@/shared-types"
+
+function isTwoFactorChallenge(result: unknown): result is TwoFactorChallenge {
+  return (
+    typeof result === 'object' &&
+    result !== null &&
+    'twoFactorRequired' in result &&
+    (result as any).challengeToken !== undefined
+  );
+}
 
 export default function LoginPage() {
   const { login, verifyTwoFactor } = useAuth();
@@ -31,24 +41,20 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const redirectByRole = (role: Role) => {
-    // /dashboard calls GET /employees and GET /payroll-runs, both
-    // ADMIN/HR-only server-side — an EMPLOYEE landing there gets two 403s
-    // instead of their portal.
     router.push(role === Role.EMPLOYEE ? '/employee-portal' : '/dashboard');
   };
 
   const handleSubmit = async (event:SubmitEvent<HTMLFormElement>) => {
-
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
     try{
       const result = await login(email, password);
 
-      if('twoFactorRequired' in result){
+      if(isTwoFactorChallenge(result)){
         setChallengeToken(result.challengeToken)
       }else {
-        redirectByRole(result.role)
+        redirectByRole((result as AuthenticatedUserDto).role)
       }
     }catch(err){
       setError(err instanceof ApiError ? err.message:"Unable to login");

@@ -279,12 +279,12 @@ export function SalaryComponentsSettings() {
                   </div>
                   <Badge
                     variant={
-                      component.type === 'EARNING' ? 'default' : 'destructive'
+                      component.type === 'EARNING' ? 'default' : 'neutral'
                     }
                   >
                     {component.type === 'EARNING' ? 'Earning' : 'Deduction'}
                   </Badge>
-                  <Badge variant="outline">
+                  <Badge variant="neutral">
                     {component.calcType === 'FIXED'
                       ? component.defaultAmount != null
                         ? `Fixed: ${component.defaultAmount}`
@@ -294,11 +294,11 @@ export function SalaryComponentsSettings() {
                         : '% of basic'}
                   </Badge>
                   {!component.isTaxable && (
-                    <Badge variant="outline">Non-taxable</Badge>
+                    <Badge variant="neutral">Non-taxable</Badge>
                   )}
                 </div>
                 <Button
-                  variant="outline"
+                  variant="neutral"
                   size="icon"
                   aria-label={`Remove ${component.name}`}
                   onClick={() => deactivateMutation.mutate(component.id)}

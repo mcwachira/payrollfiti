@@ -40,4 +40,10 @@ export interface AuthenticatedUserDto {
   role: Role;
   tenantId: string;
   employeeId?: string | null;
+  twoFactorEnabled?: boolean;
+}
+
+export interface TwoFactorChallenge {
+  twoFactorRequired: true;
+  challengeToken: string;
 }

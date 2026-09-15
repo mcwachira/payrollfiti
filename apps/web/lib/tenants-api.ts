@@ -14,7 +14,7 @@ export interface CreateCompanyInput {
 }
 
 export function getMyTenant(): Promise<Tenant> {
-  return apiFetch<Tenant>('/tenants/me');
+  return apiFetch<Tenant>('/v1/tenants/me');
 }
 
 /**
@@ -26,7 +26,7 @@ export function getMyTenant(): Promise<Tenant> {
  * kept there rather than duplicated here.
  */
 export function createCompany(input: CreateCompanyInput): Promise<Company> {
-  return apiFetch<Company>('/tenants/companies', {
+  return apiFetch<Company>('/v1/tenants/companies', {
     method: 'POST',
     body: JSON.stringify(input),
   });
