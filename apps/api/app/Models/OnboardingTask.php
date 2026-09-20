@@ -14,7 +14,6 @@ class OnboardingTask extends Model
     protected $table = 'onboarding_tasks';
 
     protected $fillable = [
-        'tenant_id',
         'company_id',
         'employee_id',
         'title',

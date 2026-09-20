@@ -12,11 +12,22 @@ class SalaryStructure extends Model
 
     protected $table = 'salary_structures';
 
-    protected $fillable = ['company_id', 'tenant_id', 'name', 'code', 'currency', 'active'];
+    protected $fillable = [
+        'company_id',
+        'name',
+        'code',
+        'currency',
+        'active',
+    ];
+
+    protected $casts = [
+        'active' => 'boolean',
+    ];
 
     public $incrementing = false;
 
     protected $keyType = 'string';
+
 
     public function company()
     {
@@ -25,6 +36,9 @@ class SalaryStructure extends Model
 
     public function components()
     {
-        return $this->hasMany(SalaryStructureComponent::class, 'salary_structure_id');
+        return $this->hasMany(
+            SalaryStructureComponent::class,
+            'salary_structure_id'
+        );
     }
 }

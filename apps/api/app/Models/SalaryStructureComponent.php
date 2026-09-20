@@ -12,13 +12,15 @@ class SalaryStructureComponent extends Model
 
     protected $table = 'salary_structure_components';
 
-    protected $fillable = ['tenant_id', 'salary_structure_id', 'salary_component_id', 'amount', 'percentage', 'configuration', 'sort_order'];
+    protected $fillable = ['salary_structure_id', 'salary_component_id', 'amount', 'percentage', 'configuration', 'sort_order'];
 
     protected $casts = [
-        'configuration' => 'array',
-        'amount' => 'string',
+        'amount' => 'decimal:2',
         'percentage' => 'decimal:4',
+        'configuration' => 'array',
+        'sort_order' => 'integer',
     ];
+
 
     public $incrementing = false;
 
@@ -26,6 +28,17 @@ class SalaryStructureComponent extends Model
 
     public function salaryStructure()
     {
-        return $this->belongsTo(SalaryStructure::class, 'salary_structure_id');
+        return $this->belongsTo(
+            SalaryStructure::class,
+            'salary_structure_id'
+        );
+    }
+
+    public function salaryComponent()
+    {
+        return $this->belongsTo(
+            SalaryComponent::class,
+            'salary_component_id'
+        );
     }
 }

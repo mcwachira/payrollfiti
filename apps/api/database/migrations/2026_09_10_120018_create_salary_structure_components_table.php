@@ -14,6 +14,10 @@ return new class extends Migration
         Schema::create('salary_structure_components', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
+            $table->foreignUuid('tenant_id')
+                ->constrained('tenants')
+                ->cascadeOnDelete();
+
             $table->foreignUuid('salary_structure_id')
                 ->constrained('salary_structures')
                 ->cascadeOnDelete();
@@ -34,6 +38,11 @@ return new class extends Migration
             $table->unique([
                 'salary_structure_id',
                 'salary_component_id'
+            ]);
+
+            $table->index([
+                'salary_structure_id',
+                'sort_order',
             ]);
         });
     }
