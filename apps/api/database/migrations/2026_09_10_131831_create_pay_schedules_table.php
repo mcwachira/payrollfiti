@@ -14,6 +14,10 @@ return new class extends Migration
         Schema::create('pay_schedules', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
+            $table->foreignUuid('tenant_id')
+                ->constrained('tenants')
+                ->cascadeOnDelete();
+
             $table->foreignUuid('company_id')
                 ->constrained('companies')
                 ->cascadeOnDelete();
@@ -27,6 +31,11 @@ return new class extends Migration
             $table->boolean('active')->default(true);
 
             $table->timestampsTz();
+
+            $table->index([
+                'company_id',
+                'active',
+            ]);
         });
     }
 
