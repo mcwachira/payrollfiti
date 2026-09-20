@@ -15,6 +15,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
 
             $table->string('name');
+            $table->string('guard_name')->default('web');
             $table->string('slug')->unique();
 
             $table->string('domain');

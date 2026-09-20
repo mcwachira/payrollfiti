@@ -19,6 +19,7 @@ return new class extends Migration
                 ->cascadeOnDelete();
 
             $table->string('name');
+            $table->string('guard_name')->default('web');
             $table->string('slug');
 
             $table->text('description')->nullable();
@@ -27,7 +28,8 @@ return new class extends Migration
 
             $table->unique([
                 'tenant_id',
-                'slug'
+                'name',
+                'guard_name',
             ]);
         });
     }

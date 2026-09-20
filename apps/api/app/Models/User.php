@@ -5,12 +5,9 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToTenant;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -18,14 +15,17 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['tenant_id', 'name', 'email', 'password', 'status'])]
-#[Hidden(['password', 'remember_token'])]
+//#[Fillable([ 'name', 'email', 'password', 'status'])]
+//#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use BelongsToTenant, HasApiTokens, HasFactory, HasRoles, HasUuids, Notifiable;
 
     public $incrementing = false;
+
+    protected $fillable = [ 'name', 'email', 'password', 'status'];
+    protected $hidden = [ 'password', 'remember_token' ];
 
     protected $keyType = 'string';
 
@@ -37,10 +37,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'tenant_id' => 'string',
     ];
 
-    public function roles(): BelongsToMany
-    {
-        return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id');
-    }
+
 
     public function twoFactorAuthentication(): HasOne
     {
