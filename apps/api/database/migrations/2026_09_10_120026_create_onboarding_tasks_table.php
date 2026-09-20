@@ -14,6 +14,14 @@ return new class extends Migration
         Schema::create('onboarding_tasks', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
+            $table->foreignUuid('tenant_id')
+                ->constrained('tenants')
+                ->cascadeOnDelete();
+
+            $table->foreignUuid('company_id')
+                ->constrained('companies')
+                ->cascadeOnDelete();
+
             $table->foreignUuid('employee_id')
                 ->constrained('employees')
                 ->cascadeOnDelete();
@@ -28,17 +36,6 @@ return new class extends Migration
                 ->constrained('users')
                 ->nullOnDelete();
 
-            $table->foreignUuid('tenant_id')
-                ->after('employee_id')
-                ->constrained('tenants')
-                ->cascadeOnDelete();
-
-            $table->foreignUuid('company_id')
-                ->after('tenant_id')
-                ->nullable()
-                ->constrained('companies')
-                ->nullOnDelete();
-
             $table->timestampTz('completed_at')->nullable();
 
             $table->timestampsTz();
@@ -48,7 +45,10 @@ return new class extends Migration
                 'status',
             ]);
 
-            $table->index(['tenant_id', 'status'], 'onboarding_tasks_tenant_status_idx');
+            $table->index(
+                ['tenant_id', 'status'],
+                'onboarding_tasks_tenant_status_idx'
+            );
         });
     }
 

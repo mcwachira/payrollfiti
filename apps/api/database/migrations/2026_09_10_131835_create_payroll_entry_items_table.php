@@ -14,6 +14,10 @@ return new class extends Migration
         Schema::create('payroll_entry_items', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
+            $table->foreignUuid('tenant_id')
+                ->constrained('tenants')
+                ->cascadeOnDelete();
+
             $table->foreignUuid('payroll_entry_id')
                 ->constrained('payroll_entries')
                 ->cascadeOnDelete();
@@ -35,8 +39,8 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index([
+                'tenant_id',
                 'payroll_entry_id',
-                'type'
             ]);
         });
     }

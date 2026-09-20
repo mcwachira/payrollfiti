@@ -3,42 +3,42 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\Concerns\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
-class SalaryStructure extends Model
+class PayrollSetting extends Model
 {
-    use BelongsToTenant, HasUuids;
+    use BelongsToTenant, HasFactory, HasUuids;
 
-    protected $table = 'salary_structures';
+    protected $table = 'payroll_settings';
 
     protected $fillable = [
         'company_id',
-        'name',
-        'code',
+        'frequency',
         'currency',
-        'active',
+        'default_rule_set_id',
+        'configuration',
     ];
 
     protected $casts = [
-        'active' => 'boolean',
+        'configuration' => 'array',
     ];
 
     public $incrementing = false;
 
     protected $keyType = 'string';
 
-
     public function company()
     {
         return $this->belongsTo(Company::class, 'company_id');
     }
 
-    public function components()
+    public function defaultRuleSet()
     {
-        return $this->hasMany(
-            SalaryStructureComponent::class,
-            'salary_structure_id'
+        return $this->belongsTo(
+            StatutoryRuleSet::class,
+            'default_rule_set_id'
         );
     }
 }

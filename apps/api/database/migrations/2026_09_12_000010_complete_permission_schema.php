@@ -15,17 +15,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (! Schema::hasColumn('permissions', 'guard_name')) {
-            Schema::table('permissions', function (Blueprint $table): void {
-                $table->string('guard_name')->default('web');
-            });
-        }
-
-        if (! Schema::hasColumn('roles', 'guard_name')) {
-            Schema::table('roles', function (Blueprint $table): void {
-                $table->string('guard_name')->default('web');
-            });
-        }
 
         Schema::create('model_has_permissions', function (Blueprint $table): void {
             $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
@@ -40,16 +29,5 @@ return new class extends Migration
     {
         Schema::dropIfExists('model_has_permissions');
 
-        if (Schema::hasColumn('roles', 'guard_name')) {
-            Schema::table('roles', function (Blueprint $table): void {
-                $table->dropColumn('guard_name');
-            });
-        }
-
-        if (Schema::hasColumn('permissions', 'guard_name')) {
-            Schema::table('permissions', function (Blueprint $table): void {
-                $table->dropColumn('guard_name');
-            });
-        }
     }
 };

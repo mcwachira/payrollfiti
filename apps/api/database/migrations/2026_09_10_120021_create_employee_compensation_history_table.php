@@ -14,6 +14,10 @@ return new class extends Migration
         Schema::create('employee_compensation_history', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
+            $table->foreignUuid('tenant_id')
+                ->constrained('tenants')
+                ->cascadeOnDelete();
+
             $table->foreignUuid('employee_id')
                 ->constrained('employees')
                 ->cascadeOnDelete();
@@ -35,8 +39,9 @@ return new class extends Migration
             $table->timestampsTz();
 
             $table->index([
+                'tenant_id',
                 'employee_id',
-                'effective_from'
+                'effective_from',
             ]);
         });
     }

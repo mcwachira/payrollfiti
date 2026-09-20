@@ -14,5 +14,5 @@ class Role extends SpatieRole
 
     protected $keyType = 'string';
 
-    protected $fillable = ['tenant_id', 'name', 'guard_name', 'slug', 'description'];
+    protected $fillable = ['name', 'guard_name', 'slug', 'description'];
 }

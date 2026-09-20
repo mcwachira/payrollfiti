@@ -5,14 +5,27 @@ namespace App\Models;
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['tenant_id', 'plan_id', 'status', 'starts_at', 'ends_at', 'trial_ends_at', 'cancelled_at', 'provider', 'provider_subscription_id', 'metadata'])]
+//#[Fillable([ 'plan_id', 'status', 'starts_at', 'ends_at', 'trial_ends_at', 'cancelled_at', 'provider', 'provider_subscription_id', 'metadata'])]
 class Subscription extends Model
 {
-    use BelongsToTenant, HasUuids;
+    use BelongsToTenant,HasFactory, HasUuids;
+
+    protected $fillable = [
+        'plan_id',
+        'status',
+        'starts_at',
+        'ends_at',
+        'trial_ends_at',
+        'cancelled_at',
+        'provider',
+        'provider_subscription_id',
+        'metadata',
+    ];
 
     public $incrementing = false;
 

@@ -68,6 +68,8 @@ return new class extends Migration
 
             $table->jsonb('input_snapshot')->nullable();
 
+            $table->jsonb('rule_snapshot')->nullable();
+
             $table->timestampsTz();
 
             $table->unique([
@@ -95,7 +97,7 @@ return new class extends Migration
             $table->foreign('corrects_run_id')
                 ->references('id')
                 ->on('payroll_runs')
-                ->nullOnDelete();
+                ->restrictOnDelete();
         });
     }
 
