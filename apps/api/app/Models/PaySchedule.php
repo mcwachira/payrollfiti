@@ -3,24 +3,26 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\Concerns\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
-class SalaryStructure extends Model
+class PaySchedule extends Model
 {
-    use BelongsToTenant, HasUuids;
+    use BelongsToTenant, HasFactory, HasUuids;
 
-    protected $table = 'salary_structures';
+    protected $table = 'pay_schedules';
 
     protected $fillable = [
         'company_id',
         'name',
-        'code',
-        'currency',
+        'frequency',
+        'pay_day',
         'active',
     ];
 
     protected $casts = [
+        'pay_day' => 'integer',
         'active' => 'boolean',
     ];
 
@@ -28,17 +30,19 @@ class SalaryStructure extends Model
 
     protected $keyType = 'string';
 
-
     public function company()
     {
-        return $this->belongsTo(Company::class, 'company_id');
+        return $this->belongsTo(
+            Company::class,
+            'company_id'
+        );
     }
 
-    public function components()
+    public function payrollPeriods()
     {
         return $this->hasMany(
-            SalaryStructureComponent::class,
-            'salary_structure_id'
+            PayrollPeriod::class,
+            'pay_schedule_id'
         );
     }
 }

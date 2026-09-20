@@ -36,7 +36,8 @@ return new class extends Migration
 
             $table->index([
                 'country',
-                'effective_from'
+                'status',
+                'effective_from',
             ]);
         });
     }

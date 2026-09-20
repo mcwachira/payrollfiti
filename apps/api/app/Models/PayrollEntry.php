@@ -15,7 +15,6 @@ class PayrollEntry extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'tenant_id',
         'payroll_run_id',
         'employee_id',
         'gross_pay',
@@ -24,16 +23,15 @@ class PayrollEntry extends Model
         'employer_contributions',
         'net_pay',
         'breakdown',
-        'created_at',
     ];
 
     protected $casts = [
+        'gross_pay' => 'decimal:2',
+        'taxable_pay' => 'decimal:2',
+        'total_deductions' => 'decimal:2',
+        'employer_contributions' => 'decimal:2',
+        'net_pay' => 'decimal:2',
         'breakdown' => 'array',
-        'gross_pay' => 'string',
-        'taxable_pay' => 'string',
-        'total_deductions' => 'string',
-        'employer_contributions' => 'string',
-        'net_pay' => 'string',
         'created_at' => 'datetime',
     ];
 
@@ -49,5 +47,13 @@ class PayrollEntry extends Model
     public function employee()
     {
         return $this->belongsTo(Employee::class, 'employee_id');
+    }
+
+    public function items()
+    {
+        return $this->hasMany(
+            PayrollEntryItem::class,
+            'payroll_entry_id'
+        );
     }
 }

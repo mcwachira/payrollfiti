@@ -62,13 +62,12 @@ return new class extends Migration
 
             $table->string('gender')->nullable();
 
-            $table->string('national_id_encrypted')->nullable();
+            $table->text('national_id')->nullable();
 
             $table->timestampsTz();
             $table->softDeletesTz();
 
             $table->unique([
-                'tenant_id',
                 'company_id',
                 'employee_number'
             ]);

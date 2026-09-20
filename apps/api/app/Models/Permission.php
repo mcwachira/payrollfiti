@@ -13,5 +13,5 @@ class Permission extends SpatiePermission
 
     protected $keyType = 'string';
 
-    protected $fillable = ['id', 'name', 'guard_name', 'slug', 'domain', 'description'];
+    protected $fillable = [ 'name', 'guard_name', 'slug', 'domain', 'description'];
 }

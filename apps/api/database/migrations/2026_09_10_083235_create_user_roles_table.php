@@ -14,15 +14,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('user_roles', function (Blueprint $table) {
-            $table->foreignUuid('user_id')
-                ->constrained('users')
-                ->cascadeOnDelete();
-
             $table->foreignUuid('role_id')
                 ->constrained('roles')
                 ->cascadeOnDelete();
 
-            $table->primary(['user_id', 'role_id']);
+            $table->uuid('user_id');
+
+            $table->string('model_type');
+
+            $table->index([
+                'user_id',
+                'model_type',
+            ]);
+
+            $table->primary([
+                'role_id',
+                'user_id',
+                'model_type',
+            ]);
         });
     }
 

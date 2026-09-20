@@ -20,7 +20,7 @@ return new class extends Migration
 
             $table->foreignUuid('payroll_run_id')
                 ->constrained('payroll_runs')
-                ->cascadeOnDelete();
+                ->restrictOnDelete();
 
             $table->foreignUuid('employee_id')
                 ->constrained('employees')
@@ -34,7 +34,7 @@ return new class extends Migration
 
             $table->jsonb('breakdown');
 
-            $table->timestampTz('created_at');
+            $table->timestampTz('created_at')->useCurrent();
 
             $table->unique([
                 'payroll_run_id',

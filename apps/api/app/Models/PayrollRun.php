@@ -14,7 +14,6 @@ class PayrollRun extends Model
     protected $table = 'payroll_runs';
 
     protected $fillable = [
-        'tenant_id',
         'company_id',
         'payroll_period_id',
         'status',
@@ -25,6 +24,7 @@ class PayrollRun extends Model
         'rule_set_id',
         'rule_version',
         'input_snapshot',
+        'rule_snapshot',
         'initiated_by',
         'approved_by',
         'approved_at',
@@ -35,6 +35,10 @@ class PayrollRun extends Model
 
     protected $casts = [
         'input_snapshot' => 'array',
+        'rule_snapshot' => 'array',
+        'period_start' => 'date',
+        'period_end' => 'date',
+        'pay_date' => 'date',
         'approved_at' => 'datetime',
         'finalized_at' => 'datetime',
     ];
@@ -43,18 +47,62 @@ class PayrollRun extends Model
 
     protected $keyType = 'string';
 
-    public function tenant()
-    {
-        return $this->belongsTo(Tenant::class, 'tenant_id');
-    }
-
     public function company()
     {
         return $this->belongsTo(Company::class, 'company_id');
     }
 
+    public function ruleSet()
+    {
+        return $this->belongsTo(
+            StatutoryRuleSet::class,
+            'rule_set_id'
+        );
+    }
+    public function payrollPeriod()
+    {
+        return $this->belongsTo(
+            PayrollPeriod::class,
+            'payroll_period_id'
+        );
+    }
+
     public function entries()
     {
-        return $this->hasMany(PayrollEntry::class, 'payroll_run_id');
+        return $this->hasMany(
+            PayrollEntry::class,
+            'payroll_run_id'
+        );
+    }
+
+    public function initiatedBy()
+    {
+        return $this->belongsTo(User::class, 'initiated_by');
+    }
+
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function finalizedBy()
+    {
+        return $this->belongsTo(User::class, 'finalized_by');
+    }
+
+    public function correctsRun()
+    {
+        return $this->belongsTo(
+            PayrollRun::class,
+            'corrects_run_id'
+        );
+    }
+
+    public function corrections()
+    {
+        return $this->hasMany(
+            PayrollRun::class,
+            'corrects_run_id'
+        );
     }
 }

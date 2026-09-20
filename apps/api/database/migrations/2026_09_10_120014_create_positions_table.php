@@ -6,13 +6,14 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('positions', function (Blueprint $table) {
             $table->uuid('id')->primary();
+
+            $table->foreignUuid('tenant_id')
+                ->constrained('tenants')
+                ->cascadeOnDelete();
 
             $table->foreignUuid('company_id')
                 ->constrained('companies')
@@ -30,14 +31,21 @@ return new class extends Migration
 
             $table->unique([
                 'company_id',
-                'name'
+                'name',
+            ]);
+
+            $table->unique([
+                'company_id',
+                'code',
+            ]);
+
+            $table->index([
+                'company_id',
+                'department_id',
             ]);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('positions');

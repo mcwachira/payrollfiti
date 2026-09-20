@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Tenant extends Model
 {
+
+    // Docker bind mount test
     use HasFactory, HasUuids;
 
     protected $fillable = [
-        'id',
         'name',
         'slug',
         'subdomain',

@@ -14,6 +14,11 @@ return new class extends Migration
         Schema::create('employee_bank_accounts', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
+            $table->foreignUuid('tenant_id')
+                ->constrained('tenants')
+                ->cascadeOnDelete();
+
+
             $table->foreignUuid('employee_id')
                 ->constrained('employees')
                 ->cascadeOnDelete();
@@ -28,9 +33,11 @@ return new class extends Migration
 
             $table->timestampsTz();
 
+
             $table->index([
+                'tenant_id',
                 'employee_id',
-                'is_primary'
+                'is_primary',
             ]);
         });
     }

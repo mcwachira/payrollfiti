@@ -14,6 +14,10 @@ return new class extends Migration
         Schema::create('payroll_settings', function (Blueprint $table) {
             $table->uuid('id')->primary();
 
+            $table->foreignUuid('tenant_id')
+                ->constrained('tenants')
+                ->cascadeOnDelete();
+
             $table->foreignUuid('company_id')
                 ->unique()
                 ->constrained('companies')
