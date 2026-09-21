@@ -24,35 +24,90 @@ return new class extends Migration
 
         Schema::create('employee_documents', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->foreignUuid('company_id')->constrained('companies')->cascadeOnDelete();
-            $table->foreignUuid('employee_id')->constrained('employees')->restrictOnDelete();
-            $table->foreignUuid('document_type_id')->constrained('document_types')->restrictOnDelete();
-            $table->foreignUuid('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
+
+            $table->foreignUuid('tenant_id')
+                ->constrained('tenants')
+                ->cascadeOnDelete();
+
+            $table->foreignUuid('company_id')
+                ->constrained('companies')
+                ->cascadeOnDelete();
+
+            $table->foreignUuid('employee_id')
+                ->constrained('employees')
+                ->restrictOnDelete();
+
+            $table->foreignUuid('document_type_id')
+                ->constrained('document_types')
+                ->restrictOnDelete();
+
+            $table->foreignUuid('uploaded_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
             $table->string('title');
-            $table->string('status')->default('active');
+
+            $table->string('status')
+                ->default('pending');
+
             $table->date('expires_on')->nullable();
+
             $table->timestampsTz();
             $table->softDeletesTz();
-            $table->index(['tenant_id', 'company_id', 'employee_id']);
+
+            $table->index([
+                'tenant_id',
+                'company_id',
+                'employee_id',
+            ]);
         });
 
         Schema::create('document_versions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('tenant_id')->constrained('tenants')->cascadeOnDelete();
-            $table->foreignUuid('employee_document_id')->constrained('employee_documents')->cascadeOnDelete();
-            $table->foreignUuid('uploaded_by')->nullable()->constrained('users')->nullOnDelete();
+
+            $table->foreignUuid('tenant_id')
+                ->constrained('tenants')
+                ->cascadeOnDelete();
+
+            $table->foreignUuid('employee_document_id')
+                ->constrained('employee_documents')
+                ->cascadeOnDelete();
+
+            $table->foreignUuid('uploaded_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
+
             $table->unsignedInteger('version');
+
             $table->string('disk');
             $table->string('path');
             $table->string('original_filename');
-            $table->string('mime_type', 255);
+
+            $table->string('mime_type');
             $table->unsignedBigInteger('size');
+
             $table->string('checksum', 128);
+
             $table->timestampTz('uploaded_at');
+
             $table->timestampsTz();
-            $table->unique(['employee_document_id', 'version']);
-            $table->unique(['employee_document_id', 'checksum']);
+
+            $table->unique([
+                'employee_document_id',
+                'version',
+            ]);
+
+            $table->unique([
+                'employee_document_id',
+                'checksum',
+            ]);
+
+            $table->index([
+                'tenant_id',
+                'employee_document_id',
+            ]);
         });
     }
 
