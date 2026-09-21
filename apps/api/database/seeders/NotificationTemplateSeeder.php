@@ -5,16 +5,22 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Domain\Notifications\NotificationTypes;
-use App\Models\NotificationTemplate;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 /**
- * Platform-wide (tenant_id NULL) notification templates for the known event
- * types. These are the out-of-the-box copy; tenants can override any of them
- * by inserting their own row with the same (code, channel).
+ * Platform-wide (tenant_id NULL) notification templates.
  *
- * The `variables` column is the allow-list of placeholders that TemplateRenderer
- * may interpolate — anything not declared there is stripped at render time.
+ * These are the default templates for known notification event types.
+ * Tenants may override them by creating a tenant-specific row with the same
+ * (code, channel) combination.
+ *
+ * The `variables` column defines the allow-list of placeholders that
+ * TemplateRenderer may interpolate.
+ *
+ * This seeder intentionally uses the query builder instead of the
+ * NotificationTemplate Eloquent model because these rows are global
+ * (`tenant_id = NULL`) and must never inherit a tenant context.
  */
 class NotificationTemplateSeeder extends Seeder
 {
@@ -32,6 +38,7 @@ class NotificationTemplateSeeder extends Seeder
                 ],
                 'sms' => null,
             ],
+
             NotificationTypes::PAYROLL_RUN_COMPLETED => [
                 'in_app' => [
                     'subject' => 'Payroll completed',
@@ -49,6 +56,7 @@ class NotificationTemplateSeeder extends Seeder
                     'variables' => ['company'],
                 ],
             ],
+
             NotificationTypes::BILLING_PAYMENT_SUCCEEDED => [
                 'in_app' => [
                     'subject' => 'Payment received',
@@ -62,6 +70,7 @@ class NotificationTemplateSeeder extends Seeder
                 ],
                 'sms' => null,
             ],
+
             NotificationTypes::BILLING_PAYMENT_FAILED => [
                 'in_app' => [
                     'subject' => 'Payment failed',
@@ -79,6 +88,7 @@ class NotificationTemplateSeeder extends Seeder
                     'variables' => ['amount', 'currency'],
                 ],
             ],
+
             NotificationTypes::BILLING_INVOICE_ISSUED => [
                 'in_app' => [
                     'subject' => 'New invoice issued',
@@ -92,6 +102,7 @@ class NotificationTemplateSeeder extends Seeder
                 ],
                 'sms' => null,
             ],
+
             NotificationTypes::COMPLIANCE_REPORT_READY => [
                 'in_app' => [
                     'subject' => 'Compliance report ready',
@@ -105,6 +116,7 @@ class NotificationTemplateSeeder extends Seeder
                 ],
                 'sms' => null,
             ],
+
             NotificationTypes::HR_EMPLOYEE_ONBOARDING => [
                 'in_app' => [
                     'subject' => 'New employee onboarded',
@@ -120,28 +132,45 @@ class NotificationTemplateSeeder extends Seeder
             ],
         ];
 
-        foreach ($templates as $eventType => $channels) {
-            foreach ($channels as $channel => $payload) {
-                if ($payload === null) {
-                    continue;
+        DB::transaction(function () use ($templates): void {
+            $table = DB::table('notification_templates');
+            $timestamp = now();
+
+            foreach ($templates as $eventType => $channels) {
+                foreach ($channels as $channel => $payload) {
+                    if ($payload === null) {
+                        continue;
+                    }
+
+                    /*
+                     * Because tenant_id is NULL for platform templates,
+                     * explicitly use whereNull() rather than where('tenant_id', null).
+                     *
+                     * We delete only the exact global template being replaced.
+                     * Tenant-specific overrides remain untouched.
+                     */
+                    $table
+                        ->whereNull('tenant_id')
+                        ->where('code', $eventType)
+                        ->where('channel', $channel)
+                        ->delete();
+
+                    $table->insert([
+                        'tenant_id' => null,
+                        'code' => $eventType,
+                        'channel' => $channel,
+                        'subject' => $payload['subject'] ?? null,
+                        'body' => $payload['body'],
+                        'variables' => isset($payload['variables'])
+                            ? json_encode($payload['variables'], JSON_THROW_ON_ERROR)
+                            : null,
+                        'active' => true,
+                        'created_at' => $timestamp,
+                        'updated_at' => $timestamp,
+                    ]);
                 }
-
-                NotificationTemplate::query()
-                    ->whereNull('tenant_id')
-                    ->where('code', $eventType)
-                    ->where('channel', $channel)
-                    ->delete();
-
-                NotificationTemplate::create([
-                    'tenant_id' => null,
-                    'code' => $eventType,
-                    'channel' => $channel,
-                    'subject' => $payload['subject'],
-                    'body' => $payload['body'],
-                    'variables' => $payload['variables'] ?? null,
-                    'active' => true,
-                ]);
             }
-        }
+        });
     }
 }
+
