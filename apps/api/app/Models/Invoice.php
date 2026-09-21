@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @method static \Illuminate\Database\Eloquent\Builder<static>|static withoutTenantScope()
  */
-#[Fillable(['tenant_id', 'subscription_id', 'invoice_number', 'status', 'billing_period_start', 'billing_period_end', 'subtotal', 'tax', 'total', 'currency', 'issued_at', 'due_at', 'paid_at', 'provider', 'provider_invoice_id', 'line_items'])]
+#[Fillable(['subscription_id', 'invoice_number', 'status', 'billing_period_start', 'billing_period_end', 'subtotal', 'tax', 'total', 'currency', 'issued_at', 'due_at', 'paid_at', 'provider', 'provider_invoice_id', 'line_items'])]
 class Invoice extends Model
 {
     use BelongsToTenant, HasUuids;

@@ -4,25 +4,11 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/**
- * Transactional outbox (Part 13 §13.7).
- *
- * Written inside the same DB transaction that completes the business state
- * change (payroll-run completion, payment settlement), then claimed by the
- * queue:dispatch-outbox command with FOR UPDATE SKIP LOCKED and translated
- * into domain events exactly once.
- *
- * Deliberately NOT a BelongsToTenant model: the outbox is platform-level
- * infrastructure and is often written before any tenant context exists
- * (e.g. payment settlement). Tenant scope is verified inside each event's
- * listeners via the tenant_id column.
- *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|static pending()
- */
 class OutboxEvent extends Model
 {
     use HasUuids;
@@ -57,11 +43,16 @@ class OutboxEvent extends Model
         return $this->belongsTo(Tenant::class, 'tenant_id');
     }
 
-    public function scopePending($query, ?int $limit = null)
-    {
-        $query->whereNull('dispatched_at')
-            ->where(function ($q) {
-                $q->whereNull('available_at')->orWhere('available_at', '<=', now());
+    public function scopePending(
+        Builder $query,
+        ?int $limit = null,
+    ): Builder {
+        $query
+            ->whereNull('dispatched_at')
+            ->where(function (Builder $query): void {
+                $query
+                    ->whereNull('available_at')
+                    ->orWhere('available_at', '<=', now());
             })
             ->orderBy('created_at');
 
@@ -72,9 +63,24 @@ class OutboxEvent extends Model
         return $query;
     }
 
-    /** True when the event has not yet been converted into a domain event. */
     public function isPending(): bool
     {
         return $this->dispatched_at === null;
+    }
+
+    public function markDispatched(): void
+    {
+        $this->forceFill([
+            'dispatched_at' => now(),
+            'last_error' => null,
+        ])->save();
+    }
+
+    public function markFailed(string $error): void
+    {
+        $this->forceFill([
+            'attempts' => $this->attempts + 1,
+            'last_error' => $error,
+        ])->save();
     }
 }

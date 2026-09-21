@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['tenant_id', 'subscription_id', 'metric', 'quantity', 'unit', 'period_start', 'period_end', 'metadata'])]
+#[Fillable([ 'subscription_id', 'metric', 'quantity', 'unit', 'period_start', 'period_end', 'metadata'])]
 class UsageRecord extends Model
 {
     use BelongsToTenant, HasUuids;

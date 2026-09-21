@@ -10,18 +10,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/**
- * In-app notification row written by the Part 14 notification dispatcher.
- * Read-state is tracked via read_at; fan-out to email/sms/push is tracked as
- * per-channel NotificationDelivery rows and performed by SendNotificationDelivery
- * on the `notifications` queue. Idempotency is enforced by dedupe_hash
- * (tenant + user + event + entity), so retried listeners never duplicate rows.
- *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|static withoutTenantScope()
- */
 class Notification extends Model
 {
-    use BelongsToTenant, HasUuids;
+    use BelongsToTenant;
+    use HasUuids;
 
     protected $table = 'notifications';
 
@@ -30,7 +22,6 @@ class Notification extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
         'user_id',
         'template_id',
         'event_type',
@@ -45,11 +36,6 @@ class Notification extends Model
         'data' => 'array',
         'read_at' => 'datetime',
     ];
-
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class, 'tenant_id');
-    }
 
     public function user(): BelongsTo
     {

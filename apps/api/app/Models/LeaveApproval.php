@@ -25,7 +25,6 @@ class LeaveApproval extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
         'leave_request_id',
         'approver_id',
         'status',

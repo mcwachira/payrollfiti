@@ -32,7 +32,6 @@ class NotificationDelivery extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
         'notification_id',
         'channel',
         'status',
@@ -79,6 +78,6 @@ class NotificationDelivery extends Model
 
     public function incrementAttempts(): void
     {
-        $this->forceFill(['attempts' => $this->attempts + 1])->save();
+        $this->increment('attempts');
     }
 }
