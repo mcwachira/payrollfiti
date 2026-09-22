@@ -27,7 +27,6 @@ class AttendanceRecord extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
         'company_id',
         'employee_id',
         'attendance_policy_id',

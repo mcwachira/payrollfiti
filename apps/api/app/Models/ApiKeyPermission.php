@@ -11,7 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ApiKeyPermission extends Model
 {
-    use BelongsToTenant, HasUuids;
+    use BelongsToTenant;
+    use HasUuids;
 
     protected $table = 'api_key_permissions';
 
@@ -20,13 +21,15 @@ class ApiKeyPermission extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
         'api_key_id',
         'permission',
     ];
 
     public function apiKey(): BelongsTo
     {
-        return $this->belongsTo(ApiKey::class, 'api_key_id');
+        return $this->belongsTo(
+            ApiKey::class,
+            'api_key_id',
+        );
     }
 }

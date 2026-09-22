@@ -30,7 +30,6 @@ class Loan extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
         'company_id',
         'employee_id',
         'loan_product_id',

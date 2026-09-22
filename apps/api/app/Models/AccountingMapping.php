@@ -11,7 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AccountingMapping extends Model
 {
-    use BelongsToTenant, HasUuids;
+    use BelongsToTenant;
+    use HasUuids;
 
     protected $table = 'accounting_mappings';
 
@@ -20,7 +21,6 @@ class AccountingMapping extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
         'accounting_connection_id',
         'entity_type',
         'local_code',
@@ -34,6 +34,9 @@ class AccountingMapping extends Model
 
     public function connection(): BelongsTo
     {
-        return $this->belongsTo(AccountingConnection::class, 'accounting_connection_id');
+        return $this->belongsTo(
+            AccountingConnection::class,
+            'accounting_connection_id',
+        );
     }
 }

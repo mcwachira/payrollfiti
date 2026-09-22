@@ -8,17 +8,12 @@ use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Enums\WebhookDeliveryStatus;
 
-/**
- * Per-delivery record for an outbound webhook. Written idempotently per
- * (endpoint, event_type, event_id). `status` moves pending -> delivered /
- * failed and carries provider-side response metadata for debugging.
- *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|static withoutTenantScope()
- */
 class WebhookDeliveryLog extends Model
 {
-    use BelongsToTenant, HasUuids;
+    use BelongsToTenant;
+    use HasUuids;
 
     protected $table = 'webhook_delivery_logs';
 
@@ -27,7 +22,6 @@ class WebhookDeliveryLog extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
         'webhook_endpoint_id',
         'event_type',
         'event_id',
@@ -42,6 +36,7 @@ class WebhookDeliveryLog extends Model
     ];
 
     protected $casts = [
+        'status' => WebhookDeliveryStatus::class,
         'attempts' => 'integer',
         'response_status' => 'integer',
         'response_time_ms' => 'integer',
@@ -49,13 +44,47 @@ class WebhookDeliveryLog extends Model
         'next_attempt_at' => 'datetime',
     ];
 
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class, 'tenant_id');
-    }
-
     public function endpoint(): BelongsTo
     {
-        return $this->belongsTo(WebhookEndpoint::class, 'webhook_endpoint_id');
+        return $this->belongsTo(
+            WebhookEndpoint::class,
+            'webhook_endpoint_id',
+        );
+    }
+
+    public function incrementAttempts(): void
+    {
+        $this->increment('attempts');
+    }
+
+    public function markDelivered(
+        ?int $responseStatus = null,
+        ?int $responseTimeMs = null,
+        ?string $responseBody = null,
+    ): void {
+        $this->forceFill([
+            'status' => 'delivered',
+            'response_status' => $responseStatus,
+            'response_time_ms' => $responseTimeMs,
+            'response_body' => $responseBody,
+            'error' => null,
+            'delivered_at' => now(),
+            'next_attempt_at' => null,
+        ])->save();
+    }
+
+    public function markFailed(
+        string $error,
+        ?int $responseStatus = null,
+        ?int $responseTimeMs = null,
+        ?string $responseBody = null,
+    ): void {
+        $this->forceFill([
+            'status' => 'failed',
+            'response_status' => $responseStatus,
+            'response_time_ms' => $responseTimeMs,
+            'response_body' => $responseBody,
+            'error' => $error,
+        ])->save();
     }
 }
