@@ -27,7 +27,6 @@ class AttendancePolicy extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
         'company_id',
         'name',
         'timezone',

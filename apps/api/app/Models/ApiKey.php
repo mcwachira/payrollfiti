@@ -5,78 +5,84 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Hidden(['secret_hash'])]
-class ApiKey extends Model
+class WebhookDeliveryLog extends Model
 {
-    use BelongsToTenant, HasUuids;
+    use BelongsToTenant;
+    use HasUuids;
 
-    protected $table = 'api_keys';
+    protected $table = 'webhook_delivery_logs';
 
     public $incrementing = false;
 
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
-        'created_by',
-        'name',
-        'prefix',
-        'secret_hash',
+        'webhook_endpoint_id',
+        'event_type',
+        'event_id',
         'status',
-        'last_used_at',
-        'expires_at',
-        'revoked_at',
+        'attempts',
+        'response_status',
+        'response_time_ms',
+        'response_body',
+        'error',
+        'delivered_at',
+        'next_attempt_at',
     ];
 
     protected $casts = [
-        'last_used_at' => 'datetime',
-        'expires_at' => 'datetime',
-        'revoked_at' => 'datetime',
+        'attempts' => 'integer',
+        'response_status' => 'integer',
+        'response_time_ms' => 'integer',
+        'delivered_at' => 'datetime',
+        'next_attempt_at' => 'datetime',
     ];
 
-    public function tenant(): BelongsTo
+    public function endpoint(): BelongsTo
     {
-        return $this->belongsTo(Tenant::class, 'tenant_id');
+        return $this->belongsTo(
+            WebhookEndpoint::class,
+            'webhook_endpoint_id',
+        );
     }
 
-    public function creator(): BelongsTo
+    public function incrementAttempts(): void
     {
-        return $this->belongsTo(User::class, 'created_by');
+        $this->increment('attempts');
     }
 
-    public function permissions(): HasMany
-    {
-        return $this->hasMany(ApiKeyPermission::class, 'api_key_id');
+    public function markDelivered(
+        ?int $responseStatus = null,
+        ?int $responseTimeMs = null,
+        ?string $responseBody = null,
+    ): void {
+        $this->forceFill([
+            'status' => 'delivered',
+            'response_status' => $responseStatus,
+            'response_time_ms' => $responseTimeMs,
+            'response_body' => $responseBody,
+            'error' => null,
+            'delivered_at' => now(),
+            'next_attempt_at' => null,
+        ])->save();
     }
 
-    public function usageRecords(): HasMany
-    {
-        return $this->hasMany(ApiKeyUsage::class, 'api_key_id');
-    }
-
-    public function isActive(): bool
-    {
-        return $this->status === 'active';
-    }
-
-    public function isExpired(): bool
-    {
-        return $this->expires_at !== null && $this->expires_at->isPast();
-    }
-
-    public function isRevoked(): bool
-    {
-        return $this->revoked_at !== null;
-    }
-
-    public function isUsable(): bool
-    {
-        return $this->isActive() && ! $this->isExpired() && ! $this->isRevoked();
+    public function markFailed(
+        string $error,
+        ?int $responseStatus = null,
+        ?int $responseTimeMs = null,
+        ?string $responseBody = null,
+    ): void {
+        $this->forceFill([
+            'status' => 'failed',
+            'response_status' => $responseStatus,
+            'response_time_ms' => $responseTimeMs,
+            'response_body' => $responseBody,
+            'error' => $error,
+        ])->save();
     }
 }

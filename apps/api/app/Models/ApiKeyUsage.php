@@ -11,7 +11,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ApiKeyUsage extends Model
 {
-    use BelongsToTenant, HasUuids;
+    use BelongsToTenant;
+    use HasUuids;
 
     protected $table = 'api_key_usage';
 
@@ -20,7 +21,6 @@ class ApiKeyUsage extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
         'api_key_id',
         'endpoint',
         'method',
@@ -30,11 +30,16 @@ class ApiKeyUsage extends Model
     ];
 
     protected $casts = [
+        'response_status' => 'integer',
+        'response_time_ms' => 'integer',
         'used_at' => 'datetime',
     ];
 
     public function apiKey(): BelongsTo
     {
-        return $this->belongsTo(ApiKey::class, 'api_key_id');
+        return $this->belongsTo(
+            ApiKey::class,
+            'api_key_id',
+        );
     }
 }

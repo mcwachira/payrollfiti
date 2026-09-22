@@ -1,20 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\Concerns\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ComplianceReport extends Model
 {
-    use BelongsToTenant, HasFactory, HasUuids;
+    use BelongsToTenant;
+    use HasFactory;
+    use HasUuids;
 
     protected $table = 'compliance_reports';
 
     protected $fillable = [
-        'tenant_id',
         'company_id',
         'payroll_run_id',
         'country',
@@ -38,13 +42,19 @@ class ComplianceReport extends Model
 
     protected $keyType = 'string';
 
-    public function company()
+    public function company(): BelongsTo
     {
-        return $this->belongsTo(Company::class, 'company_id');
+        return $this->belongsTo(
+            Company::class,
+            'company_id',
+        );
     }
 
-    public function payrollRun()
+    public function payrollRun(): BelongsTo
     {
-        return $this->belongsTo(PayrollRun::class, 'payroll_run_id');
+        return $this->belongsTo(
+            PayrollRun::class,
+            'payroll_run_id',
+        );
     }
 }

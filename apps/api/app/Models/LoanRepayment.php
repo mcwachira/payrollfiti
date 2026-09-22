@@ -27,7 +27,6 @@ class LoanRepayment extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
         'loan_id',
         'payroll_entry_id',
         'installment_number',

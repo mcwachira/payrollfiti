@@ -25,7 +25,6 @@ class PublicHoliday extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
         'company_id',
         'country',
         'name',

@@ -26,7 +26,7 @@ class LeaveAccrual extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
+
         'employee_id',
         'leave_type_id',
         'leave_balance_id',

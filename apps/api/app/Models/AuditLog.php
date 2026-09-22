@@ -12,16 +12,18 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class AuditLog extends Model
 {
-    use BelongsToTenant, HasUuids;
+    use BelongsToTenant;
+    use HasUuids;
 
     protected $table = 'audit_logs';
 
     public $incrementing = false;
 
+    public $timestamps = false;
+
     protected $keyType = 'string';
 
     protected $fillable = [
-        'tenant_id',
         'user_id',
         'action',
         'auditable_type',
@@ -39,11 +41,6 @@ class AuditLog extends Model
         'new_values' => 'array',
         'created_at' => 'datetime',
     ];
-
-    public function tenant(): BelongsTo
-    {
-        return $this->belongsTo(Tenant::class, 'tenant_id');
-    }
 
     public function user(): BelongsTo
     {
