@@ -35,7 +35,6 @@ return new class extends Migration
         'payroll_runs',
         'payroll_entries',
         'payroll_entry_items',
-        'payslips',
 
         'leave_types',
         'leave_balances',

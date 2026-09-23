@@ -156,6 +156,7 @@ class NotificationTemplateSeeder extends Seeder
                         ->delete();
 
                     $table->insert([
+                        'id' => (string) \Illuminate\Support\Str::uuid(),
                         'tenant_id' => null,
                         'code' => $eventType,
                         'channel' => $channel,

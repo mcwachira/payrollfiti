@@ -13,6 +13,7 @@ class Tenant extends Model
     use HasFactory, HasUuids;
 
     protected $fillable = [
+        'id',
         'name',
         'slug',
         'subdomain',
