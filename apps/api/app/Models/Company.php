@@ -11,7 +11,7 @@ class Company extends Model
 {
     use BelongsToTenant, HasFactory, HasUuids;
 
-    protected $fillable = [ 'name', 'legal_name', 'registration_number', 'tax_number', 'country', 'currency', 'email', 'phone', 'address', 'status'];
+    protected $fillable = [ 'name', 'legal_name', 'registration_number', 'tax_number', 'country', 'currency', 'email', 'phone', 'address', 'status', 'tenant_id'];
 
     public $incrementing = false;
 

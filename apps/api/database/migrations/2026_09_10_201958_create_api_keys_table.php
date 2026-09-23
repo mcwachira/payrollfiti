@@ -10,64 +10,48 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('webhook_delivery_logs', function (Blueprint $table): void {
+        Schema::create('api_keys', function (Blueprint $table): void {
             $table->uuid('id')->primary();
 
             $table->foreignUuid('tenant_id')
                 ->constrained('tenants')
                 ->cascadeOnDelete();
 
-            $table->foreignUuid('webhook_endpoint_id')
-                ->constrained('webhook_endpoints')
-                ->cascadeOnDelete();
+            $table->foreignUuid('created_by')
+                ->nullable()
+                ->constrained('users')
+                ->nullOnDelete();
 
-            $table->string('event_type');
+            $table->string('name');
 
-            /*
-             * Every outbound event gets a stable event ID.
-             * This is part of webhook delivery idempotency.
-             */
-            $table->string('event_id');
+            $table->string('prefix', 16);
 
-            $table->string('status')->default('pending');
+            $table->string('secret_hash', 64);
 
-            $table->unsignedSmallInteger('attempts')->default(0);
+            $table->string('status')->default('active');
 
-            $table->unsignedSmallInteger('response_status')->nullable();
+            $table->timestampTz('last_used_at')->nullable();
 
-            $table->unsignedInteger('response_time_ms')->nullable();
+            $table->timestampTz('expires_at')->nullable();
 
-            $table->text('response_body')->nullable();
-
-            $table->text('error')->nullable();
-
-            $table->timestampTz('delivered_at')->nullable();
-
-            $table->timestampTz('next_attempt_at')->nullable();
+            $table->timestampTz('revoked_at')->nullable();
 
             $table->timestampsTz();
 
             $table->unique([
-                'webhook_endpoint_id',
-                'event_type',
-                'event_id',
-            ], 'webhook_delivery_logs_idempotency_unique');
-
-            $table->index([
-                'webhook_endpoint_id',
-                'created_at',
+                'tenant_id',
+                'prefix',
             ]);
 
             $table->index([
                 'tenant_id',
                 'status',
-                'next_attempt_at',
             ]);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('webhook_delivery_logs');
+        Schema::dropIfExists('api_keys');
     }
 };

@@ -8,81 +8,95 @@ use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class WebhookDeliveryLog extends Model
+class ApiKey extends Model
 {
     use BelongsToTenant;
     use HasUuids;
 
-    protected $table = 'webhook_delivery_logs';
+    protected $table = 'api_keys';
 
     public $incrementing = false;
 
     protected $keyType = 'string';
 
     protected $fillable = [
-        'webhook_endpoint_id',
-        'event_type',
-        'event_id',
+        'created_by',
+        'name',
+        'prefix',
         'status',
-        'attempts',
-        'response_status',
-        'response_time_ms',
-        'response_body',
-        'error',
-        'delivered_at',
-        'next_attempt_at',
+        'last_used_at',
+        'expires_at',
+        'revoked_at',
+    ];
+
+    protected $hidden = [
+        'secret_hash',
     ];
 
     protected $casts = [
-        'attempts' => 'integer',
-        'response_status' => 'integer',
-        'response_time_ms' => 'integer',
-        'delivered_at' => 'datetime',
-        'next_attempt_at' => 'datetime',
+        'last_used_at' => 'datetime',
+        'expires_at' => 'datetime',
+        'revoked_at' => 'datetime',
     ];
 
-    public function endpoint(): BelongsTo
+    public function creator(): BelongsTo
     {
-        return $this->belongsTo(
-            WebhookEndpoint::class,
-            'webhook_endpoint_id',
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function permissions(): HasMany
+    {
+        return $this->hasMany(
+            ApiKeyPermission::class,
+            'api_key_id',
         );
     }
 
-    public function incrementAttempts(): void
+    public function usageRecords(): HasMany
     {
-        $this->increment('attempts');
+        return $this->hasMany(
+            ApiKeyUsage::class,
+            'api_key_id',
+        );
     }
 
-    public function markDelivered(
-        ?int $responseStatus = null,
-        ?int $responseTimeMs = null,
-        ?string $responseBody = null,
-    ): void {
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at !== null
+            && $this->expires_at->isPast();
+    }
+
+    public function isRevoked(): bool
+    {
+        return $this->revoked_at !== null;
+    }
+
+    public function isUsable(): bool
+    {
+        return $this->isActive()
+            && ! $this->isExpired()
+            && ! $this->isRevoked();
+    }
+
+    public function revoke(): void
+    {
         $this->forceFill([
-            'status' => 'delivered',
-            'response_status' => $responseStatus,
-            'response_time_ms' => $responseTimeMs,
-            'response_body' => $responseBody,
-            'error' => null,
-            'delivered_at' => now(),
-            'next_attempt_at' => null,
+            'status' => 'revoked',
+            'revoked_at' => now(),
         ])->save();
     }
 
-    public function markFailed(
-        string $error,
-        ?int $responseStatus = null,
-        ?int $responseTimeMs = null,
-        ?string $responseBody = null,
-    ): void {
+    public function markUsed(): void
+    {
         $this->forceFill([
-            'status' => 'failed',
-            'response_status' => $responseStatus,
-            'response_time_ms' => $responseTimeMs,
-            'response_body' => $responseBody,
-            'error' => $error,
+            'last_used_at' => now(),
         ])->save();
     }
 }
