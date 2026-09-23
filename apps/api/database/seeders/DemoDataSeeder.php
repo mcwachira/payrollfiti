@@ -1077,7 +1077,6 @@ class DemoDataSeeder extends Seeder
                                 "payslip-$tenantKey-$index"
                             ),
                             [
-                                'tenant_id' => $tenantId,
                                 'payroll_entry_id' => $entryId,
                                 'payslip_number' => strtoupper(
                                         substr($tenantKey, 0, 2)
