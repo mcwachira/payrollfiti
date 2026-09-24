@@ -1,19 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Tenant extends Model
 {
-
-    // Docker bind mount test
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
-        'id',
         'name',
         'slug',
         'subdomain',
@@ -33,12 +34,12 @@ class Tenant extends Model
 
     protected $keyType = 'string';
 
-    public function companies()
+    public function companies(): HasMany
     {
         return $this->hasMany(Company::class, 'tenant_id');
     }
 
-    public function users()
+    public function users(): HasMany
     {
         return $this->hasMany(User::class, 'tenant_id');
     }
