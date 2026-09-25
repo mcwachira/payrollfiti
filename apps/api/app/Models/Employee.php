@@ -1,17 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Employee extends Model
 {
-    use BelongsToTenant, HasFactory, HasUuids;
-
-    protected $table = 'employees';
+    use BelongsToTenant, HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'company_id',
@@ -32,9 +35,6 @@ class Employee extends Model
         'date_of_birth',
         'gender',
     ];
-    public $incrementing = false;
-
-    protected $keyType = 'string';
 
     protected $casts = [
         'hire_date' => 'date',
@@ -43,32 +43,40 @@ class Employee extends Model
         'national_id' => 'encrypted',
     ];
 
-    public function company()
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class, 'company_id');
     }
 
-    public function department()
+    public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class, 'department_id');
     }
 
-    public function position()
+    public function position(): BelongsTo
     {
         return $this->belongsTo(Position::class, 'position_id');
     }
 
-    public function workLocation()
+    public function workLocation(): BelongsTo
     {
         return $this->belongsTo(WorkLocation::class, 'work_location_id');
     }
 
-    public function salaryStructure()
+    public function salaryStructure(): BelongsTo
     {
         return $this->belongsTo(SalaryStructure::class, 'salary_structure_id');
     }
 
-    public function payrollEntries()
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(Contract::class, 'employee_id');
+    }
+    public function payrollEntries(): HasMany
     {
         return $this->hasMany(PayrollEntry::class, 'employee_id');
     }

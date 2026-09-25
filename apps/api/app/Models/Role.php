@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
@@ -10,9 +12,14 @@ class Role extends SpatieRole
 {
     use BelongsToTenant, HasUuids;
 
+    protected $fillable = [
+        'name',
+        'guard_name',
+        'slug',
+        'description',
+    ];
+
     public $incrementing = false;
 
     protected $keyType = 'string';
-
-    protected $fillable = ['name', 'guard_name', 'slug', 'description'];
 }
